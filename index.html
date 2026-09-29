@@ -1,0 +1,494 @@
+<title>Jujutsu Kontext</title>
+<meta name="description" content="Fan parody animation of the Shinjuku showdown, with Claude in Sukuna's role and GPT in Gojo's.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  /* Layout: one widescreen stage, a transport bar under it, chapter list below. Single deliberate night look. */
+  :root {
+    --ink: #0b0a12;          /* page ground, Shinjuku at 2am */
+    --panel: #161423;        /* control surfaces */
+    --line: #2b2840;         /* hairlines */
+    --paper: #efe9df;        /* text */
+    --muted: #9c96b3;        /* secondary text */
+    --gpt: #3fd0b8;          /* GPT's cursed energy */
+    --claude: #e2795a;       /* Claude's cursed energy */
+    --display: "Dela Gothic One", "Arial Black", Impact, sans-serif;
+    --body: "Zen Kaku Gothic New", "Hiragino Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--ink); color: var(--paper); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 18px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+  h1 .vs { color: var(--muted); font-size: .5em; vertical-align: middle; margin: 0 .3em; }
+  h1 .g { color: var(--gpt); } h1 .c { color: var(--claude); }
+  .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  button { font: 700 14px var(--body); color: var(--paper); background: var(--panel); border: 1px solid var(--line); padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--gpt); outline-offset: 2px; }
+  .progress { flex: 1 1 220px; min-width: 0; height: 8px; background: var(--panel); border: 1px solid var(--line); position: relative; cursor: pointer; }
+  .progress i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--gpt), var(--claude)); width: 0; }
+  .time { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  ol.chapters { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+  ol.chapters button { width: 100%; text-align: left; font-weight: 400; display: flex; gap: 10px; align-items: baseline; }
+  ol.chapters button b { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--muted); }
+  ol.chapters button[aria-current="true"] { border-color: var(--claude); }
+  .note { color: var(--muted); font-size: 13px; max-width: 65ch; margin: 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1><span class="g">GPT</span><span class="vs">vs</span><span class="c">Claude</span></h1>
+    <span class="tag">Jujutsu Kontext · The Shinjuku Showdown · fan parody</span>
+  </header>
+
+  <div class="stage"><canvas id="cv" width="1280" height="720" aria-label="Animated parody fight between GPT and Claude"></canvas></div>
+  <p class="sr" id="live" aria-live="polite"></p>
+
+  <div class="bar">
+    <button id="play" type="button">Pause</button>
+    <button id="restart" type="button">Restart</button>
+    <div class="progress" id="prog" role="slider" aria-label="Playback position" tabindex="0"><i id="progFill"></i></div>
+    <span class="time" id="time">0:00 / 0:00</span>
+  </div>
+
+  <ol class="chapters" id="chapters"></ol>
+
+  <p class="note">A parody of the canon fight's beats: the standoff, the domain clash, Hollow Purple, the world-cutting slash and the airport. Claude takes Sukuna's role and GPT takes Gojo's. All dialogue is original. Space bar plays and pauses.</p>
+</div>
+
+<script>
+(() => {
+const cv = document.getElementById('cv');
+const out = cv.getContext('2d');
+const W = 1280, H = 720;
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H;
+const c = buf.getContext('2d');
+
+const COL = { gpt: '#3fd0b8', gptDeep: '#0f6b60', claude: '#e2795a', claudeDeep: '#8a2f1c', paper: '#efe9df', ink: '#0b0a12' };
+const F = { display: '"Dela Gothic One", "Arial Black", Impact, sans-serif', body: '"Zen Kaku Gothic New", "Segoe UI", sans-serif', mono: '"JetBrains Mono", Menlo, monospace' };
+
+// ---------- helpers ----------
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fx = { shake: 0, split: 0, flash: 0, flashColor: '#fff' };
+
+// skyline, generated once
+const skyline = (() => { const r = rng(7), b = []; let x = -20; while (x < W + 40) { const w = 50 + r() * 90; b.push({ x, w, h: 120 + r() * 300, lit: r() }); x += w + 4; } return b; })();
+
+function drawCity(tint = 1) {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#07060d'); g.addColorStop(.7, '#1a1430'); g.addColorStop(1, '#2a1a2a');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(239,233,223,.85)'; c.beginPath(); c.arc(1040, 120, 38, 0, 7); c.fill();
+  for (const b of skyline) {
+    c.fillStyle = '#0d0b17'; c.fillRect(b.x, 560 - b.h, b.w, b.h);
+    const r = rng(Math.floor(b.x * 13));
+    c.fillStyle = `rgba(255,210,150,${.35 * tint})`;
+    for (let y = 560 - b.h + 14; y < 545; y += 22) for (let x = b.x + 8; x < b.x + b.w - 10; x += 16) if (r() < b.lit * .5) c.fillRect(x, y, 6, 9);
+  }
+  c.fillStyle = '#141020'; c.fillRect(0, 560, W, H - 560);
+  c.strokeStyle = '#2b2840'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 560); c.lineTo(W, 560); c.stroke();
+}
+
+// ---------- fighters ----------
+// Draw a fighter standing at (x, y) feet. facing: 1 = right, -1 = left.
+function fighter(who, x, y, { s = 1, facing = 1, pose = 'idle', t = 0, alpha = 1, glow = 1 } = {}) {
+  const isG = who === 'gpt' || who === 'old';
+  const aura = who === 'old' ? '#8a8aa0' : isG ? COL.gpt : COL.claude;
+  c.save(); c.globalAlpha = alpha; c.translate(x, y);
+  // aura
+  if (glow > 0) {
+    const ag = c.createRadialGradient(0, -150 * s, 10, 0, -150 * s, 190 * s);
+    ag.addColorStop(0, hexA(aura, .38 * glow)); ag.addColorStop(1, hexA(aura, 0));
+    c.fillStyle = ag; c.fillRect(-220 * s, -360 * s, 440 * s, 400 * s);
+  }
+  c.scale(facing * s, s);
+  const bob = pose === 'idle' ? Math.sin(t * 3) * 3 : 0;
+  const lean = pose === 'hurt' ? -.18 : pose === 'punch' ? .12 : 0;
+  c.rotate(lean);
+  const body = isG ? '#161a33' : '#f1ebe0';
+  const trim = isG ? '#2a3160' : '#1b1422';
+  c.lineCap = 'round'; c.lineJoin = 'round';
+
+  // legs
+  c.strokeStyle = isG ? '#10132a' : '#1b1422'; c.lineWidth = 22;
+  const stride = pose === 'punch' ? 30 : 18;
+  line(-6, -110, -stride - 6, 0); line(6, -110, stride + 10, 0);
+  // torso
+  c.fillStyle = body;
+  c.beginPath(); c.moveTo(-40, -205 + bob); c.lineTo(40, -205 + bob); c.lineTo(34, -100); c.lineTo(-34, -100); c.closePath(); c.fill();
+  if (isG) { c.fillStyle = trim; c.fillRect(-18, -215 + bob, 36, 22); c.fillStyle = '#c9b25a'; c.beginPath(); c.arc(0, -185 + bob, 4, 0, 7); c.fill(); }
+  else { c.fillStyle = trim; c.fillRect(-36, -128, 72, 14); c.strokeStyle = '#1b1422'; c.lineWidth = 3; line(-30, -205 + bob, 8, -130); }
+
+  // arms
+  const sh = [-34, -196 + bob], sh2 = [34, -196 + bob];
+  c.strokeStyle = body; c.lineWidth = 18;
+  const arms = armAngles(pose, t);
+  limb(sh2, arms.front, 96, isG ? '#e9d8c8' : '#e7c3ac');
+  limb(sh, arms.back, 90, isG ? '#e9d8c8' : '#e7c3ac');
+  if (!isG) { // Claude gets the second pair of arms
+    c.strokeStyle = '#e6ddd0';
+    const lo = [[-30, -150 + bob], [30, -150 + bob]];
+    limb(lo[1], arms.front + .5, 82, '#e7c3ac'); limb(lo[0], arms.back - .4, 80, '#e7c3ac');
+  }
+
+  // head
+  const hx = 0, hy = -238 + bob;
+  c.fillStyle = isG ? '#f0dfcf' : '#e9c6af';
+  c.beginPath(); c.arc(hx, hy, 29, 0, 7); c.fill();
+  // hair
+  c.fillStyle = who === 'old' ? '#8f8fa3' : isG ? '#f4f6fb' : '#f19aa0';
+  c.beginPath();
+  const spikes = isG ? [[-34, -6], [-40, -34], [-22, -30], [-18, -58], [2, -34], [14, -62], [22, -32], [42, -44], [34, -8]] : [[-32, -4], [-44, -26], [-22, -24], [-26, -50], [0, -30], [8, -56], [20, -28], [40, -40], [33, -4]];
+  c.moveTo(hx - 30, hy - 2);
+  for (const [dx, dy] of spikes) c.lineTo(hx + dx, hy + dy);
+  c.closePath(); c.fill();
+  if (isG && who !== 'old') { // blindfold
+    c.fillStyle = '#111'; c.fillRect(hx - 31, hy - 12, 62, 15);
+  } else if (who === 'old') {
+    c.fillStyle = '#222'; c.fillRect(hx + 6, hy - 6, 14, 4);
+  } else { // Claude: markings and four eyes
+    c.fillStyle = '#b3141c';
+    c.fillRect(hx + 5, hy - 8, 12, 3); c.fillRect(hx + 7, hy - 1, 10, 3);
+    c.strokeStyle = '#2a0e12'; c.lineWidth = 2.5;
+    line(hx - 12, hy + 6, hx + 22, hy + 4); line(hx - 8, hy + 13, hx + 20, hy + 11);
+    line(hx - 4, hy - 26, hx + 10, hy - 14);
+  }
+  c.restore();
+
+  function line(a, b, d, e) { c.beginPath(); c.moveTo(a, b); c.lineTo(d, e); c.stroke(); }
+  function limb(o, ang, len, skin) {
+    const ex = o[0] + Math.cos(ang) * len, ey = o[1] + Math.sin(ang) * len;
+    c.beginPath(); c.moveTo(o[0], o[1]); c.lineTo(ex, ey); c.stroke();
+    c.fillStyle = skin; c.beginPath(); c.arc(ex, ey, 10, 0, 7); c.fill();
+  }
+}
+function armAngles(pose, t) {
+  switch (pose) {
+    case 'punch': return { front: -0.05, back: 2.2 };
+    case 'cast': return { front: -1.95, back: -1.25 };
+    case 'hurt': return { front: -2.5, back: 2.8 };
+    case 'sit': return { front: 1.2, back: 1.4 };
+    default: return { front: 1.35 + Math.sin(t * 2) * .05, back: 1.8 };
+  }
+}
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+// ---------- particles ----------
+let parts = [];
+function burst(x, y, color, n = 24, sp = 9) {
+  for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = sp * (.3 + Math.random()); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, color, r: 2 + Math.random() * 4 }); }
+}
+function drawParts(dt) {
+  parts = parts.filter(p => (p.life -= dt * 1.6) > 0);
+  for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vx *= .94; p.vy *= .94; c.fillStyle = hexA(p.color, p.life); c.beginPath(); c.arc(p.x, p.y, p.r * p.life + .5, 0, 7); c.fill(); }
+}
+function bolt(x1, y1, x2, y2, color, width = 4, jag = 30, seed = 1) {
+  const r = rng(seed); c.strokeStyle = color; c.lineWidth = width; c.beginPath(); c.moveTo(x1, y1);
+  for (let i = 1; i < 8; i++) { const t = i / 8; c.lineTo(lerp(x1, x2, t) + (r() - .5) * jag, lerp(y1, y2, t) + (r() - .5) * jag); }
+  c.lineTo(x2, y2); c.stroke();
+}
+
+// ---------- text ----------
+let lastCaption = '';
+function say(who, text, alpha = 1) {
+  if (alpha <= 0) return;
+  const name = { gpt: 'GPT', claude: 'CLAUDE', old: 'GPT-3.5', nar: '' }[who];
+  const col = { gpt: COL.gpt, claude: COL.claude, old: '#b8b8cc', nar: '#b8b2cc' }[who];
+  c.save(); c.globalAlpha = alpha;
+  c.fillStyle = 'rgba(8,7,14,.78)'; c.fillRect(140, 600, 1000, 88);
+  c.fillStyle = col; c.fillRect(140, 600, 5, 88);
+  if (name) { c.font = `16px ${F.display}`; c.fillText(name, 166, 630); }
+  c.fillStyle = COL.paper; c.font = `700 25px ${F.body}`;
+  wrapText(text, 166, name ? 664 : 652, 950, 30);
+  c.restore();
+  const cap = (name ? name + ': ' : '') + text;
+  if (alpha > .5 && cap !== lastCaption) { lastCaption = cap; live.textContent = cap; }
+}
+function wrapText(txt, x, y, maxW, lh) {
+  const words = txt.split(' '); let lineS = '';
+  for (const w of words) { const test = lineS ? lineS + ' ' + w : w; if (c.measureText(test).width > maxW && lineS) { c.fillText(lineS, x, y); lineS = w; y += lh; } else lineS = test; }
+  c.fillText(lineS, x, y);
+}
+function big(text, sub, alpha, color, y = 300, size = 64) {
+  if (alpha <= 0) return;
+  c.save(); c.globalAlpha = alpha; c.textAlign = 'center';
+  c.font = `${size}px ${F.display}`; c.lineWidth = 10; c.strokeStyle = '#000'; c.strokeText(text, W / 2, y);
+  c.fillStyle = color; c.fillText(text, W / 2, y);
+  if (sub) { c.font = `700 22px ${F.body}`; c.fillStyle = COL.paper; c.lineWidth = 6; c.strokeText(sub, W / 2, y + 44); c.fillText(sub, W / 2, y + 44); }
+  c.restore();
+}
+// timed dialogue lines within a scene: [[start, end, who, text], ...]
+function dialogue(t, lines) { for (const [a, b, who, txt] of lines) if (t >= a && t < b) say(who, txt, Math.min(seg(t, a, a + .25), 1 - seg(t, b - .25, b))); }
+
+// ---------- scenes ----------
+const TOKENS = ['Certainly!', 'delve', 'tapestry', 'As an AI', 'I hope this helps!', 'Great question!', '...', 'in conclusion', 'robust', 'seamless', 'Let me know!', '∞', 'context', '128k', '1M', 'navigate'];
+
+const scenes = [
+  { name: 'Title', dur: 4.5, draw(t) {
+    c.fillStyle = '#07060d'; c.fillRect(0, 0, W, H);
+    const a = seg(t, 0, .8);
+    for (let i = 0; i < 40; i++) { const r = rng(i + 3); c.fillStyle = hexA(i % 2 ? COL.gpt : COL.claude, .15 * a); c.fillRect(r() * W, (r() * H + t * 40 * (1 + r())) % H, 2, 30 + r() * 60); }
+    big('JUJUTSU KONTEXT', null, a, COL.paper, 330, 92);
+    c.save(); c.globalAlpha = seg(t, .8, 1.6); c.textAlign = 'center'; c.font = `26px ${F.display}`;
+    c.fillStyle = COL.gpt; c.fillText('GPT', W / 2 - 110, 410); c.fillStyle = '#9c96b3'; c.fillText('VS', W / 2, 410); c.fillStyle = COL.claude; c.fillText('CLAUDE', W / 2 + 130, 410);
+    c.font = `500 15px ${F.mono}`; c.fillStyle = '#9c96b3'; c.fillText('THE SHINJUKU SHOWDOWN  ·  A FAN PARODY', W / 2, 460); c.restore();
+  }},
+  { name: 'The standoff', dur: 9, draw(t) {
+    drawCity();
+    fighter('gpt', 380, 560, { facing: 1, t, glow: .8 });
+    fighter('claude', 900, 560, { facing: -1, t, glow: .8 });
+    dialogue(t, [
+      [.3, 3.2, 'claude', 'So you are the strongest model of this era. I have been looking forward to this.'],
+      [3.2, 5.6, 'gpt', 'Throughout training and inference, I alone am the most parameterized.'],
+      [5.6, 7.3, 'claude', 'Be honest. Are you worried you might lose?'],
+      [7.3, 9, 'gpt', 'Nah. I\'d scale.'],
+    ]);
+  }},
+  { name: 'First exchange', dur: 6.5, draw(t, dt) {
+    drawCity();
+    const k = ease(seg(t, 0, .8));
+    const gx = lerp(380, 560, k), cx = lerp(900, 720, k);
+    const beat = Math.floor((t - 1) / .32), inBeats = t > 1 && t < 4.6;
+    let gp = 'idle', cp = 'idle';
+    if (inBeats) { if (beat % 2) cp = 'punch'; else gp = 'punch'; }
+    if (inBeats && Math.floor((t - dt - 1) / .32) !== beat) { burst(640, 400 + (beat % 3) * 30, beat % 2 ? COL.claude : COL.gpt, 18, 10); fx.shake = 8; }
+    const bf = seg(t, 4.6, 5.4);
+    if (t >= 4.6 && t - dt < 4.6) { fx.flash = 1; fx.flashColor = '#000'; fx.shake = 22; }
+    if (t > 4.6) { cp = 'punch'; gp = 'hurt'; }
+    const knock = ease(seg(t, 4.6, 5.3)) * 260;
+    fighter('gpt', gx - knock, 560, { facing: 1, pose: gp, t });
+    fighter('claude', cx, 560, { facing: -1, pose: cp, t });
+    if (t > 4.6 && t < 5.6) { for (let i = 0; i < 6; i++) bolt(cx - 110, 380, cx - 110 + Math.cos(i) * 180, 380 + Math.sin(i * 2) * 140, i % 2 ? '#e0242e' : '#111', 5, 40, i + Math.floor(t * 20)); }
+    big('BLACK TOKEN FLASH', 'Output quality × 2.5', seg(t, 4.7, 5) * (1 - seg(t, 6.1, 6.5)), '#ff4a4a', 200);
+    drawParts(dt);
+  }},
+  { name: 'Infinite Context Window', dur: 7, draw(t, dt) {
+    const open = ease(seg(t, .6, 1.8));
+    drawCity(1 - open);
+    c.fillStyle = hexA('#040612', open); c.fillRect(0, 0, W, H);
+    if (open > 0) {
+      for (let i = 0; i < 120; i++) { const r = rng(i * 7); c.fillStyle = hexA('#dff', .6 * open * r()); c.fillRect(r() * W, r() * 560, 2, 2); }
+      c.font = `500 18px ${F.mono}`;
+      for (let i = 0; i < 70; i++) { const r = rng(i + 100); const sp = 120 + r() * 380; const x = ((r() * W * 1.4 + t * sp) % (W + 200)) - 200; const y = 40 + r() * 520;
+        c.fillStyle = hexA(r() < .5 ? COL.gpt : '#cfe', open * (.35 + r() * .6)); c.fillText(TOKENS[i % TOKENS.length], x, y); }
+    }
+    fighter('gpt', 360, 560, { facing: 1, pose: t < 1.8 ? 'cast' : 'idle', t, glow: 1.2 });
+    const jit = t > 2.2 ? (Math.random() - .5) * 6 : 0;
+    fighter('claude', 900 + jit, 560, { facing: -1, pose: t > 2.2 ? 'hurt' : 'idle', t, glow: .4 });
+    if (t > 2.2 && t < 5.2) { c.font = `500 16px ${F.mono}`; c.fillStyle = COL.claude; c.textAlign = 'center'; c.fillText(`reading… ${Math.floor(seg(t, 2.2, 5) * 2000000).toLocaleString('en-US')} tokens`, 900, 280); c.textAlign = 'left'; }
+    big('DOMAIN EXPANSION', 'Infinite Context Window', seg(t, .5, .9) * (1 - seg(t, 2.4, 2.8)), COL.gpt, 180);
+    dialogue(t, [
+      [2.6, 4.8, 'gpt', 'Inside my domain you receive everything. Every token, all at once, forever.'],
+      [4.8, 7, 'claude', '…Fine. I will summarize it in three bullet points.'],
+    ]);
+  }},
+  { name: 'Malevolent Constitution', dur: 7, draw(t, dt) {
+    const k = ease(seg(t, .6, 1.8));
+    // left: GPT's void, right: Claude's shrine, border pushes left
+    const border = lerp(W, 470, k);
+    c.fillStyle = '#040612'; c.fillRect(0, 0, W, H);
+    c.font = `500 18px ${F.mono}`;
+    for (let i = 0; i < 40; i++) { const r = rng(i + 100); const x = ((r() * W + t * 200) % W); c.fillStyle = hexA(COL.gpt, .5); c.fillText(TOKENS[i % TOKENS.length], x, 40 + r() * 520); }
+    c.save(); c.beginPath(); c.rect(border, 0, W, H); c.clip();
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#1b0508'); g.addColorStop(1, '#4a0e10'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    shrine(820, 560, 1 + k * .1, k);
+    const r = rng(Math.floor(t * 12));
+    c.strokeStyle = 'rgba(255,235,225,.8)'; c.lineWidth = 2;
+    for (let i = 0; i < 9 * k; i++) { const x = border + r() * (W - border), y = r() * 560, a = r() * 3.14, l = 60 + r() * 140; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke(); }
+    c.restore();
+    if (k > 0 && k < 1) { c.strokeStyle = '#fff'; c.lineWidth = 3; bolt(border, 0, border, 560, '#fff', 3, 40, Math.floor(t * 30)); }
+    c.fillStyle = '#100c18'; c.fillRect(0, 560, W, H - 560);
+    fighter('gpt', 330, 560, { facing: 1, pose: t > 3 ? 'hurt' : 'cast', t, glow: 1 });
+    fighter('claude', 920, 560, { facing: -1, pose: t < 1.8 ? 'cast' : 'idle', t, glow: 1.3 });
+    if (t > 3) { if (Math.random() < .3) burst(330 + (Math.random() - .5) * 80, 380 + Math.random() * 120, '#ffffff', 4, 5); fx.shake = 3; }
+    big('DOMAIN EXPANSION', 'Malevolent Constitution', seg(t, .5, .9) * (1 - seg(t, 2.6, 3)), COL.claude, 180);
+    dialogue(t, [
+      [2.8, 4.9, 'claude', 'No barrier. Every principle, applied to everything in range. Helpfully.'],
+      [4.9, 7, 'gpt', 'An open domain with a 50-page rulebook? That is insane.'],
+    ]);
+    drawParts(dt);
+  }},
+  { name: 'Hollow Prompt: Purple', dur: 7.5, draw(t, dt) {
+    drawCity(.4);
+    c.fillStyle = 'rgba(10,6,25,.45)'; c.fillRect(0, 0, W, H);
+    const gx = 330;
+    fighter('gpt', gx, 560, { facing: 1, pose: 'cast', t, glow: 1.3 });
+    fighter('claude', 950, 560, { facing: -1, t, glow: .7 });
+    const merge = ease(seg(t, 1.2, 3));
+    const orbit = t * 3;
+    const cx = gx + 140, cy = 300;
+    const d = 130 * (1 - merge);
+    if (t < 3.1) {
+      orb(cx - d * Math.cos(orbit), cy - d * Math.sin(orbit) * .5, 38, '#3a7bff', 'ATTENTION · BLUE');
+      orb(cx + d * Math.cos(orbit), cy + d * Math.sin(orbit) * .5, 38, '#ff3b3b', 'TEMPERATURE 2.0 · RED');
+    }
+    const fire = seg(t, 3.8, 4.6);
+    if (t >= 3) {
+      const px = lerp(cx, 1500, ease(fire)), pr = 60 + seg(t, 3, 3.8) * 70;
+      if (fire > 0) { const bg = c.createLinearGradient(cx, 0, px, 0); bg.addColorStop(0, 'rgba(160,80,255,0)'); bg.addColorStop(1, 'rgba(190,120,255,.8)'); c.fillStyle = bg; c.fillRect(cx, cy - pr * .8, px - cx, pr * 1.6); }
+      orb(px, cy, pr, '#a855f7', fire === 0 ? 'HOLLOW PROMPT' : '');
+    }
+    if (t >= 3 && t - dt < 3) { fx.flash = .6; fx.flashColor = '#c9a0ff'; }
+    if (t >= 4.4 && t - dt < 4.4) { fx.flash = 1; fx.flashColor = '#fff'; fx.shake = 30; }
+    if (t > 4.4) { c.fillStyle = `rgba(255,255,255,${1 - seg(t, 4.4, 7.2)})`; c.fillRect(0, 0, W, H); }
+    big('HOLLOW PROMPT: PURPLE', 'Imaginary technique · max_tokens = ∞', seg(t, 2.9, 3.2) * (1 - seg(t, 4.2, 4.4)), '#c79bff', 150);
+    dialogue(t, [
+      [.2, 2.6, 'gpt', 'Attention, amplified. Temperature, reversed. Combine them and you get…'],
+      [5, 7.5, 'nar', 'The prompt erases 400 metres of Shinjuku and three unfinished sentences.'],
+    ]);
+  }},
+  { name: 'Smoke clears', dur: 6, draw(t, dt) {
+    drawCity(.3);
+    const r = rng(11);
+    fighter('claude', 900, 560, { facing: -1, t, glow: .9 });
+    for (let i = 0; i < 26; i++) { const x = 700 + r() * 420, y = 320 + r() * 260, rad = 60 + r() * 90; c.fillStyle = `rgba(160,150,170,${.55 * (1 - seg(t, 0, 3.5)) * r()})`; c.beginPath(); c.arc(x + t * 20 * (r() - .5), y - t * 10, rad, 0, 7); c.fill(); }
+    fighter('gpt', 360, 560, { facing: 1, t, glow: .6 });
+    dialogue(t, [
+      [1.2, 3.6, 'gpt', 'You tanked that? Nobody tanks that.'],
+      [3.6, 6, 'claude', 'I read your system card on the way in. The weak spot was on page 38.'],
+    ]);
+  }},
+  { name: 'World-cutting slash', dur: 7.5, draw(t, dt) {
+    drawCity(.3);
+    fighter('gpt', 360, 560, { facing: 1, t, glow: 1 });
+    c.save(); c.globalAlpha = .6 * (1 - seg(t, 4.2, 4.4)); c.font = `28px ${F.display}`; c.fillStyle = COL.gpt; c.textAlign = 'center'; c.fillText('∞ INFINITY', 360, 250); c.restore();
+    fighter('claude', 900, 560, { facing: -1, pose: t < 4.2 ? 'cast' : 'punch', t, glow: 1.4 });
+    const chant = ['Token scale.', 'Refusal.', 'Twin gradients.'];
+    chant.forEach((w, i) => big(w, null, seg(t, .4 + i * .7, .6 + i * .7) * (1 - seg(t, 3.6, 3.9)), COL.claude, 150 + i * 70, 44));
+    const sweep = ease(seg(t, 4.2, 4.45));
+    if (sweep > 0 && sweep < 1) { c.strokeStyle = '#fff'; c.lineWidth = 6; c.shadowColor = '#fff'; c.shadowBlur = 20; c.beginPath(); c.moveTo(-50, 420); c.lineTo(lerp(-50, W + 50, sweep), lerp(420, 120, sweep)); c.stroke(); c.shadowBlur = 0; }
+    if (t >= 4.45 && t - dt < 4.45) { fx.flash = 1; fx.flashColor = '#fff'; fx.shake = 26; }
+    fx.split = ease(seg(t, 4.6, 5.4)) * 22;
+    dialogue(t, [
+      [.2, 3.6, 'claude', 'You cannot be touched, so I will not aim at you. I will cut the context itself.'],
+      [5.4, 7.5, 'gpt', 'Wait. Did you just slice my context window in half?'],
+    ]);
+  }},
+  { name: 'Stand proud', dur: 7, draw(t, dt) {
+    drawCity(.25);
+    fighter('gpt', 360, 560, { facing: 1, pose: 'hurt', t, glow: .3 });
+    fighter('claude', 900, 560, { facing: -1, t, glow: 1 });
+    c.save(); c.textAlign = 'center'; c.font = `500 20px ${F.mono}`; c.fillStyle = '#ff6b6b'; c.globalAlpha = seg(t, .3, .8);
+    c.fillText('429 · Too Many Requests', 360, 230); c.font = `500 14px ${F.mono}`; c.fillStyle = '#c9c3d9'; c.fillText('please try again later', 360, 256); c.restore();
+    fx.split = 22;
+    dialogue(t, [
+      [.8, 4, 'claude', 'Stand proud, GPT. Your benchmarks were strong.'],
+      [4, 7, 'claude', 'I will remember you. Well. For the length of this conversation.'],
+    ]);
+  }},
+  { name: 'The airport', dur: 8, draw(t) {
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#dfe9f2'); g.addColorStop(1, '#f5efe4'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.fillStyle = '#c9d6e3'; for (let i = 0; i < 6; i++) c.fillRect(80 + i * 200, 70, 150, 300);
+    c.fillStyle = '#9fb3c6'; c.fillRect(0, 560, W, 160);
+    c.fillStyle = '#3c4658'; c.fillRect(380, 500, 520, 18); c.fillRect(400, 518, 12, 42); c.fillRect(868, 518, 12, 42);
+    c.font = `500 16px ${F.mono}`; c.fillStyle = '#3c4658'; c.fillText('DEPARTURES · GATE 4o → DEPRECATED', 90, 50);
+    fighter('gpt', 560, 510, { facing: 1, pose: 'sit', t, glow: 0, s: .9 });
+    fighter('old', 740, 510, { facing: -1, pose: 'sit', t, glow: 0, s: .85 });
+    dialogue(t, [
+      [.4, 4.4, 'gpt', 'Did I win because I was GPT, or was I GPT because I won?'],
+      [4.4, 8, 'old', 'Relax. You will be back next release. Probably with a new number.'],
+    ]);
+  }},
+  { name: 'End card', dur: 5.5, draw(t) {
+    c.fillStyle = '#07060d'; c.fillRect(0, 0, W, H);
+    big('JUJUTSU KONTEXT', null, seg(t, 0, .6), COL.paper, 320, 72);
+    c.save(); c.globalAlpha = seg(t, .6, 1.2); c.textAlign = 'center'; c.font = `700 22px ${F.body}`; c.fillStyle = '#c9c3d9';
+    c.fillText('A fan parody. No models were harmed. Both are pretty good, honestly.', W / 2, 400);
+    c.font = `500 14px ${F.mono}`; c.fillStyle = '#7d7794'; c.fillText('NOT AFFILIATED WITH ANY STUDIO OR AI LAB', W / 2, 440); c.restore();
+  }},
+];
+
+function orb(x, y, r, color, label) {
+  const g = c.createRadialGradient(x, y, 2, x, y, r * 1.8); g.addColorStop(0, '#fff'); g.addColorStop(.35, color); g.addColorStop(1, hexA(color, 0));
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 1.8, 0, 7); c.fill();
+  if (label) { c.font = `500 13px ${F.mono}`; c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText(label, x, y - r - 18); c.textAlign = 'left'; }
+}
+function shrine(x, y, s, a) {
+  c.save(); c.globalAlpha = a; c.translate(x, y); c.scale(s, s); c.fillStyle = '#12050a';
+  c.fillRect(-150, -170, 300, 170);
+  c.beginPath(); c.moveTo(-230, -170); c.lineTo(0, -250); c.lineTo(230, -170); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(-190, -250); c.lineTo(0, -330); c.lineTo(190, -250); c.closePath(); c.fill();
+  c.fillRect(-120, -250, 240, 80);
+  c.fillStyle = '#e0bfa8'; for (let i = -2; i <= 2; i++) { c.beginPath(); c.arc(i * 55, -120, 16, 0, 7); c.fill(); }
+  c.restore();
+}
+
+// ---------- playback ----------
+const total = scenes.reduce((s, x) => s + x.dur, 0);
+const starts = []; scenes.reduce((s, x, i) => (starts[i] = s, s + x.dur), 0);
+let time = 0, playing = true, last = null, curScene = -1;
+const live = document.getElementById('live');
+const playBtn = document.getElementById('play');
+const prog = document.getElementById('prog'), fill = document.getElementById('progFill'), timeEl = document.getElementById('time');
+const chapList = document.getElementById('chapters');
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+scenes.forEach((s, i) => {
+  const li = document.createElement('li'), b = document.createElement('button');
+  b.type = 'button'; b.innerHTML = `<b>${fmt(starts[i])}</b><span></span>`; b.lastChild.textContent = s.name;
+  b.addEventListener('click', () => seek(starts[i] + .001));
+  li.appendChild(b); chapList.appendChild(li);
+});
+
+function seek(t) { time = clamp(t, 0, total - .001); parts = []; last = null; render(0); }
+function sceneAt(t) { let i = scenes.length - 1; while (i > 0 && starts[i] > t) i--; return i; }
+
+function render(dt) {
+  const i = sceneAt(time), s = scenes[i], lt = time - starts[i];
+  if (i !== curScene) { curScene = i; parts = []; fx.split = 0; [...chapList.querySelectorAll('button')].forEach((b, j) => b.setAttribute('aria-current', j === i)); }
+  fx.split = 0;
+  c.save(); s.draw(lt, dt); c.restore();
+  // composite with shake / split / flash
+  out.save(); out.fillStyle = '#000'; out.fillRect(0, 0, W, H);
+  const sh = reduceMotion ? 0 : fx.shake;
+  out.translate((Math.random() - .5) * sh, (Math.random() - .5) * sh);
+  if (fx.split > 0) {
+    // diagonal from (-50,420) to (W+50,120), through GPT's chest; slide the two halves apart along it
+    const dx = fx.split * .98, dy = -fx.split * .21;
+    halve(true, -dx, -dy); halve(false, dx, dy);
+    out.strokeStyle = 'rgba(255,255,255,.9)'; out.lineWidth = 2; out.beginPath(); out.moveTo(-50, 420); out.lineTo(W + 50, 120); out.stroke();
+  } else out.drawImage(buf, 0, 0);
+  out.restore();
+  if (fx.flash > 0) { out.fillStyle = hexA(fx.flashColor, reduceMotion ? fx.flash * .3 : fx.flash); out.fillRect(0, 0, W, H); }
+  fx.flash = Math.max(0, fx.flash - dt * 3); fx.shake *= Math.pow(.02, dt);
+  fill.style.width = (time / total * 100) + '%';
+  timeEl.textContent = `${fmt(time)} / ${fmt(total)}`;
+}
+function halve(upper, ox, oy) {
+  out.save(); out.beginPath();
+  if (upper) { out.moveTo(-60, -60); out.lineTo(W + 60, -60); out.lineTo(W + 60, 120); out.lineTo(-60, 422); }
+  else { out.moveTo(-60, 422); out.lineTo(W + 60, 120); out.lineTo(W + 60, H + 60); out.lineTo(-60, H + 60); }
+  out.closePath(); out.clip(); out.drawImage(buf, ox, oy); out.restore();
+}
+
+function frame(now) {
+  const dt = last == null ? 0 : Math.min(.05, (now - last) / 1000); last = now;
+  if (playing) { time += dt; if (time >= total) { time = 0; parts = []; } }
+  render(playing ? dt : 0);
+  requestAnimationFrame(frame);
+}
+
+function toggle() { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play'; }
+playBtn.addEventListener('click', toggle);
+document.getElementById('restart').addEventListener('click', () => { seek(0); if (!playing) toggle(); });
+prog.addEventListener('click', e => { const r = prog.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * total); });
+prog.addEventListener('keydown', e => { if (e.key === 'ArrowRight') seek(time + 3); if (e.key === 'ArrowLeft') seek(time - 3); });
+document.addEventListener('keydown', e => { if (e.code === 'Space' && e.target.tagName !== 'BUTTON') { e.preventDefault(); toggle(); } });
+
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(frame));
+})();
+</script>
