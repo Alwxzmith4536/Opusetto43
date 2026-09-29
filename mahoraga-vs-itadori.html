@@ -1,0 +1,736 @@
+<title>Mahoraga vs Itadori</title>
+<meta name="description" content="Stickman fan animation: Itadori Yuji fights Mahoraga, the adapting shikigami, on a notebook page.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=%E9%AD%94%E8%99%9A%E7%BE%85%E8%99%8E%E6%9D%96%E6%82%A0%E4%BB%81%E9%BB%92%E9%96%83%E9%80%95%E5%BA%AD%E6%8B%B3%E3%82%AC%E3%82%B3%E3%83%B3%E3%83%89&display=swap">
+<style>
+  /* Layout: a flipbook sheet on a desk. One wide canvas stage, a transport bar, then the chapter list. Single paper look. */
+  :root {
+    --desk: #e6dfcf;         /* page ground, the desk under the notebook */
+    --sheet: #f4efe3;        /* notebook paper */
+    --ink: #1c1a20;          /* stickman ink */
+    --pencil: #6e6a73;       /* secondary text, pencil grey */
+    --rule: #b9c9dc;         /* ruled-line blue */
+    --yuji: #c8283a;         /* Itadori's red */
+    --gold: #b98a22;         /* Mahoraga's wheel */
+    --display: "Permanent Marker", "Comic Sans MS", "Marker Felt", cursive;
+    --body: "Kalam", "Segoe Print", "Bradley Hand", cursive;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  html, body { background: var(--desk); color: var(--ink); }
+  body { font-family: var(--body); font-size: 17px; line-height: 1.5; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 16px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(28px, 5.5vw, 50px); line-height: 1; margin: 0; text-wrap: balance; }
+  h1 .vs { font-family: var(--body); color: var(--pencil); font-size: .45em; margin: 0 .35em; vertical-align: middle; }
+  h1 .y { color: var(--yuji); }
+  .tag { font-family: var(--mono); font-size: 12px; color: var(--pencil); letter-spacing: .08em; text-transform: uppercase; }
+  .stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: var(--sheet); border: 2px solid var(--ink); box-shadow: 6px 6px 0 rgba(28,26,32,.18); overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  button { font: 700 16px var(--body); color: var(--ink); background: var(--sheet); border: 2px solid var(--ink); padding: 4px 14px; cursor: pointer; }
+  button:hover { background: #fffaf0; }
+  button:focus-visible { outline: 3px solid var(--yuji); outline-offset: 2px; }
+  .progress { flex: 1 1 220px; min-width: 0; height: 12px; background: var(--sheet); border: 2px solid var(--ink); position: relative; cursor: pointer; }
+  .progress i { position: absolute; inset: 0 auto 0 0; background: var(--ink); width: 0; }
+  .time { font-family: var(--mono); font-size: 12px; color: var(--pencil); font-variant-numeric: tabular-nums; }
+  ol.chapters { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+  ol.chapters button { width: 100%; text-align: left; font-weight: 400; display: flex; gap: 10px; align-items: baseline; border-width: 1px; }
+  ol.chapters button b { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--pencil); }
+  ol.chapters button[aria-current="true"] { border-color: var(--yuji); box-shadow: inset 4px 0 0 var(--yuji); }
+  .note { color: var(--pencil); font-size: 15px; max-width: 65ch; margin: 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Mahoraga<span class="vs">vs</span><span class="y">Itadori</span></h1>
+    <span class="tag">stickman fan animation · flipbook edition</span>
+  </header>
+
+  <div class="stage"><canvas id="cv" width="1280" height="720" aria-label="Stickman animation of Itadori Yuji fighting Mahoraga"></canvas></div>
+  <p class="sr" id="live" aria-live="polite"></p>
+
+  <div class="bar">
+    <button id="play" type="button">Pause</button>
+    <button id="restart" type="button">Restart</button>
+    <div class="progress" id="prog" role="slider" aria-label="Playback position" tabindex="0"><i id="progFill"></i></div>
+    <span class="time" id="time">0:00 / 0:00</span>
+  </div>
+
+  <ol class="chapters" id="chapters"></ol>
+
+  <p class="note">Mahoraga adapts: each turn of the wheel on its head makes it immune to whatever hurt it last. So Itadori has to keep changing what he throws. Space bar plays and pauses. Mahoraga and Itadori Yuji are from Jujutsu Kaisen by Gege Akutami; this is an unofficial fan piece with original dialogue.</p>
+</div>
+
+<script>
+(() => {
+const cv = document.getElementById('cv');
+const out = cv.getContext('2d');
+const W = 1280, H = 720, GROUND = 600;
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H;
+const c = buf.getContext('2d');
+
+const INK = '#1c1a20', PAPER = '#f4efe3', RED = '#c8283a', BLUE = '#3b6fd6', GOLD = '#d4a22c', HAIR = '#e0647c', PENCIL = '#8d8993';
+const F = { display: '"Permanent Marker", "Comic Sans MS", cursive', body: '"Kalam", "Segoe Print", cursive', brush: '"Yuji Syuku", "Hiragino Mincho ProN", "Yu Mincho", serif', mono: '"JetBrains Mono", Menlo, monospace' };
+const D = Math.PI / 180;
+
+// ---------- helpers ----------
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const hit = (t, dt, at) => dt > 0 && t >= at && t - dt < at;
+const fade = (t, a, b, f = .2) => Math.min(seg(t, a, a + f), 1 - seg(t, b - f, b));
+function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fx = { shake: 0, flash: 0, flashColor: '#fff' };
+
+// ---------- poses ----------
+// Angles in degrees. Limbs: [upper, lower], absolute, 0 = hanging straight down, 90 = pointing forward, 180 = straight up.
+// t = torso lean from vertical, positive = forward.
+const P = {
+  stance: { t: 10, fa: [45, 150], ba: [25, 140], fl: [25, -5], bl: [-20, -30] },
+  guardM: { t: 6, fa: [35, 115], ba: [20, 100], fl: [22, -4], bl: [-18, -26] },
+  jab:    { t: 18, fa: [88, 90], ba: [30, 150], fl: [35, 5], bl: [-35, -45] },
+  cross:  { t: 28, fa: [40, 150], ba: [86, 88], fl: [40, 10], bl: [-40, -50] },
+  upper:  { t: -8, fa: [150, 172], ba: [30, 140], fl: [15, 0], bl: [-25, -35] },
+  kick:   { t: -25, fa: [60, 110], ba: [-50, -20], fl: [100, 95], bl: [-8, -8] },
+  hurt:   { t: -28, fa: [-60, -100], ba: [-30, -70], fl: [30, 15], bl: [-15, -25] },
+  fly:    { t: -70, fa: [-140, -160], ba: [-115, -150], fl: [50, 75], bl: [25, 60] },
+  crouch: { t: 35, fa: [40, 130], ba: [20, 120], fl: [75, -10], bl: [-20, -95] },
+  limp:   { t: 0, fa: [25, 10], ba: [-15, -25], fl: [12, 5], bl: [-6, 0] },
+  kneel:  { t: 8, fa: [20, 15], ba: [8, 2], fl: [80, 5], bl: [-5, -90] },
+  windup: { t: -10, fa: [-45, 70], ba: [80, 120], fl: [30, 5], bl: [-25, -35] },
+  punch:  { t: 30, fa: [92, 92], ba: [-30, 40], fl: [45, 15], bl: [-45, -55] },
+  raise:  { t: -5, fa: [165, 178], ba: [50, 120], fl: [25, 0], bl: [-20, -30] },
+  slash:  { t: 35, fa: [55, 35], ba: [-35, 10], fl: [55, 10], bl: [-45, -70] },
+  focus:  { t: 16, fa: [-35, 75], ba: [70, 140], fl: [35, -5], bl: [-35, -50] },
+  run1:   { t: 28, fa: [-50, 30], ba: [70, 150], fl: [70, 10], bl: [-45, -100] },
+  run2:   { t: 28, fa: [70, 150], ba: [-50, 30], fl: [-45, -100], bl: [70, 10] },
+  walk1:  { t: 6, fa: [-20, -5], ba: [25, 40], fl: [25, 5], bl: [-20, -35] },
+  walk2:  { t: 6, fa: [25, 40], ba: [-20, -5], fl: [-20, -35], bl: [25, 5] },
+  tuck:   { t: 20, fa: [60, 150], ba: [40, 140], fl: [95, -20], bl: [75, -35] },
+  pant:   { t: 32, fa: [35, 10], ba: [25, 5], fl: [28, -8], bl: [-22, -35] },
+};
+function mix(a, b, k) {
+  const o = {};
+  for (const key in a) o[key] = Array.isArray(a[key]) ? [lerp(a[key][0], b[key][0], k), lerp(a[key][1], b[key][1], k)] : lerp(a[key], b[key], k);
+  return o;
+}
+const breathe = (p, amt = 1) => tt => { const b = Math.sin(tt * 3) * amt; return { ...p, t: p.t + b * 2, fa: [p.fa[0] + b * 3, p.fa[1] + b * 4], ba: [p.ba[0] - b * 2, p.ba[1] + b * 3] }; };
+const run = tt => mix(P.run1, P.run2, (Math.sin(tt * 18) + 1) / 2);
+const walk = tt => mix(P.walk1, P.walk2, (Math.sin(tt * 6) + 1) / 2);
+// keyframe track: [[time, value], ...]; value may be a number, a pose, or a function of t returning one
+function track(t, keys) {
+  const val = v => typeof v === 'function' ? v(t) : v;
+  if (t <= keys[0][0]) return val(keys[0][1]);
+  for (let i = 1; i < keys.length; i++) if (t < keys[i][0]) {
+    const [t0, v0] = keys[i - 1], [t1, v1] = keys[i], k = ease((t - t0) / (t1 - t0)), a = val(v0), b = val(v1);
+    return typeof a === 'number' ? lerp(a, b, k) : mix(a, b, k);
+  }
+  return val(keys[keys.length - 1][1]);
+}
+
+// ---------- the stickman ----------
+// x = hip x; feet land on the ground unless y (hip y) is given. f: 1 faces right, -1 faces left.
+function stick(o) {
+  const M = o.who === 'maho', s = o.s, f = o.f ?? 1, p = o.p, rot = o.rot || 0;
+  const leg = a => { const x1 = Math.sin(a[0] * D) * 46 * f, y1 = Math.cos(a[0] * D) * 46; return [x1, y1, x1 + Math.sin(a[1] * D) * 46 * f, y1 + Math.cos(a[1] * D) * 46]; };
+  const FL = leg(p.fl), BL = leg(p.bl);
+  const autoY = GROUND - Math.max(FL[3], BL[3]) * s - (o.lift || 0);
+  const y = o.y == null ? autoY : lerp(o.y, autoY, o.yk || 0);
+  const dir = [Math.sin(p.t * D) * f, -Math.cos(p.t * D)];
+  const sh = [dir[0] * 62, dir[1] * 62], hc = [dir[0] * 91, dir[1] * 91];
+  const arm = a => { const x1 = sh[0] + Math.sin(a[0] * D) * 38 * f, y1 = sh[1] + Math.cos(a[0] * D) * 38; return [x1, y1, x1 + Math.sin(a[1] * D) * 36 * f, y1 + Math.cos(a[1] * D) * 36]; };
+  const FA = arm(p.fa), BA = arm(p.ba);
+  const r = rot * D * f, cs = Math.cos(r), sn = Math.sin(r);
+  const toWorld = (lx, ly) => [o.x + s * (lx * cs - ly * sn), y + s * (lx * sn + ly * cs)];
+
+  c.save(); c.globalAlpha = o.alpha ?? 1; c.translate(o.x, y); c.rotate(r); c.scale(s, s);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  const lw = M ? 8 : 6.5;
+  const limb = (x0, y0, L) => { c.lineWidth = lw; c.beginPath(); c.moveTo(x0, y0); c.lineTo(L[0], L[1]); c.lineTo(L[2], L[3]); c.stroke(); };
+
+  c.strokeStyle = M ? '#3d3942' : '#57525c';
+  limb(sh[0], sh[1], BA); limb(0, 0, BL);
+  c.strokeStyle = INK; c.fillStyle = INK;
+  if (M) { // broad tapered torso
+    const n = [-dir[1], dir[0]];
+    c.beginPath();
+    c.moveTo(n[0] * 9, n[1] * 9); c.lineTo(dir[0] * 68 + n[0] * 24, dir[1] * 68 + n[1] * 24);
+    c.lineTo(dir[0] * 68 - n[0] * 24, dir[1] * 68 - n[1] * 24); c.lineTo(-n[0] * 9, -n[1] * 9); c.closePath(); c.fill();
+  } else { c.lineWidth = lw; c.beginPath(); c.moveTo(0, 0); c.lineTo(dir[0] * 72, dir[1] * 72); c.stroke(); }
+  limb(0, 0, FL);
+
+  // head, in a frame turned with the torso
+  c.save(); c.translate(hc[0], hc[1]); c.rotate(p.t * D * f);
+  if (M) {
+    c.fillStyle = INK;
+    for (const side of [-1, 1]) for (let i = 0; i < 2; i++) { // head wings
+      c.beginPath(); c.moveTo(side * 12, -6 + i * 8);
+      c.quadraticCurveTo(side * (34 + i * 4), -20 + i * 10, side * (40 - i * 6), -40 + i * 16);
+      c.quadraticCurveTo(side * 24, -14 + i * 6, side * 10, 2 + i * 8); c.fill();
+    }
+    c.beginPath(); c.arc(0, 0, 17, 0, 7); c.fill();
+    c.fillStyle = PAPER; c.fillRect(-9, -2, 18, 3);
+  } else {
+    c.fillStyle = HAIR; c.strokeStyle = INK; c.lineWidth = 2.5;
+    for (const a of [-80, -52, -24, 4, 32, 60]) {
+      const aa = (a - 90 - 8 * f) * D, w = 13 * D;
+      c.beginPath(); c.moveTo(Math.cos(aa - w) * 15, Math.sin(aa - w) * 15);
+      c.lineTo(Math.cos(aa) * 29, Math.sin(aa) * 29); c.lineTo(Math.cos(aa + w) * 15, Math.sin(aa + w) * 15); c.closePath(); c.fill(); c.stroke();
+    }
+    c.fillStyle = PAPER; c.lineWidth = 5; c.beginPath(); c.arc(0, 0, 16, 0, 7); c.fill(); c.stroke();
+    c.fillStyle = HAIR; c.beginPath(); c.arc(0, -4, 15, Math.PI * 1.08, Math.PI * 1.92); c.closePath(); c.fill();
+    c.fillStyle = INK; c.beginPath(); c.arc(7 * f, 1, 2.6, 0, 7); c.fill();
+  }
+  c.restore();
+
+  c.strokeStyle = INK;
+  limb(sh[0], sh[1], FA);
+  c.fillStyle = INK; c.beginPath(); c.arc(FA[2], FA[3], M ? 7 : 5.5, 0, 7); c.fill();
+
+  if (M) { // the Sword of Extermination grows from the right forearm
+    const dx = FA[2] - FA[0], dy = FA[3] - FA[1], l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+    const b0 = [FA[2] + ux * 2, FA[3] + uy * 2], b1 = [FA[2] + ux * 88, FA[3] + uy * 88];
+    if (o.glow) { c.save(); c.shadowColor = '#fff6c8'; c.shadowBlur = 30 * o.glow; c.strokeStyle = hexA('#ffe27a', .8 * o.glow); c.lineWidth = 16; c.beginPath(); c.moveTo(...b0); c.lineTo(...b1); c.stroke(); c.restore(); }
+    c.fillStyle = '#fbf8ef'; c.lineWidth = 2.5;
+    c.beginPath(); c.moveTo(b0[0] + nx * 6, b0[1] + ny * 6); c.lineTo(b1[0], b1[1]); c.lineTo(b0[0] - nx * 6, b0[1] - ny * 6); c.closePath(); c.fill(); c.stroke();
+  }
+  c.restore();
+
+  const res = { hand: toWorld(FA[2], FA[3]), head: toWorld(hc[0], hc[1]), hip: [o.x, y] };
+  if (M) { res.wheel = toWorld(dir[0] * 150, dir[1] * 150); drawWheel(res.wheel[0], res.wheel[1], 24 * s, o.wheel || 0, o.alpha ?? 1); }
+  return res;
+}
+const yuji = o => stick({ who: 'yuji', s: 1.05, ...o });
+const maho = o => stick({ who: 'maho', s: 1.75, ...o });
+
+function drawWheel(x, y, R, ang, alpha = 1) {
+  c.save(); c.globalAlpha = alpha; c.translate(x, y); c.rotate(ang * D); c.lineCap = 'round';
+  for (const [col, w] of [[INK, R * .2], [GOLD, R * .09]]) {
+    c.strokeStyle = col; c.lineWidth = w;
+    c.beginPath(); c.arc(0, 0, R, 0, 7); c.stroke();
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; c.beginPath(); c.moveTo(Math.cos(a) * R * .25, Math.sin(a) * R * .25); c.lineTo(Math.cos(a) * R * 1.5, Math.sin(a) * R * 1.5); c.stroke(); }
+  }
+  c.fillStyle = GOLD; c.strokeStyle = INK; c.lineWidth = R * .07;
+  for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; c.beginPath(); c.arc(Math.cos(a) * R * 1.55, Math.sin(a) * R * 1.55, R * .13, 0, 7); c.fill(); c.stroke(); }
+  c.beginPath(); c.arc(0, 0, R * .22, 0, 7); c.fill(); c.stroke();
+  c.restore();
+}
+function wheelPulse(x, y, k) {
+  if (k <= 0 || k >= 1) return;
+  c.save(); c.strokeStyle = hexA(GOLD, 1 - k); c.lineWidth = 5 * (1 - k) + 1;
+  for (let i = 0; i < 3; i++) { const r = 50 + (k * 1.2 - i * .15) * 220; if (r > 50) { c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); } }
+  c.restore();
+}
+
+// ---------- the page ----------
+function paper() {
+  c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(96,140,196,.25)'; c.lineWidth = 1.2;
+  for (let y = 66; y < H; y += 34) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+  c.strokeStyle = 'rgba(214,86,86,.4)'; c.beginPath(); c.moveTo(88, 0); c.lineTo(88, H); c.stroke();
+  c.fillStyle = '#ddd6c6'; for (const y of [140, 360, 580]) { c.beginPath(); c.arc(38, y, 13, 0, 7); c.fill(); }
+}
+function ground() {
+  c.strokeStyle = INK; c.lineWidth = 3; c.beginPath();
+  for (let x = 0; x <= W; x += 16) { const y = GROUND + Math.sin(x * .05) * 1.2 + Math.sin(x * .013) * 1.6; x ? c.lineTo(x, y) : c.moveTo(x, y); }
+  c.stroke();
+  const r = rng(5); c.strokeStyle = 'rgba(28,26,32,.35)'; c.lineWidth = 1.5;
+  for (let i = 0; i < 70; i++) { const x = r() * W, y = GROUND + 12 + r() * 90; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 14, y - 8); c.stroke(); }
+}
+const skyline = (() => { const r = rng(11), b = []; let x = 100; while (x < W) { const w = 60 + r() * 80; b.push({ x, w, h: 110 + r() * 170, ant: r() < .3 }); x += w + 10 + r() * 20; } return b; })();
+function city(a = 1) {
+  c.save(); c.globalAlpha = a; c.strokeStyle = PENCIL; c.lineWidth = 2;
+  for (const b of skyline) {
+    c.strokeRect(b.x, GROUND - b.h, b.w, b.h);
+    if (b.ant) { c.beginPath(); c.moveTo(b.x + b.w / 2, GROUND - b.h); c.lineTo(b.x + b.w / 2, GROUND - b.h - 30); c.stroke(); }
+    const r = rng(Math.floor(b.x));
+    for (let y = GROUND - b.h + 16; y < GROUND - 20; y += 28) for (let x = b.x + 10; x < b.x + b.w - 14; x += 20) if (r() < .45) c.strokeRect(x, y, 8, 11);
+  }
+  c.restore();
+}
+function building(x, w, h) {
+  c.fillStyle = '#e9e2d1'; c.fillRect(x, GROUND - h, w, h);
+  c.strokeStyle = INK; c.lineWidth = 3; c.strokeRect(x, GROUND - h, w, h);
+  c.lineWidth = 2; for (let y = GROUND - h + 20; y < GROUND - 30; y += 36) for (let xx = x + 16; xx < x + w - 24; xx += 34) c.strokeRect(xx, y, 16, 20);
+}
+
+// ---------- effects ----------
+let parts = [];
+function burst(x, y, color, n = 20, sp = 9, g = 0, sq = false) {
+  for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = sp * (.3 + Math.random()); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (g ? sp * .5 : 0), life: 1, color, r: 2 + Math.random() * (sq ? 9 : 4), g, sq, spin: Math.random() * 6 }); }
+}
+function drawParts(dt) {
+  parts = parts.filter(p => (p.life -= dt * (p.g ? .8 : 1.7)) > 0);
+  for (const p of parts) {
+    p.x += p.vx; p.y += p.vy; p.vx *= .95; p.vy = p.g ? p.vy + p.g : p.vy * .94;
+    if (p.g && p.y > GROUND) { p.y = GROUND; p.vy *= -.3; p.vx *= .6; }
+    c.fillStyle = hexA(p.color, Math.min(1, p.life * 1.5));
+    if (p.sq) { c.save(); c.translate(p.x, p.y); c.rotate(p.spin += .2); c.fillRect(-p.r / 2, -p.r / 2, p.r, p.r); c.restore(); }
+    else { c.beginPath(); c.arc(p.x, p.y, p.r * p.life + .5, 0, 7); c.fill(); }
+  }
+}
+function star(x, y, R, k, fill = '#fff') {
+  if (k <= 0 || k >= 1) return;
+  const s = .4 + ease(Math.min(1, k * 3)) * .6;
+  c.save(); c.globalAlpha = 1 - k * k; c.translate(x, y); c.scale(s, s);
+  c.beginPath(); for (let i = 0; i < 24; i++) { const a = i / 24 * 6.283, r = i % 2 ? R * .42 : R * (.85 + (i % 4 ? .15 : 0)); c.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+  c.closePath(); c.fillStyle = fill; c.fill(); c.strokeStyle = INK; c.lineWidth = 4; c.stroke();
+  c.restore();
+}
+function sfx(text, x, y, size, rot, a, col = INK, pop = 0) {
+  if (a <= 0) return;
+  c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate(rot * D); c.scale(1 + pop * .35, 1 + pop * .35);
+  c.font = `${size}px ${F.display}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+  c.lineWidth = size * .22; c.strokeStyle = PAPER; c.strokeText(text, 0, 0);
+  c.lineWidth = size * .08; c.strokeStyle = INK; c.strokeText(text, 0, 0);
+  c.fillStyle = col; c.fillText(text, 0, 0);
+  c.restore();
+}
+// a sound effect that pops in at `at` and fades out after `dur`
+function sfxAt(t, at, dur, text, x, y, size, rot, col) { if (t >= at && t < at + dur) sfx(text, x, y, size, rot, 1 - seg(t, at + dur - .25, at + dur), col, 1 - seg(t, at, at + .12)); }
+function brush(text, x, y, size, a, col = INK) {
+  if (a <= 0) return;
+  c.save(); c.globalAlpha = a; c.font = `${size}px ${F.brush}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = col; c.fillText(text, x, y); c.restore();
+}
+function bolt(x1, y1, x2, y2, color, width = 4, jag = 30, seed = 1) {
+  const r = rng(seed); c.strokeStyle = color; c.lineWidth = width; c.lineCap = 'round'; c.beginPath(); c.moveTo(x1, y1);
+  for (let i = 1; i < 7; i++) { const t = i / 7; c.lineTo(lerp(x1, x2, t) + (r() - .5) * jag, lerp(y1, y2, t) + (r() - .5) * jag); }
+  c.lineTo(x2, y2); c.stroke();
+}
+function sparks(x, y, t, n = 5, len = 60, red = true) { // black flash crackle
+  const r = rng(Math.floor(t * 18) * 31 + 7);
+  for (let i = 0; i < n; i++) {
+    const a = r() * 6.283, l = len * (.4 + r() * .8), ex = x + Math.cos(a) * l, ey = y + Math.sin(a) * l, sd = Math.floor(r() * 1e6);
+    if (red) bolt(x, y, ex, ey, RED, 8, 22, sd);
+    bolt(x, y, ex, ey, INK, 3.5, 22, sd);
+  }
+}
+function flames(x, y, t, col, n = 7, size = 26) { // cursed energy wisps
+  c.save(); c.strokeStyle = col; c.lineWidth = 3; c.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const ph = (t * 2.2 + i / n) % 1, a = i / n * 6.283 + t, r0 = size * .5, px = x + Math.cos(a) * r0, py = y + Math.sin(a) * r0 * .6;
+    c.globalAlpha = Math.sin(ph * Math.PI);
+    c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo(px + Math.sin(t * 9 + i) * 10, py - size * ph, px + Math.cos(t * 7 + i) * 6, py - size * (.6 + ph)); c.stroke();
+  }
+  c.restore();
+}
+function rings(x, y, k, col, n = 3, max = 360, squash = .35) {
+  if (k <= 0 || k >= 1) return;
+  c.save(); c.strokeStyle = col;
+  for (let i = 0; i < n; i++) { const kk = k * 1.3 - i * .12; if (kk <= 0 || kk >= 1) continue; c.globalAlpha = 1 - kk; c.lineWidth = 8 * (1 - kk) + 1; c.beginPath(); c.ellipse(x, y, max * kk, max * kk * squash, 0, 0, 7); c.stroke(); }
+  c.restore();
+}
+function speedLines(x, y, dirSign, a, seed = 1) {
+  if (a <= 0) return;
+  const r = rng(seed); c.save(); c.strokeStyle = hexA(INK, .5 * a); c.lineWidth = 2;
+  for (let i = 0; i < 9; i++) { const yy = y - 90 + r() * 180, x0 = x - dirSign * (30 + r() * 40), l = 60 + r() * 140; c.beginPath(); c.moveTo(x0, yy); c.lineTo(x0 - dirSign * l, yy); c.stroke(); }
+  c.restore();
+}
+function dust(x, k, spread = 1) {
+  if (k <= 0 || k >= 1) return;
+  const r = rng(Math.floor(x));
+  c.save(); c.strokeStyle = hexA(INK, .55 * (1 - k)); c.fillStyle = hexA(PAPER, .9 * (1 - k)); c.lineWidth = 2.5;
+  for (let i = 0; i < 9; i++) { const dx = (r() - .5) * 220 * spread * (.4 + k), rad = (18 + r() * 30) * (.5 + k); c.beginPath(); c.arc(x + dx, GROUND - rad * .6 - k * 30 * r(), rad, 0, 7); c.fill(); c.stroke(); }
+  c.restore();
+}
+function crater(x, w, a = 1) {
+  c.save(); c.globalAlpha = a; c.fillStyle = '#d9d0bc'; c.strokeStyle = INK; c.lineWidth = 3;
+  c.beginPath(); c.ellipse(x, GROUND + 4, w, w * .16, 0, 0, 7); c.fill(); c.stroke();
+  const r = rng(Math.floor(x) + 3); c.lineWidth = 2;
+  for (let i = 0; i < 7; i++) { const a0 = (r() - .5) * 2.6, sx = x + Math.cos(a0) * w, l = 30 + r() * 60; c.beginPath(); c.moveTo(sx, GROUND + 4); c.lineTo(sx + Math.sign(Math.cos(a0)) * l, GROUND + 6 + r() * 20); c.stroke(); }
+  c.restore();
+}
+
+// ---------- words ----------
+const live = document.getElementById('live');
+let lastCaption = '';
+function announce(txt) { if (txt !== lastCaption) { lastCaption = txt; live.textContent = txt; } }
+function wrapLines(txt, maxW) {
+  const words = txt.split(' '), lines = []; let l = '';
+  for (const w of words) { const test = l ? l + ' ' + w : w; if (c.measureText(test).width > maxW && l) { lines.push(l); l = w; } else l = test; }
+  lines.push(l); return lines;
+}
+// speech bubble anchored above a speaker's head
+function bubble(t, a, b, who, txt, head) {
+  if (t < a || t >= b) return;
+  const al = fade(t, a, b);
+  c.save(); c.globalAlpha = al; c.font = `700 25px ${F.body}`;
+  const lines = wrapLines(txt, 330), w = Math.max(...lines.map(l => c.measureText(l).width)) + 44, h = lines.length * 31 + 26;
+  let bx = clamp(head[0] - w / 2, 100, W - w - 20), by = head[1] - 70 - h;
+  if (by < 12) by = 12;
+  c.fillStyle = '#fffdf7'; c.strokeStyle = INK; c.lineWidth = 3;
+  c.beginPath();
+  const r = 18, tx = clamp(head[0], bx + 30, bx + w - 30);
+  c.moveTo(bx + r, by); c.arcTo(bx + w, by, bx + w, by + h, r); c.arcTo(bx + w, by + h, bx, by + h, r);
+  c.lineTo(tx + 12, by + h); c.lineTo(head[0], head[1] - 34); c.lineTo(tx - 10, by + h);
+  c.arcTo(bx, by + h, bx, by, r); c.arcTo(bx, by, bx + w, by, r); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = INK; lines.forEach((l, i) => c.fillText(l, bx + 22, by + 38 + i * 31));
+  c.restore();
+  if (al > .5) announce(`${who}: ${txt}`);
+}
+// narration box, top left, like a manga panel caption
+function narr(t, a, b, txt) {
+  if (t < a || t >= b) return;
+  const al = fade(t, a, b);
+  c.save(); c.globalAlpha = al; c.font = `700 23px ${F.body}`;
+  const lines = wrapLines(txt, 520), w = 560, h = lines.length * 30 + 24;
+  c.fillStyle = INK; c.fillRect(116, 26, w, h); c.fillStyle = '#fffdf7'; c.fillRect(110, 20, w, h);
+  c.strokeStyle = INK; c.lineWidth = 3; c.strokeRect(110, 20, w, h);
+  c.fillStyle = INK; lines.forEach((l, i) => c.fillText(l, 128, 52 + i * 30));
+  c.restore();
+  if (al > .5) announce(txt);
+}
+// name card with a strip of tape
+function card(t, a, b, x, en, jp, col) {
+  if (t < a || t >= b) return;
+  const al = fade(t, a, b, .3);
+  c.save(); c.globalAlpha = al; c.translate(x, 70); c.rotate(-3 * D);
+  c.fillStyle = '#fffdf7'; c.strokeStyle = INK; c.lineWidth = 3; c.fillRect(-150, -38, 300, 92); c.strokeRect(-150, -38, 300, 92);
+  c.fillStyle = 'rgba(214,196,140,.75)'; c.fillRect(-40, -50, 80, 22);
+  c.textAlign = 'center'; c.fillStyle = col; c.font = `46px ${F.brush}`; c.fillText(jp, 0, 12);
+  c.fillStyle = INK; c.font = `18px ${F.display}`; c.fillText(en, 0, 44);
+  c.restore();
+  if (al > .5) announce(en);
+}
+function title(text, x, y, size, a, col = INK, rot = 0) {
+  if (a <= 0) return;
+  c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate(rot * D); c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = `${size}px ${F.display}`; c.lineJoin = 'round'; c.lineWidth = size * .16; c.strokeStyle = PAPER; c.strokeText(text, 0, 0);
+  c.fillStyle = col; c.fillText(text, 0, 0); c.restore();
+}
+function world(z, cx, cy) { c.translate(W / 2, H / 2); c.scale(z, z); c.translate(-cx, -cy); }
+
+// ---------- scenes ----------
+const scenes = [
+  { name: 'Title', dur: 4.5, draw(t) {
+    paper();
+    const a = seg(t, 0, .6);
+    brush('魔虚羅', 330, 300, 170, a * .16, INK); brush('虎杖', 950, 300, 170, a * .16, RED);
+    title('MAHORAGA', W / 2, 250, 104, a);
+    title('vs', W / 2, 330, 40, seg(t, .4, .8), PENCIL);
+    title('ITADORI', W / 2, 410, 104, seg(t, .6, 1.1), RED);
+    c.strokeStyle = INK; c.lineWidth = 4; c.lineCap = 'round';
+    const u = ease(seg(t, 1.1, 1.8)); c.beginPath(); c.moveTo(420, 478); c.quadraticCurveTo(640, 468, lerp(420, 860, u), 482); c.stroke();
+    c.font = `700 22px ${F.body}`; c.fillStyle = PENCIL; c.textAlign = 'center'; c.globalAlpha = seg(t, 1.6, 2.2);
+    c.fillText('a stickman flipbook · 12 drawings a second', W / 2, 530); c.globalAlpha = 1; c.textAlign = 'left';
+    announce('Mahoraga versus Itadori');
+  }},
+  { name: 'The summoning', dur: 7, draw(t, dt) {
+    paper(); city(); ground();
+    const y = yuji({ x: 330, f: 1, p: track(t, [[0, breathe(P.stance)], [3.7, breathe(P.stance)], [3.95, P.crouch], [4.6, breathe(P.stance)]]) });
+    const pr = ease(seg(t, .3, 1.4)) * 200;
+    c.fillStyle = INK; c.beginPath(); c.ellipse(900, GROUND + 2, pr, pr * .14, 0, 0, 7); c.fill();
+    const rise = ease(seg(t, 1.2, 3.3));
+    const spin = Math.pow(1 - seg(t, 2.2, 3.6), 2) * 900;
+    c.save(); c.beginPath(); c.rect(0, 0, W, GROUND + 1); c.clip();
+    const m = maho({ x: 900, f: -1, p: breathe(P.guardM, .6)(t), lift: -(1 - rise) * 470, wheel: spin });
+    c.restore();
+    if (rise > 0 && rise < 1 && Math.random() < .5 && dt) parts.push({ x: 820 + Math.random() * 160, y: GROUND - Math.random() * 200 * rise, vx: 0, vy: 1, life: 1, color: INK, r: 3 + Math.random() * 3, g: .5 });
+    if (hit(t, dt, 3.6)) fx.shake = 10;
+    wheelPulse(m.wheel[0], m.wheel[1], seg(t, 3.6, 4.6));
+    sfxAt(t, 3.6, 1.4, 'GAKON', m.wheel[0] + 130, m.wheel[1] - 10, 50, -8);
+    sfx('!!', y.head[0] + 36, y.head[1] - 44, 44, 10, fade(t, 3.8, 5), RED);
+    card(t, .3, 2.6, 330, 'ITADORI YUJI', '虎杖悠仁', RED);
+    card(t, 4.2, 6.9, 930, 'MAHORAGA', '魔虚羅', INK);
+    drawParts(dt);
+  }},
+  { name: 'First rush', dur: 6.5, draw(t, dt) {
+    paper(); city(); ground();
+    const mx = track(t, [[0, 900], [1.2, 900], [1.3, 915], [1.5, 915], [1.6, 932], [1.85, 932], [1.95, 948], [2.35, 948], [2.5, 985]]);
+    const mHit = mix(P.guardM, P.hurt, .35);
+    const mp = track(t, [[0, breathe(P.guardM, .6)], [1.2, P.guardM], [1.28, mHit], [1.45, P.guardM], [1.58, mHit], [1.75, P.guardM], [1.92, mHit], [2.2, P.guardM], [2.42, mHit], [2.75, P.windup], [3.1, P.windup], [3.3, P.punch], [3.7, P.punch], [4.3, breathe(P.guardM, .6)]]);
+    const m = maho({ x: mx, f: -1, p: mp });
+    const yx = track(t, [[0, 330], [1.1, 790], [1.4, 790], [1.5, 805], [1.85, 820], [2.35, 835], [3.4, 835], [3.9, 560]]);
+    const yp = track(t, [[0, P.stance], [.15, run], [1.05, run], [1.2, P.jab], [1.35, P.stance], [1.5, P.cross], [1.65, P.stance], [1.85, P.upper], [2.05, P.stance], [2.35, P.kick], [2.6, P.stance], [3.0, P.stance], [3.2, P.crouch], [3.5, P.crouch], [3.7, P.tuck], [3.95, breathe(P.stance)]]);
+    const lift = Math.sin(seg(t, 3.5, 3.95) * Math.PI) * 70;
+    speedLines(yx - 30, GROUND - 120, 1, fade(t, .15, 1.15));
+    const y = yuji({ x: yx, f: 1, p: yp, lift });
+    const hits = [[1.2, 'DOK', 850, 440], [1.5, 'BAM', 865, 425], [1.85, 'GAN', 860, 350], [2.35, 'DOKA', 890, 470]];
+    hits.forEach(([at, w, hx, hy], i) => {
+      if (hit(t, dt, at)) { burst(hx, hy, INK, 14, 9); fx.shake = 7; }
+      star(hx, hy, 70, seg(t, at, at + .35));
+      sfxAt(t, at, .7, w, hx + 30 - i * 20, hy - 110 + (i % 2) * 30, 58, -10 + i * 7);
+    });
+    // Mahoraga's counter sweeps over his head
+    if (t > 3.1 && t < 3.5) { c.save(); c.strokeStyle = hexA(INK, .6); c.lineWidth = 3; for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(900, 420, 150 + i * 14, Math.PI * 1.02, Math.PI * 1.32); c.stroke(); } c.restore(); }
+    sfxAt(t, 3.25, .7, 'WHOOSH', 760, 250, 40, -6, PENCIL);
+    bubble(t, 4.3, 6.4, 'Itadori', "Four clean hits and he didn't even flinch.", y.head);
+    drawParts(dt);
+  }},
+  { name: 'Divergent Fist', dur: 6, draw(t, dt) {
+    paper(); city(); ground();
+    const k2 = 1.45;
+    const mx = track(t, [[0, 985], [k2, 985], [k2 + .25, 1070], [3.2, 1070], [3.8, 1010]]);
+    const mp = track(t, [[0, breathe(P.guardM, .6)], [1.15, P.guardM], [1.25, mix(P.guardM, P.hurt, .2)], [k2, mix(P.guardM, P.hurt, .2)], [k2 + .1, P.hurt], [2.6, P.hurt], [3.6, breathe(P.guardM, .6)]]);
+    const m = maho({ x: mx, f: -1, p: mp });
+    const yx = track(t, [[0, 560], [.9, 560], [1.15, 875], [2.8, 875], [3.5, 600]]);
+    const yp = track(t, [[0, breathe(P.stance)], [.4, P.focus], [.9, P.focus], [1.0, run], [1.1, P.jab], [2.6, P.jab], [2.9, P.tuck], [3.4, breathe(P.stance)]]);
+    speedLines(yx - 30, GROUND - 120, 1, fade(t, .9, 1.2));
+    const y = yuji({ x: yx, f: 1, p: yp, lift: Math.sin(seg(t, 2.8, 3.5) * Math.PI) * 60 });
+    if (t < 1.4) flames(y.hand[0], y.hand[1], t, BLUE, 8, 30);
+    title('DIVERGENT FIST', W / 2 - 60, 120, 60, fade(t, .3, 1.3), BLUE, -3);
+    brush('逕庭拳', W / 2 - 60, 190, 50, fade(t, .3, 1.3) * .8, BLUE);
+    if (hit(t, dt, 1.15)) { burst(940, 455, BLUE, 10, 5); fx.shake = 4; }
+    star(940, 455, 40, seg(t, 1.15, 1.4));
+    sfxAt(t, 1.15, .45, 'tap', 960, 360, 34, -8, PENCIL);
+    if (hit(t, dt, k2)) { burst(940, 455, BLUE, 30, 13); burst(940, 455, INK, 16, 10); fx.shake = 22; fx.flash = .5; fx.flashColor = '#dbe6ff'; }
+    rings(960, 450, seg(t, k2, k2 + .8), BLUE, 3, 280, .9);
+    star(960, 450, 120, seg(t, k2, k2 + .5));
+    sfxAt(t, k2, 1.3, 'DOOON', 1000, 260, 84, -8, BLUE);
+    bubble(t, 3.7, 5.9, 'Itadori', 'The punch lands twice. The second one hurts more.', y.head);
+    drawParts(dt);
+  }},
+  { name: 'The wheel turns', dur: 6.5, draw(t, dt) {
+    paper(); city(); ground();
+    const wheel = track(t, [[0, 0], [.4, 0], [.7, 45]]);
+    const mp = track(t, [[0, breathe(P.guardM, .6)], [2.55, P.guardM], [2.75, P.windup], [2.95, P.punch], [3.5, P.punch], [4.2, breathe(P.guardM, .6)]]);
+    const m = maho({ x: 1010, f: -1, p: mp, wheel });
+    if (hit(t, dt, .7)) fx.shake = 8;
+    wheelPulse(m.wheel[0], m.wheel[1], seg(t, .7, 1.7));
+    sfxAt(t, .7, 1.2, 'GAKON', m.wheel[0] - 150, m.wheel[1] - 20, 56, 8);
+    brush('ガコン', m.wheel[0] - 150, m.wheel[1] + 36, 30, fade(t, .7, 1.9) * .7, GOLD);
+    let y;
+    if (t < 2.95) {
+      const yx = track(t, [[0, 600], [1.4, 600], [1.72, 900]]);
+      const yp = track(t, [[0, breathe(P.stance)], [1.4, P.stance], [1.5, run], [1.65, run], [1.75, P.jab], [2.1, P.jab], [2.4, P.stance]]);
+      speedLines(yx - 30, GROUND - 120, 1, fade(t, 1.4, 1.75));
+      y = yuji({ x: yx, f: 1, p: yp });
+      sfx('?', y.head[0] + 30, y.head[1] - 40, 44, 10, fade(t, .8, 1.4), RED);
+      sfxAt(t, 1.75, .6, 'pff', 960, 380, 30, -6, PENCIL);
+      sfx('...!?', y.head[0] + 10, y.head[1] - 60, 40, -6, fade(t, 2.0, 2.85), RED);
+    } else {
+      const k = seg(t, 2.95, 3.6);
+      y = yuji({ x: lerp(900, -160, k), f: 1, p: P.fly, y: GROUND - 160 - Math.sin(k * Math.PI) * 90, rot: -k * 620 });
+    }
+    if (hit(t, dt, 2.95)) { burst(890, 440, INK, 24, 12); fx.shake = 24; fx.flash = .7; fx.flashColor = '#fff'; }
+    star(890, 440, 130, seg(t, 2.95, 3.4));
+    sfxAt(t, 2.95, 1.1, 'BOOM', 780, 300, 90, -12);
+    narr(t, 3.9, 6.4, 'Each turn of the wheel means Mahoraga has adapted. The same attack will not work twice.');
+    drawParts(dt);
+  }},
+  { name: 'Through the wall', dur: 6, draw(t, dt) {
+    paper(); city(.5); ground();
+    const bx = 520, bw = 170, bh = 310, broke = t >= .47;
+    building(bx, bw, bh);
+    if (broke) {
+      const hole = [[bx - 2, 395], [bx + 40, 380], [bx + 70, 405], [bx + 110, 378], [bx + bw + 2, 400], [bx + bw + 2, 505], [bx + 120, 520], [bx + 80, 498], [bx + 30, 518], [bx - 2, 500]];
+      c.save(); c.beginPath(); hole.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.clip(); paper(); c.restore();
+      c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); hole.slice(0, 5).forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+      c.beginPath(); hole.slice(5).forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke();
+    }
+    if (hit(t, dt, .47)) { burst(bx + bw / 2, 450, INK, 26, 10, .5, true); fx.shake = 18; }
+    sfxAt(t, .47, 1, 'CRASH', bx + bw / 2, 330, 70, -10);
+    let y;
+    if (t < 1.0) {
+      const k = seg(t, 0, 1.0);
+      y = yuji({ x: lerp(1360, 170, k), f: 1, p: P.fly, y: lerp(GROUND - 250, GROUND - 16, k * k), rot: -k * 700 - 90 });
+      speedLines(lerp(1360, 170, k) + 60, lerp(GROUND - 250, GROUND - 16, k * k), -1, 1, 3);
+    } else {
+      const rot = track(t, [[1.0, -90], [2.4, -90], [3.0, 0]]);
+      const yk = track(t, [[1.0, 0], [2.4, 0], [3.0, 1]]);
+      const p = track(t, [[1.0, P.limp], [2.4, P.limp], [3.0, P.kneel], [3.4, P.kneel], [3.9, breathe(P.stance)]]);
+      y = yuji({ x: 170, f: 1, p, rot, y: GROUND - 14, yk });
+    }
+    if (hit(t, dt, 1.0)) { fx.shake = 12; burst(170, GROUND - 10, INK, 16, 7, .4, true); }
+    dust(170, seg(t, 1.0, 2.4), .8);
+    sfxAt(t, 1.0, .9, 'THUD', 260, 460, 52, 6);
+    bubble(t, 4.0, 5.9, 'Itadori', "Okay. Hitting harder won't cut it.", y.head);
+    drawParts(dt);
+  }},
+  { name: 'The sword', dur: 7, draw(t, dt) {
+    paper(); city(.5); ground();
+    // the building on the left gets cut in two
+    const cut = t >= 2.8, slide = ease(seg(t, 2.95, 4.1));
+    const L0 = [40, GROUND - 150], L1 = [290, GROUND - 250];
+    if (!cut) building(70, 180, 330);
+    else {
+      c.save(); c.beginPath(); c.moveTo(0, H); c.lineTo(...L0); c.lineTo(...L1); c.lineTo(400, L1[1]); c.lineTo(400, H); c.closePath(); c.clip(); building(70, 180, 330); c.restore();
+      c.save(); c.translate(-slide * 120, slide * 62); c.beginPath(); c.moveTo(0, 0); c.lineTo(0, L0[1]); c.lineTo(...L0); c.lineTo(...L1); c.lineTo(400, L1[1]); c.lineTo(400, 0); c.closePath(); c.clip(); building(70, 180, 330); c.restore();
+      c.strokeStyle = hexA(INK, 1 - seg(t, 3.2, 3.8)); c.lineWidth = 3; c.beginPath(); c.moveTo(...L0); c.lineTo(...L1); c.stroke();
+    }
+    if (hit(t, dt, 4.1)) { burst(150, 400, INK, 18, 7, .5, true); fx.shake = 14; }
+    sfxAt(t, 4.1, .9, 'KRSSH', 190, 300, 50, -8);
+    const mx = track(t, [[0, 1360], [1.5, 1000], [2.5, 1000], [2.75, 520]]);
+    const mf = t < 3.8 ? -1 : 1;
+    const mp = track(t, [[0, walk], [1.5, walk], [1.6, P.guardM], [2.0, P.raise], [2.5, P.raise], [2.75, P.slash], [3.4, P.slash], [3.8, P.guardM], [4.2, breathe(P.guardM, .6)]]);
+    const m = maho({ x: mx, f: mf, p: mp, wheel: 45, glow: fade(t, 1.8, 3.2, .3) });
+    speedLines(mx + 80, GROUND - 200, -1, fade(t, 2.5, 2.9), 5);
+    const sw = seg(t, 2.6, 2.85), sa = 1 - seg(t, 2.85, 3.3);
+    if (sw > 0 && sa > 0) { // crescent of the slash
+      const cx = 470, cy = 340, R = 270, a0 = -60 * D, a1 = (-60 - 210 * sw) * D;
+      c.save(); c.globalAlpha = sa; c.fillStyle = '#fffbe8'; c.strokeStyle = INK; c.lineWidth = 3;
+      c.beginPath(); c.arc(cx, cy, R, a0, a1, true); c.arc(cx + 30, cy - 10, R * .84, a1, a0, false); c.closePath(); c.fill(); c.stroke(); c.restore();
+    }
+    sfxAt(t, 2.7, .9, 'ZAN', 420, 150, 76, -12);
+    const jk = seg(t, 2.45, 3.3);
+    const yx = track(t, [[0, 330], [2.45, 330], [3.3, 820]]);
+    const yf = jk < .5 ? 1 : -1;
+    const yp = track(t, [[0, breathe(P.stance)], [2.3, P.stance], [2.45, P.crouch], [2.55, P.tuck], [3.2, P.tuck], [3.35, P.crouch], [3.7, breathe(P.stance)]]);
+    const y = yuji({ x: yx, f: yf, p: yp, lift: Math.sin(jk * Math.PI) * 330, rot: jk > 0 && jk < 1 ? jk * 360 * yf : 0 });
+    if (hit(t, dt, 3.3)) burst(820, GROUND, INK, 10, 5, .3);
+    bubble(t, 4.4, 6.8, 'Itadori', "That sword would've split me in half.", y.head);
+    drawParts(dt);
+  }},
+  { name: 'Black Flash', dur: 8, draw(t, dt) {
+    const imp = 2.4, red = t >= imp && t < imp + .45;
+    const z = track(t, [[0, 1], [1.9, 1.35], [2.1, 1.35], [2.3, 1]]);
+    c.save(); world(z, lerp(640, 800, seg(z, 1, 1.35)), lerp(360, 460, seg(z, 1, 1.35)));
+    paper(); if (!red) city(.5);
+    if (red) { c.fillStyle = RED; c.fillRect(-200, -200, W + 400, H + 400); }
+    ground();
+    if (t > imp + .9) crater(130, 150, seg(t, imp + .9, imp + 1.2));
+    let m;
+    if (t < imp + .35) m = maho({ x: 460, f: 1, p: t < imp ? breathe(P.guardM, .6)(t) : P.hurt, wheel: 45 });
+    else if (t < imp + 1.0) {
+      const k = seg(t, imp + .35, imp + 1.0);
+      m = maho({ x: lerp(460, 130, k), f: 1, p: P.fly, y: lerp(GROUND - 200, GROUND - 16, k) - Math.sin(k * Math.PI) * 80, rot: lerp(-20, -90, k), wheel: 45 });
+    } else m = maho({ x: 130, f: 1, p: P.limp, y: GROUND - 16, rot: -90, wheel: 45 });
+    const yx = track(t, [[0, 820], [2.1, 820], [imp, 600]]);
+    const yp = track(t, [[0, breathe(P.stance)], [.6, P.focus], [2.1, P.focus], [2.2, run], [2.3, P.punch], [3.4, P.punch], [4.2, breathe(P.stance)]]);
+    speedLines(yx + 30, GROUND - 120, -1, fade(t, 2.1, imp + .1), 9);
+    const y = yuji({ x: yx, f: -1, p: yp });
+    if (t > .6 && t < 2.3 && Math.floor(t * 7) % 2) sparks(y.hand[0], y.hand[1], t, 3, 40);
+    if (red || (t >= imp && t < imp + .9)) sparks(490, 420, t, 9, 260 * (red ? 1 : 1 - seg(t, imp + .45, imp + .9)));
+    if (hit(t, dt, imp)) { fx.shake = 32; burst(490, 420, INK, 34, 15); burst(490, 420, RED, 24, 12); }
+    if (hit(t, dt, imp + 1.0)) { fx.shake = 18; burst(130, GROUND - 10, INK, 22, 9, .4, true); }
+    dust(130, seg(t, imp + 1.0, imp + 2.4), 1.3);
+    if (t > imp + 2 && t < 7) sparks(y.hand[0], y.hand[1], t, 2, 26, false);
+    c.restore();
+    narr(t, .5, 2.1, 'Hit within a millionth of a second of the cursed energy, and space itself bends.');
+    title('BLACK FLASH', W / 2 + 120, 150, 96, fade(t, imp + .05, imp + 2.4, .1), INK, -6);
+    brush('黒閃', W / 2 + 140, 270, 110, fade(t, imp + .05, imp + 2.4, .1), red ? INK : RED);
+    sfxAt(t, imp + 1.0, .9, 'DOGON', 250, 420, 60, 8);
+    bubble(t, 4.8, 7.2, 'Itadori', 'Something new. Adapt to that.', y.head);
+    drawParts(dt);
+  }},
+  { name: 'It adapts again', dur: 6.5, draw(t, dt) {
+    paper(); city(.5); ground(); crater(130, 150);
+    const rot = track(t, [[0, -90], [1.0, -90], [1.9, 0]]);
+    const yk = track(t, [[0, 0], [1.0, 0], [1.9, 1]]);
+    const p = track(t, [[0, P.limp], [1.0, P.limp], [1.9, P.kneel], [2.3, P.kneel], [2.9, breathe(P.guardM, .6)]]);
+    const wheel = track(t, [[0, 45], [3.2, 45], [3.5, 90]]);
+    const m = maho({ x: 130, f: 1, p, rot, y: GROUND - 16, yk, wheel });
+    if (t < 3.2) { // healing steam
+      c.save(); c.strokeStyle = hexA(PENCIL, .7 * (1 - seg(t, 2.6, 3.2))); c.lineWidth = 2.5;
+      for (let i = 0; i < 6; i++) { const ph = (t * .8 + i / 6) % 1, sx = m.hip[0] - 60 + i * 26, sy = m.hip[1] - 20 - ph * 140; c.beginPath(); c.moveTo(sx, sy); c.bezierCurveTo(sx + 14, sy - 16, sx - 14, sy - 30, sx, sy - 44); c.stroke(); }
+      c.restore();
+      sfx('shhh', 250, 330, 34, -4, fade(t, .4, 2.8), PENCIL);
+    }
+    if (hit(t, dt, 3.5)) fx.shake = 10;
+    wheelPulse(m.wheel[0], m.wheel[1], seg(t, 3.5, 4.5));
+    sfxAt(t, 3.5, 1.3, 'GAKON', m.wheel[0] + 150, m.wheel[1] - 20, 56, -8);
+    const y = yuji({ x: 820, f: -1, p: track(t, [[0, P.pant], [2.8, P.pant], [3.4, breathe(P.stance)]]) });
+    if (t < 2.8) { c.save(); c.strokeStyle = hexA(INK, .5); c.lineWidth = 2; for (let i = 0; i < 3; i++) { const ph = (t * 1.5 + i / 3) % 1; c.globalAlpha = 1 - ph; c.beginPath(); c.arc(y.head[0] - 30 - ph * 20, y.head[1] + 10, 5 + ph * 8, 0, 7); c.stroke(); } c.restore(); }
+    bubble(t, 3.9, 6.3, 'Itadori', 'Turned again. So I get one more shot.', y.head);
+    drawParts(dt);
+  }},
+  { name: 'Final clash', dur: 7.5, draw(t, dt) {
+    const imp = 1.5, frozen = t >= imp && t < 4.6;
+    paper();
+    if (frozen) { // freeze frame: red band and radial lines
+      c.save(); c.fillStyle = RED; c.beginPath(); c.moveTo(0, 170); c.lineTo(W, 60); c.lineTo(W, 470); c.lineTo(0, 580); c.closePath(); c.fill();
+      c.strokeStyle = hexA(INK, .5); c.lineWidth = 2; const r = rng(4);
+      for (let i = 0; i < 60; i++) { const a = r() * 6.283, r0 = 180 + r() * 60; c.beginPath(); c.moveTo(688 + Math.cos(a) * r0, 330 + Math.sin(a) * r0); c.lineTo(688 + Math.cos(a) * 1200, 330 + Math.sin(a) * 1200); c.stroke(); }
+      c.restore();
+    } else city(.5);
+    ground();
+    const tt = frozen ? imp : t;
+    const mx = track(tt, [[0, 250], [.6, 250], [imp, 520]]);
+    const mp = track(tt, [[0, breathe(P.guardM, .6)], [.6, P.guardM], [.7, walk], [1.2, walk], [1.3, P.windup], [imp, P.punch]]);
+    const m = maho({ x: mx, f: 1, p: mp, wheel: 90 });
+    const yx = track(tt, [[0, 1020], [.6, 1020], [imp, 800]]);
+    const yp = track(tt, [[0, breathe(P.stance)], [.6, P.stance], [.7, run], [1.1, run], [1.25, P.tuck], [imp, P.punch]]);
+    speedLines(mx - 80, GROUND - 220, 1, frozen ? 0 : fade(t, .7, imp), 2);
+    speedLines(yx + 30, GROUND - 140, -1, frozen ? 0 : fade(t, .7, imp), 8);
+    const y = yuji({ x: yx, f: -1, p: yp, lift: track(tt, [[0, 0], [1.1, 0], [imp, 110]]) });
+    const cx = (m.hand[0] + y.hand[0]) / 2, cy = (m.hand[1] + y.hand[1]) / 2;
+    if (hit(t, dt, imp)) { fx.flash = 1; fx.flashColor = '#fff'; fx.shake = 36; burst(cx, cy, INK, 40, 16); burst(cx, cy, GOLD, 16, 11); burst(cx, GROUND, INK, 20, 9, .5, true); }
+    if (frozen) { star(cx, cy, 150, .2); sparks(cx, cy, t, 5, 150); }
+    rings(cx, GROUND, seg(t, imp, imp + 1.2), INK, 4, 560, .12);
+    title('DON!!', 1010, 170, 120, fade(t, imp + .1, 4.6, .15), INK, 8);
+    const fadeOut = seg(t, 5.2, 7.2);
+    if (fadeOut > 0) { c.fillStyle = hexA(PAPER, fadeOut); c.fillRect(0, 0, W, H); }
+    drawParts(dt);
+  }},
+  { name: 'End', dur: 5.5, draw(t) {
+    paper();
+    title('TO BE CONTINUED', W / 2 - 40, 320, 84, seg(t, 0, .6), INK, -3);
+    const u = ease(seg(t, .6, 1.3));
+    c.strokeStyle = INK; c.lineWidth = 6; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(360, 400); c.lineTo(lerp(360, 900, u), 400); c.stroke();
+    if (u >= 1) { c.beginPath(); c.moveTo(875, 382); c.lineTo(900, 400); c.lineTo(875, 418); c.stroke(); }
+    c.save(); c.globalAlpha = seg(t, 1.2, 1.8); c.textAlign = 'center'; c.fillStyle = PENCIL; c.font = `700 22px ${F.body}`;
+    c.fillText('Mahoraga and Itadori Yuji are from Jujutsu Kaisen by Gege Akutami.', W / 2, 480);
+    c.fillText('Unofficial stickman fan animation with original dialogue.', W / 2, 512); c.restore();
+    announce('To be continued');
+  }},
+];
+
+// ---------- playback ----------
+const total = scenes.reduce((s, x) => s + x.dur, 0);
+const starts = []; scenes.reduce((s, x, i) => (starts[i] = s, s + x.dur), 0);
+let time = 0, playing = true, last = null, curScene = -1;
+const playBtn = document.getElementById('play');
+const prog = document.getElementById('prog'), fill = document.getElementById('progFill'), timeEl = document.getElementById('time');
+const chapList = document.getElementById('chapters');
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+scenes.forEach((s, i) => {
+  const li = document.createElement('li'), b = document.createElement('button');
+  b.type = 'button'; b.innerHTML = `<b>${fmt(starts[i])}</b><span></span>`; b.lastChild.textContent = s.name;
+  b.addEventListener('click', () => seek(starts[i] + .001));
+  li.appendChild(b); chapList.appendChild(li);
+});
+
+function seek(t) { time = clamp(t, 0, total - .001); parts = []; last = null; render(0); }
+function sceneAt(t) { let i = scenes.length - 1; while (i > 0 && starts[i] > t) i--; return i; }
+
+function render(dt) {
+  const i = sceneAt(time), s = scenes[i], lt = time - starts[i];
+  if (i !== curScene) { curScene = i; parts = []; [...chapList.querySelectorAll('button')].forEach((b, j) => b.setAttribute('aria-current', j === i)); }
+  c.save(); s.draw(lt, dt); c.restore();
+  // flipbook page number, bottom right
+  c.save(); c.font = `700 18px ${F.body}`; c.fillStyle = PENCIL; c.textAlign = 'right';
+  c.fillText(`p. ${String(Math.floor(time * 12) + 1).padStart(3, '0')}`, W - 28, H - 22); c.restore();
+  out.save(); out.fillStyle = PAPER; out.fillRect(0, 0, W, H);
+  const sh = reduceMotion ? 0 : fx.shake;
+  out.translate((Math.random() - .5) * sh, (Math.random() - .5) * sh);
+  out.drawImage(buf, 0, 0);
+  out.restore();
+  if (fx.flash > 0) { out.fillStyle = hexA(fx.flashColor, reduceMotion ? fx.flash * .3 : fx.flash); out.fillRect(0, 0, W, H); }
+  fx.flash = Math.max(0, fx.flash - dt * 3); fx.shake *= Math.pow(.02, dt);
+  fill.style.width = (time / total * 100) + '%';
+  timeEl.textContent = `${fmt(time)} / ${fmt(total)}`;
+}
+
+function frame(now) {
+  const dt = last == null ? 0 : Math.min(.05, (now - last) / 1000); last = now;
+  if (playing) { time += dt; if (time >= total) { time = 0; parts = []; } }
+  render(playing ? dt : 0);
+  requestAnimationFrame(frame);
+}
+
+function toggle() { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play'; }
+playBtn.addEventListener('click', toggle);
+document.getElementById('restart').addEventListener('click', () => { seek(0); if (!playing) toggle(); });
+prog.addEventListener('click', e => { const r = prog.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * total); });
+prog.addEventListener('keydown', e => { if (e.key === 'ArrowRight') seek(time + 3); if (e.key === 'ArrowLeft') seek(time - 3); });
+document.addEventListener('keydown', e => { if (e.code === 'Space' && e.target.tagName !== 'BUTTON') { e.preventDefault(); toggle(); } });
+
+// canvas-only fonts are not requested until asked for, so load them before the first frame
+const fontLoads = document.fonts ? Promise.all([
+  document.fonts.load(`40px ${F.display}`), document.fonts.load(`700 24px ${F.body}`),
+  document.fonts.load(`40px ${F.brush}`, '魔虚羅虎杖悠仁黒閃逕庭拳ガコン'),
+]).catch(() => {}) : Promise.resolve();
+Promise.race([fontLoads, new Promise(r => setTimeout(r, 2500))]).then(() => requestAnimationFrame(frame));
+})();
+</script>
