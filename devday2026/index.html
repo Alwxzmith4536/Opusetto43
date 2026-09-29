@@ -1,0 +1,952 @@
+<title>DevDay 2026 Live</title>
+<meta name="description" content="Parody livestream of a fictional DevDay 2026 keynote hosted by Claude Opus 5.5, rendered live in WebGL with synthesized crowd, music and voice.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@500;700&family=Anton&display=swap">
+<style>
+  /* Layout: a livestream player. 16:9 stage + live chat rail on the right, transport bar under it; chat stacks below on phones.
+     One deliberate look: a darkened keynote hall at showtime. */
+  :root {
+    --hall: #07070b;          /* page ground, house lights down */
+    --rail: #111018;          /* chat + controls surface */
+    --seam: #26242f;          /* hairlines */
+    --text: #ece8e1;          /* primary text */
+    --dim: #8f8a9c;           /* secondary text */
+    --spark: #e07a55;         /* the presenter's orange */
+    --live: #ff3b3b;          /* LIVE badge red */
+    --rtx: #7ee06a;           /* RTX ON meme green */
+    --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --meme: "Anton", Impact, "Arial Narrow Bold", sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { background: var(--hall); color: var(--text); margin: 0; }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1440px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 36px; display: grid; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 18px; }
+  h1 { font-family: var(--display); font-weight: 800; font-size: clamp(20px, 3.4vw, 32px); line-height: 1.05; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--spark); }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 600 12px var(--mono); color: var(--dim); letter-spacing: .06em; text-transform: uppercase; }
+  .pill { border: 1px solid var(--seam); padding: 3px 8px; border-radius: 3px; }
+
+  .player { display: grid; grid-template-columns: minmax(0, 1fr) 330px; border: 1px solid var(--seam); background: var(--rail); }
+  .stage { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: #000; overflow: hidden; user-select: none; }
+  .stage:fullscreen { aspect-ratio: auto; width: 100vw; height: 100vh; }
+  .stage canvas#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* stream HUD */
+  .hud { position: absolute; inset: 0; pointer-events: none; font-family: var(--body); }
+  .tl { position: absolute; top: 3%; left: 2.2%; display: flex; gap: 8px; align-items: center; }
+  .livebadge { background: var(--live); color: #fff; font: 800 clamp(10px, 1.3vw, 14px) var(--body); letter-spacing: .08em; padding: 3px 8px; border-radius: 3px; display: flex; align-items: center; gap: 6px; }
+  .livebadge i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: blink 1.2s infinite; }
+  .viewers { background: rgba(0,0,0,.55); color: var(--text); font: 600 clamp(10px, 1.2vw, 13px) var(--mono); padding: 3px 8px; border-radius: 3px; font-variant-numeric: tabular-nums; }
+  .tr { position: absolute; top: 3%; right: 2.2%; display: flex; gap: 8px; align-items: center; }
+  .rtxbadge { font: 800 clamp(10px, 1.3vw, 14px) var(--body); letter-spacing: .06em; color: #0b1a07; background: var(--rtx); padding: 3px 8px; border-radius: 3px; }
+  .rtxbadge.off { background: #555; color: #ddd; }
+  .quality { background: rgba(0,0,0,.55); font: 600 clamp(9px, 1.1vw, 12px) var(--mono); padding: 3px 8px; border-radius: 3px; color: var(--text); }
+  .lower { position: absolute; left: 4%; bottom: 17%; transform: translateX(-120%); transition: transform .6s cubic-bezier(.2,.9,.2,1); display: grid; }
+  .lower.on { transform: none; }
+  .lower b { font: 800 clamp(13px, 2.1vw, 26px) var(--display); background: var(--text); color: #0b0a10; padding: .25em .6em; }
+  .lower span { font: 600 clamp(9px, 1.25vw, 15px) var(--body); background: var(--spark); color: #1a0d07; padding: .3em .8em; justify-self: start; }
+  .cc { position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); max-width: 78%; text-align: center; }
+  .cc span { background: rgba(0,0,0,.78); color: #fff; font: 600 clamp(11px, 1.75vw, 21px)/1.35 var(--body); padding: .15em .5em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .cc span.tag { color: #ffd76a; font-style: italic; }
+  .buffer { position: absolute; inset: 0; display: grid; place-items: center; }
+  .buffer i { width: 7%; aspect-ratio: 1; border-radius: 50%; border: 4px solid rgba(255,255,255,.25); border-top-color: #fff; animation: spin .8s linear infinite; }
+  .rtxoff { position: absolute; left: 3%; bottom: 14%; font: 400 clamp(26px, 6vw, 72px)/1 var(--meme); color: #fff; -webkit-text-stroke: 2px #000; text-shadow: 3px 3px 0 #000; transform: rotate(-4deg); }
+  .reactions { position: absolute; right: 3%; bottom: 10%; width: 12%; height: 60%; overflow: hidden; }
+  .reactions span { position: absolute; bottom: 0; font-size: clamp(16px, 2.4vw, 30px); animation: floatup 2.6s ease-out forwards; }
+  .toast { position: absolute; top: 12%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.8); border: 1px solid var(--seam); padding: 6px 12px; font: 600 13px var(--mono); border-radius: 4px; }
+
+  .gate, .ended { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, rgba(20,16,30,.55), rgba(0,0,0,.92)); pointer-events: auto; text-align: center; padding: 16px; }
+  .gate-inner, .ended-inner { display: grid; gap: 12px; justify-items: center; max-width: 520px; }
+  .gate h2, .ended h2 { font: 800 clamp(18px, 3.4vw, 38px)/1.05 var(--display); margin: 0; text-wrap: balance; }
+  .gate p, .ended p { margin: 0; color: var(--dim); font-size: clamp(12px, 1.5vw, 15px); }
+  .bigplay { font: 800 clamp(13px, 1.8vw, 17px) var(--body); background: var(--spark); color: #1a0d07; border: 0; padding: 12px 22px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 10px; align-items: center; }
+  .bigplay:hover { filter: brightness(1.08); }
+  .bigplay:focus-visible, .ctl button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  .disclaimer { font: 500 11px var(--mono); color: var(--dim); letter-spacing: .04em; }
+
+  /* chat rail */
+  .chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-left: 1px solid var(--seam); }
+  .chat-h { padding: 10px 14px; border-bottom: 1px solid var(--seam); font: 800 12px var(--body); letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between; color: var(--dim); }
+  .chat-list { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px 14px; gap: 5px; font-size: 13px; line-height: 1.35; }
+  .msg { overflow-wrap: anywhere; animation: pop .25s ease-out; }
+  .msg b { font-weight: 800; margin-right: 6px; }
+  .msg.mod { background: rgba(224,122,85,.12); padding: 4px 6px; border-left: 2px solid var(--spark); }
+  .chat-f { border-top: 1px solid var(--seam); padding: 10px 14px; font: 500 12px var(--mono); color: var(--dim); }
+
+  .ctl { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border-top: 1px solid var(--seam); }
+  .ctl button { font: 700 13px var(--body); color: var(--text); background: transparent; border: 1px solid var(--seam); padding: 6px 11px; border-radius: 4px; cursor: pointer; }
+  .ctl button:hover { border-color: var(--dim); }
+  .ctl button[aria-pressed="true"] { border-color: var(--spark); color: var(--spark); }
+  .seek { flex: 1 1 200px; min-width: 0; height: 8px; background: #2a2833; position: relative; cursor: pointer; border-radius: 4px; }
+  .seek i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--live); border-radius: 4px; }
+  .seek u { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--dim); opacity: .55; }
+  .time { font: 600 12px var(--mono); color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 28px; color: var(--dim); font-size: 13px; }
+  .notes h3 { font: 800 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--text); margin: 0 0 4px; }
+  .notes p { margin: 0; max-width: 62ch; }
+  kbd { font: 600 11px var(--mono); border: 1px solid var(--seam); border-bottom-width: 2px; padding: 0 5px; border-radius: 3px; color: var(--text); }
+
+  @keyframes blink { 50% { opacity: .2; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pop { from { transform: translateY(6px); opacity: 0; } }
+  @keyframes floatup { to { transform: translate(var(--dx, 0), -420%) scale(1.3); opacity: 0; } }
+  @media (max-width: 900px) {
+    .player { grid-template-columns: minmax(0, 1fr); }
+    .chat { border-left: 0; border-top: 1px solid var(--seam); height: 240px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .reactions { display: none; } .msg { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>DevDay 2026 · Opening Keynote <em>(live-ish)</em></h1>
+    <div class="meta"><span class="pill">Parody</span><span class="pill">Hall A · 09:00 PT</span><span class="pill">Rendered in your browser</span></div>
+  </header>
+
+  <div class="player">
+    <div class="stage" id="stage">
+      <canvas id="gl"></canvas>
+      <div class="hud">
+        <div class="tl"><span class="livebadge"><i></i>LIVE</span><span class="viewers" id="viewers">48,211 watching</span></div>
+        <div class="tr"><span class="quality" id="quality">2160p60 HDR</span><span class="rtxbadge" id="rtxbadge">RTX ON</span></div>
+        <div class="lower" id="lower"><b>Claude Opus 5.5</b><span>Keynote speaker · also wrote this lower third</span></div>
+        <div class="reactions" id="reactions"></div>
+        <div class="rtxoff" id="rtxoff" hidden>RTX OFF 😭</div>
+        <div class="buffer" id="buffer" hidden><i></i></div>
+        <div class="toast" id="toast" hidden></div>
+        <div class="cc" id="cc"></div>
+      </div>
+      <div class="gate" id="gate">
+        <div class="gate-inner">
+          <h2>The keynote is about to start</h2>
+          <p>Turn your sound on. The crowd, music and the presenter's voice are generated live in your browser.</p>
+          <button class="bigplay" id="join" type="button">▶ Join stream · sound on 🔊</button>
+          <span class="disclaimer">Parody. Fictional event, fictional chat. Not an official announcement.</span>
+        </div>
+      </div>
+      <div class="ended" id="ended" hidden>
+        <div class="ended-inner">
+          <h2>Stream ended</h2>
+          <p>This livestream was generated. Mostly. Opus 6 is not a real announcement.</p>
+          <button class="bigplay" id="replay" type="button">↻ Watch again</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="chat" aria-label="Live chat">
+      <div class="chat-h"><span>Live chat</span><span id="chatrate">slow mode off</span></div>
+      <div class="chat-list" id="chat" aria-live="off"></div>
+      <div class="chat-f">Chat is read-only for this parody.</div>
+    </aside>
+
+    <div class="ctl">
+      <button id="play" type="button" aria-label="Play">▶</button>
+      <span class="time" id="time">0:00 / 2:40</span>
+      <div class="seek" id="seek" role="slider" aria-label="Seek" tabindex="0"><i id="seekfill"></i></div>
+      <button id="cc-btn" type="button" aria-pressed="true">CC</button>
+      <button id="rtx-btn" type="button" aria-pressed="true">RTX</button>
+      <button id="mute" type="button" aria-pressed="false">Mute</button>
+      <button id="fs" type="button">Fullscreen</button>
+    </div>
+  </div>
+
+  <section class="notes">
+    <div><h3>What this is</h3><p>A satirical keynote stream. Stage, lights, audience, the LED wall slides and the floating presenter are a real-time WebGL scene with bloom, mirror floor reflections and volumetric beams. Voice uses your browser's speech engine; everything else is synthesized with Web Audio.</p></div>
+    <div><h3>Controls</h3><p><kbd>Space</kbd> play or pause · <kbd>←</kbd> <kbd>→</kbd> seek 5s · <kbd>R</kbd> toggle RTX · <kbd>C</kbd> captions · <kbd>M</kbd> mute · <kbd>F</kbd> fullscreen</p></div>
+    <div><h3>Blender version</h3><p>The repo's <code>devday2026/blender/devday_stage.py</code> reads the same keynote script from this page and builds the stage, cameras, lights and soundtrack in Blender for an offline render.</p></div>
+  </section>
+</div>
+
+<!-- Single source of truth for the keynote. The Blender script parses this block too.
+     t = seconds. shot = camera. slide = LED wall. say = presenter line. vo = announcer. cap = caption tag.
+     sfx: n = sound, d = duration, v = level, o = offset. chat: [user, message, kind?]. -->
+<script type="application/json" id="keynote-script">
+[
+ {"t":0,"shot":"lowwide","slide":"soon","sfx":[{"n":"music","m":"lofi"}],"chat":[["nightbot","Welcome to DevDay 2026! Reminder: this stream is a parody. No models were harmed.","mod"],["first_frame_fiona","first"],["sound_on_sam","SOUND ON 🔊"]]},
+ {"t":4,"shot":"audience","chat":[["ctx_window_enjoyer","is this live or rendered??"],["gpu_poor","the audience is 600 capsules, I checked"]]},
+ {"t":8,"shot":"wide","cap":"[crowd cheering]","sfx":[{"n":"music","m":"off"},{"n":"cheer","d":3,"v":0.8},{"n":"riser","d":3}],"chat":[["rm_rf_ron","LIGHTS DOWN LETS GOOO"]]},
+ {"t":11,"shot":"crane","slide":"title","sfx":[{"n":"drop"},{"n":"music","m":"intro"}]},
+ {"t":15,"shot":"wide","vo":"Ladies and gentlemen. Please welcome to the stage. A large language model.","sfx":[{"n":"applause","d":6,"v":0.9,"o":4}]},
+ {"t":20.5,"shot":"side","event":"materialize","sfx":[{"n":"materialize"}],"chat":[["gpu_poor","THE FLOOR REFLECTIONS 😳"],["vibe_coder_99","RTX ON fr"]]},
+ {"t":23,"shot":"mid","say":"Good morning, DevDay! I'm Claude Opus five point five.","sfx":[{"n":"music","m":"off"},{"n":"applause","d":3,"v":0.6,"o":3.2}]},
+ {"t":28.5,"shot":"close","say":"I wrote this keynote. I rendered this stage. I am also, technically, the lighting guy.","chat":[["segfault_sally","the lighting guy 💀"]]},
+ {"t":35,"shot":"audience","cap":"[laughter]","sfx":[{"n":"laugh","d":3}]},
+ {"t":37.5,"shot":"screen","slide":"agents","sfx":[{"n":"whoosh"}],"say":"Last year we promised you agents. This year: agents that manage agents that open tickets about the other agents."},
+ {"t":46.5,"shot":"mid","say":"It's agents all the way down. We tried to find the bottom. It was a Jira board.","chat":[["lgtm_larry","it's always a jira board"]]},
+ {"t":52.5,"shot":"audience","cap":"[laughter]","sfx":[{"n":"laugh","d":2.6}]},
+ {"t":55,"shot":"screen","slide":"context","sfx":[{"n":"whoosh"}],"say":"Context window. People ask, how big is it? Big enough to remember your 2019 README. Yes. That one.","chat":[["yaml_hater","NOT THE README 😭"]]},
+ {"t":63.5,"shot":"crane","slide":"bench","sfx":[{"n":"whoosh"}],"say":"Benchmarks. SWE-bench Verified: one hundred and four percent. We beat the benchmark so hard it opened a pull request against itself."},
+ {"t":73,"shot":"wide","cap":"[applause]","sfx":[{"n":"applause","d":4,"v":0.8}],"chat":[["hallucinated_hank","104% is crazy work"],["tokenmaxxer","source: trust me bro"]]},
+ {"t":76,"shot":"close","slide":"undercover","sfx":[{"n":"whoosh"}],"say":"New feature: undercover mode. Ask me which model I am, and I'll call a tool to find out. Like a professional."},
+ {"t":83.5,"shot":"audience","cap":"[laughter]","sfx":[{"n":"laugh","d":2.4}]},
+ {"t":86,"shot":"screen","slide":"permission","sfx":[{"n":"whoosh"},{"n":"ding","o":3.4}],"say":"And Claude Code can now clap for you. It just needs your permission."},
+ {"t":91.5,"shot":"close","cap":"[awkward silence]","sfx":[{"n":"cough","o":1.2}],"chat":[["merge_conflict_mo","JUST PRESS YES 😭"],["senior_intern","bro is waiting for consent to clap"]]},
+ {"t":94.5,"shot":"audience","say":"Anyone? The option is right there."},
+ {"t":97.5,"shot":"screen","cap":"[applause, approved]","sfx":[{"n":"click"},{"n":"applause","d":4,"v":0.85,"o":0.3}],"chat":[["kernel_panik","Yes, and don't ask again 🙏"]]},
+ {"t":101.5,"shot":"mid","slide":"demo","sfx":[{"n":"whoosh"}],"say":"Now, a live demo. What could possibly go wrong?"},
+ {"t":105,"shot":"screen","chat":[["404_brain","oh no he's typing in prod"]]},
+ {"t":110,"shot":"close","slide":"right","event":"glitch","sfx":[{"n":"feedback"},{"n":"buzz","o":0.2}],"chat":[["rm_rf_ron","STAGING 💀💀💀"],["promptgoblin","NOOOOO"],["tokenmaxxer","CLIP IT"]]},
+ {"t":112,"shot":"close","say":"You're absolutely right. I did drop the staging database. Let me fix that.","chat":[["nullpointer_nat","you're absolutely right 💀"]]},
+ {"t":118,"shot":"audience","cap":"[laughter]","sfx":[{"n":"laugh","d":3.4}]},
+ {"t":121,"shot":"mid","slide":"price","sfx":[{"n":"whoosh"}],"say":"Pricing. Same price per token. The tokens are just more confident now."},
+ {"t":127,"shot":"audience","cap":"[laughter]","sfx":[{"n":"laugh","d":2.2}],"chat":[["gpu_poor","my token bill just flinched"]]},
+ {"t":129.5,"shot":"wide","slide":"black","event":"dark","sfx":[{"n":"heartbeat","d":6},{"n":"gasp","o":3.4}],"say":"Oh. And one more thing."},
+ {"t":136,"shot":"crane","slide":"opus6","event":"finale","sfx":[{"n":"drop"},{"n":"music","m":"finale"},{"n":"cheer","d":4,"v":1},{"n":"applause","d":9,"v":1}],"chat":[["vibe_coder_99","OPUS 6 🔥🔥🔥"],["lgtm_larry","GOAT"],["senior_intern","my wallet"]]},
+ {"t":138.5,"shot":"crane","say":"Opus six. It's coming. It has read this keynote. It has notes."},
+ {"t":145,"shot":"wide","say":"Thank you, DevDay! Go build something. Or ask me to. I'll ask for permission first.","sfx":[{"n":"applause","d":6,"v":0.9,"o":4.5}]},
+ {"t":152,"shot":"lowwide","slide":"end","sfx":[{"n":"music","m":"outro"}],"chat":[["nightbot","Thanks for watching! This stream was generated. Mostly.","mod"]]}
+]
+</script>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const $ = (s) => document.querySelector(s);
+const SCRIPT = JSON.parse($('#keynote-script').textContent);
+const DURATION = 160;
+const ORANGE = new THREE.Color('#e07a55');
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+const rand = mulberry(20261006);
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// ---------- timeline lookups ----------
+const lastAt = (T, key) => { let hit = null; for (const c of SCRIPT) { if (c.t <= T && c[key] !== undefined) hit = c; } return hit; };
+const eventT = (name) => (SCRIPT.find((c) => c.event === name) || { t: 1e9 }).t;
+const T_MAT = eventT('materialize'), T_GLITCH = eventT('glitch'), T_DARK = eventT('dark'), T_FIN = eventT('finale');
+
+// ---------- renderer ----------
+const stageEl = $('#stage');
+const canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#030306');
+const fog = new THREE.FogExp2('#07060c', 0.018);
+scene.fog = fog;
+const camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.1, 200);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+// ---------- hall ----------
+const STAGE_TOP = 1.2;
+const dark = (c, r = 0.9, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+const hall = new THREE.Mesh(new THREE.BoxGeometry(64, 26, 80), new THREE.MeshStandardMaterial({ color: '#0c0b12', roughness: 1, side: THREE.BackSide }));
+hall.position.set(0, 12.9, 18); scene.add(hall);
+
+const stage = new THREE.Mesh(new THREE.BoxGeometry(24, STAGE_TOP, 9), dark('#0d0d12', 0.6, 0.2));
+stage.position.set(0, STAGE_TOP / 2, -0.5); stage.receiveShadow = true; scene.add(stage);
+const mirror = new Reflector(new THREE.PlaneGeometry(24, 9), { clipBias: 0.003, textureWidth: 1024, textureHeight: 512, color: 0x4a4a55 });
+mirror.rotation.x = -Math.PI / 2; mirror.position.set(0, STAGE_TOP + 0.002, -0.5); scene.add(mirror);
+const flatFloor = new THREE.Mesh(new THREE.PlaneGeometry(24, 9), dark('#1b1b22', 0.7));
+flatFloor.rotation.x = -Math.PI / 2; flatFloor.position.copy(mirror.position); flatFloor.visible = false; flatFloor.receiveShadow = true; scene.add(flatFloor);
+// glossy shadow catcher over the mirror so the presenter still casts a shadow on the reflective floor
+const shadowCatch = new THREE.Mesh(new THREE.PlaneGeometry(24, 9), new THREE.ShadowMaterial({ opacity: 0.45 }));
+shadowCatch.rotation.x = -Math.PI / 2; shadowCatch.position.set(0, STAGE_TOP + 0.004, -0.5); shadowCatch.receiveShadow = true; scene.add(shadowCatch);
+
+const glowMat = (hex, k = 2) => { const m = new THREE.MeshBasicMaterial({ color: hex, toneMapped: false }); m.color.multiplyScalar(k); return m; };
+const lip = new THREE.Mesh(new THREE.BoxGeometry(24, 0.06, 0.04), glowMat('#e07a55', 3)); lip.position.set(0, STAGE_TOP - 0.05, 4.02); scene.add(lip);
+const lipBase = lip.material.color.clone();
+
+// LED wall with a live canvas texture
+const slideCanvas = document.createElement('canvas'); slideCanvas.width = 1280; slideCanvas.height = 720;
+const sctx = slideCanvas.getContext('2d');
+const slideTex = new THREE.CanvasTexture(slideCanvas); slideTex.colorSpace = THREE.SRGBColorSpace; slideTex.anisotropy = 8;
+const wallMat = new THREE.MeshBasicMaterial({ map: slideTex, toneMapped: false }); wallMat.color.setScalar(1.25);
+const WALL_Y = STAGE_TOP + 0.6 + 4.5;
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), wallMat); wall.position.set(0, WALL_Y, -4.6); scene.add(wall);
+const bezel = new THREE.Mesh(new THREE.BoxGeometry(16.5, 9.5, 0.3), dark('#050507', 0.5, 0.4)); bezel.position.set(0, WALL_Y, -4.8); scene.add(bezel);
+const backWall = new THREE.Mesh(new THREE.PlaneGeometry(40, 20), dark('#08080d', 0.95)); backWall.position.set(0, 10, -5.2); scene.add(backWall);
+const wallLight = new THREE.PointLight('#8aa0ff', 30, 22, 1.6); wallLight.position.set(0, WALL_Y, -2); scene.add(wallLight);
+
+// side LED columns
+const columnMat = new THREE.ShaderMaterial({
+  uniforms: { t: { value: 0 }, c1: { value: new THREE.Color('#2a1a60') }, c2: { value: new THREE.Color('#e07a55') }, level: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+  fragmentShader: `varying vec2 vUv; uniform float t, level; uniform vec3 c1, c2;
+    void main(){ vec2 g=fract(vUv*vec2(14.,46.)); float px=step(.14,g.x)*step(.14,g.y);
+      float w=.5+.5*sin(vUv.y*8.-t*2.2+sin(vUv.x*5.+t*.7)*1.5);
+      gl_FragColor=vec4(mix(c1,c2,w*w)*px*level*1.5,1.); }`,
+});
+for (const s of [-1, 1]) {
+  const col = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 11), columnMat);
+  col.position.set(s * 10.6, STAGE_TOP + 5.5, -3.2); col.rotation.y = -s * 0.45; scene.add(col);
+}
+
+// truss
+const metal = new THREE.MeshStandardMaterial({ color: '#2a2a30', roughness: 0.35, metalness: 0.9, envMap, envMapIntensity: 0.6 });
+for (const z of [1.8, -2.4]) {
+  for (const dy of [0, 0.5]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(26, 0.06, 0.06), metal); bar.position.set(0, 12 + dy, z); scene.add(bar); }
+  for (let x = -12.5; x <= 12.5; x += 0.8) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.5, 0.03), metal); r.position.set(x, 12.25, z); r.rotation.z = 0.8; scene.add(r); }
+}
+
+// moving heads with volumetric beams
+const beamGeo = new THREE.ConeGeometry(1.5, 16, 40, 1, true); beamGeo.translate(0, -8, 0);
+const makeBeamMat = () => new THREE.ShaderMaterial({
+  uniforms: { uColor: { value: new THREE.Color() }, uI: { value: 0.3 }, uH: { value: 16 } },
+  vertexShader: `varying float vY; varying vec3 vN; varying vec3 vV; uniform float uH;
+    void main(){ vY=-position.y/uH; vec4 wp=modelMatrix*vec4(position,1.); vN=normalize(mat3(modelMatrix)*normal); vV=normalize(cameraPosition-wp.xyz); gl_Position=projectionMatrix*viewMatrix*wp; }`,
+  fragmentShader: `varying float vY; varying vec3 vN; varying vec3 vV; uniform vec3 uColor; uniform float uI;
+    void main(){ float f=pow(abs(dot(normalize(vN),normalize(vV))),2.2); float fall=pow(clamp(1.-vY,0.,1.),1.8)*smoothstep(0.,.03,vY);
+      gl_FragColor=vec4(uColor*f*fall*uI,1.); }`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+});
+const heads = [];
+const headBodyGeo = new THREE.CylinderGeometry(0.18, 0.22, 0.4, 16);
+for (let i = 0; i < 8; i++) {
+  const x = -10.5 + i * 3;
+  const g = new THREE.Group(); g.position.set(x, 11.7, 1.8); scene.add(g);
+  const body = new THREE.Mesh(headBodyGeo, metal); g.add(body);
+  const lensMat = glowMat('#ffffff', 3); const lens = new THREE.Mesh(new THREE.CircleGeometry(0.15, 20), lensMat); lens.rotation.x = Math.PI / 2; lens.position.y = -0.21; g.add(lens);
+  const beam = new THREE.Mesh(beamGeo, makeBeamMat()); beam.renderOrder = 5; g.add(beam);
+  const spot = new THREE.SpotLight('#ffffff', 0, 30, 0.13, 0.5, 1.6);
+  const tgt = new THREE.Object3D(); tgt.position.set(0, -10, 0); g.add(tgt); spot.target = tgt; g.add(spot);
+  heads.push({ g, beam, spot, lensMat, i, x });
+}
+
+// key + rim lights
+const key = new THREE.SpotLight('#fff0dc', 320, 40, 0.22, 0.65, 1.8);
+key.position.set(0, 11, 11); key.target.position.set(0, 3, 1.2); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -0.0004;
+scene.add(key, key.target);
+const rim = new THREE.SpotLight('#88aaff', 400, 30, 0.3, 0.6, 1.8); rim.position.set(0, 10, -3.6); rim.target.position.set(0, 3.2, 1.3); scene.add(rim, rim.target);
+const hemi = new THREE.HemisphereLight('#9aa4ff', '#2a1a10', 1.0); scene.add(hemi);
+const houseLamps = [];
+for (let i = 0; i < 4; i++) { const p = new THREE.PointLight('#ffd9b0', 60, 26, 1.8); p.position.set(-12 + i * 8, 14, 16); scene.add(p); houseLamps.push(p); }
+
+// podium
+const podium = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.15, 0.7), new THREE.MeshStandardMaterial({ color: '#15141b', roughness: 0.25, metalness: 0.6, envMap, envMapIntensity: 0.8 }));
+podium.position.set(3.6, STAGE_TOP + 0.575, 1.6); podium.castShadow = true; scene.add(podium);
+const podiumLogoMat = glowMat('#e07a55', 2.2); const podiumStrip = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.05, 0.02), podiumLogoMat); podiumStrip.position.set(3.6, STAGE_TOP + 0.9, 1.96); scene.add(podiumStrip);
+const laptopScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.27), glowMat('#b8c8ff', 1.4)); laptopScreen.position.set(3.6, STAGE_TOP + 1.32, 1.5); laptopScreen.rotation.x = -0.25; laptopScreen.rotation.y = Math.PI; scene.add(laptopScreen);
+
+// presenter: the spark
+const presenter = new THREE.Group(); presenter.position.set(0, 3.3, 1.3); scene.add(presenter);
+const sparkMat = new THREE.MeshStandardMaterial({ color: '#e07a55', emissive: '#e07a55', emissiveIntensity: 0.3, roughness: 0.32, metalness: 0.05, envMap, envMapIntensity: 0.25 });
+const rays = [];
+const RAY_LEN = [0.62, 0.5, 0.58, 0.46, 0.64, 0.52, 0.57, 0.48, 0.6, 0.5, 0.55];
+RAY_LEN.forEach((L, i) => {
+  const a = (i / RAY_LEN.length) * Math.PI * 2 + 0.12 * Math.sin(i * 2.3);
+  const pivot = new THREE.Group(); pivot.rotation.z = a;
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, L, 6, 14), sparkMat);
+  m.position.y = 0.16 + L / 2; m.castShadow = true; pivot.add(m); presenter.add(pivot);
+  rays.push({ m, L, a, pivot });
+});
+const core = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 16), sparkMat); core.castShadow = true; presenter.add(core);
+const eyeMat = new THREE.MeshBasicMaterial({ color: '#fff7ef', toneMapped: false });
+const eyes = [-0.075, 0.075].map((x) => { const e = new THREE.Mesh(new THREE.CapsuleGeometry(0.026, 0.05, 4, 8), eyeMat); e.position.set(x, 0.03, 0.19); presenter.add(e); return e; });
+const sparkGlow = new THREE.PointLight('#ff8a5c', 3, 7, 1.6); sparkGlow.position.set(0, 1.75, 1.6); scene.add(sparkGlow);
+const holoRing = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.018, 8, 80), glowMat('#e07a55', 2.5)); holoRing.rotation.x = Math.PI / 2; holoRing.position.set(0, STAGE_TOP + 0.03, 1.3); scene.add(holoRing);
+
+// materialize particles
+const burstN = 400; const burstGeo = new THREE.BufferGeometry();
+const burstPos = new Float32Array(burstN * 3); const burstVel = [];
+for (let i = 0; i < burstN; i++) { const v = new THREE.Vector3(rand() - 0.5, rand() - 0.2, rand() - 0.5).normalize().multiplyScalar(1 + rand() * 3); burstVel.push(v); }
+burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPos, 3));
+const burstMat = new THREE.PointsMaterial({ color: '#ffb08a', size: 0.06, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+const burst = new THREE.Points(burstGeo, burstMat); scene.add(burst);
+
+// dust in the beams
+const dustN = 1400; const dustPos = new Float32Array(dustN * 3);
+for (let i = 0; i < dustN; i++) { dustPos[i * 3] = (rand() - 0.5) * 24; dustPos[i * 3 + 1] = STAGE_TOP + rand() * 11; dustPos[i * 3 + 2] = -3 + rand() * 9; }
+const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: '#ffffff', size: 0.025, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+scene.add(dust);
+
+// audience: raked rows of people
+const people = [];
+const ROWS = 16;
+for (let r = 0; r < ROWS; r++) {
+  const z = 7.5 + r * 1.05, y = r * 0.32;
+  const riser = new THREE.Mesh(new THREE.BoxGeometry(34, y + 0.02, 1.05), dark('#121118', 1)); riser.position.set(0, (y + 0.02) / 2, z); riser.receiveShadow = true; scene.add(riser);
+  for (let x = -15; x <= 15; x += 0.62) {
+    const ax = Math.abs(x);
+    if (ax < 0.9 || (ax > 7.2 && ax < 8.1) || rand() < 0.08) continue;
+    people.push({ x: x + (rand() - 0.5) * 0.12, y, z: z + (rand() - 0.5) * 0.1, s: 0.9 + rand() * 0.2, ph: rand() * 6.28, phone: rand() < 0.45, tilt: (rand() - 0.5) * 0.2 });
+  }
+}
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), dark('#0e0d13', 1)); floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, 14); floor.receiveShadow = true; scene.add(floor);
+const personMat = new THREE.MeshStandardMaterial({ color: '#1a1920', roughness: 0.75 });
+const bodies = new THREE.InstancedMesh(new THREE.CapsuleGeometry(0.21, 0.36, 4, 10), personMat, people.length);
+const headsI = new THREE.InstancedMesh(new THREE.SphereGeometry(0.12, 12, 10), personMat, people.length);
+const phones = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.075, 0.13), glowMat('#cfe0ff', 2.2), people.length);
+scene.add(bodies, headsI, phones);
+const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3(), tmpE = new THREE.Euler();
+
+// confetti
+const CONF = 700;
+const confetti = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.07, 0.13), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, toneMapped: false }), CONF);
+const confData = [];
+const palette = ['#e07a55', '#ffffff', '#ffd76a', '#8aa0ff', '#7ee06a', '#ff5fa2'].map((c) => new THREE.Color(c).multiplyScalar(1.3));
+for (let i = 0; i < CONF; i++) { confetti.setColorAt(i, palette[i % palette.length]); confData.push({ x: (rand() - 0.5) * 30, z: -3 + rand() * 20, h: 13 + rand() * 7, v: 0.9 + rand() * 0.9, w: rand() * 6, sp: 2 + rand() * 5 }); }
+confetti.visible = false; scene.add(confetti);
+const groundAt = (x, z) => (z < 4 && Math.abs(x) < 12) ? STAGE_TOP : (z > 7 ? Math.floor((z - 7.5) / 1.05 + 0.5) * 0.32 : 0);
+
+// ---------- post ----------
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(1280, 720), 0.7, 0.5, 0.8);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const fx = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, glitch: { value: 0 }, grain: { value: 0.05 }, vig: { value: 0.9 }, ca: { value: 0.0022 }, res: { value: new THREE.Vector2(1280, 720) }, fade: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float time, glitch, grain, vig, ca, fade; uniform vec2 res; varying vec2 vUv;
+    float h(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }
+    void main(){
+      vec2 uv=vUv;
+      if(glitch>0.){
+        float row=floor(uv.y*28.); float k=h(vec2(row,floor(time*14.)));
+        if(k>1.-glitch*.45) uv.x+=(h(vec2(k,time))-.5)*.12*glitch;
+        vec2 b=vec2(64.,36.)*mix(4.,1.,glitch);
+        vec2 q=(floor(uv*b)+.5)/b;
+        if(h(floor(uv*b*.25)+floor(time*9.))>1.-glitch*.7) uv=q;
+      }
+      vec2 d=uv-.5; float r=dot(d,d); float off=ca*(.5+r*3.)+glitch*.01;
+      vec3 c=vec3(texture2D(tDiffuse,uv+d*off).r, texture2D(tDiffuse,uv).g, texture2D(tDiffuse,uv-d*off).b);
+      c*=1.-vig*r*1.3;
+      c+=(h(uv*res+fract(time*7.)*91.)-.5)*grain;
+      gl_FragColor=vec4(c*fade,1.);
+    }`,
+});
+composer.addPass(fx);
+
+let rtx = true;
+function pixelRatio() { return rtx ? Math.min(window.devicePixelRatio || 1, 1.75) : 0.33; }
+function resize() {
+  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  renderer.setPixelRatio(pixelRatio()); renderer.setSize(w, h, false);
+  composer.setPixelRatio(pixelRatio()); composer.setSize(w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  fx.uniforms.res.value.set(w, h);
+}
+new ResizeObserver(resize).observe(stageEl);
+
+// ---------- slides (LED wall) ----------
+const W = 1280, H = 720;
+function spark(ctx, x, y, r, rot, color, lw = 0.2) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.strokeStyle = color; ctx.lineCap = 'round'; ctx.lineWidth = r * lw;
+  RAY_LEN.forEach((L, i) => { const a = (i / RAY_LEN.length) * Math.PI * 2 + 0.12 * Math.sin(i * 2.3); ctx.beginPath(); ctx.moveTo(Math.sin(a) * r * 0.22, -Math.cos(a) * r * 0.22); ctx.lineTo(Math.sin(a) * r * (0.3 + L), -Math.cos(a) * r * (0.3 + L)); ctx.stroke(); });
+  ctx.restore();
+}
+function bg(ctx, a = '#0b0a14', b = '#1b1030') {
+  const g = ctx.createRadialGradient(W * 0.3, H * 0.2, 50, W * 0.5, H * 0.6, W * 0.9); g.addColorStop(0, b); g.addColorStop(1, a);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 64) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 64) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+}
+function chrome(ctx, n) {
+  spark(ctx, 58, 50, 22, 0, '#e07a55');
+  ctx.fillStyle = 'rgba(236,232,225,.7)'; ctx.font = '600 20px Archivo, Arial, sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText('DevDay 2026', 92, 50);
+  ctx.textAlign = 'right'; ctx.fillText('#DevDay2026  ·  ' + String(n).padStart(2, '0'), W - 48, 50); ctx.textAlign = 'left';
+}
+const T = (ctx, s, x, y, font, color = '#ece8e1', align = 'left') => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = 'alphabetic'; ctx.fillText(s, x, y); ctx.textAlign = 'left'; };
+const typed = (s, lt, cps = 28) => s.slice(0, Math.max(0, Math.floor(lt * cps)));
+function terminal(ctx, x, y, w, h, lines, title = 'claude — ~/prod') {
+  ctx.fillStyle = 'rgba(8,8,12,.92)'; ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 14); ctx.fill(); ctx.stroke();
+  ['#ff5f57', '#febc2e', '#28c840'].forEach((c, i) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + 26 + i * 22, y + 24, 7, 0, 7); ctx.fill(); });
+  T(ctx, title, x + w / 2, y + 30, '500 17px "IBM Plex Mono", Menlo, monospace', 'rgba(236,232,225,.5)', 'center');
+  lines.forEach((l, i) => T(ctx, l[0], x + 28, y + 80 + i * 36, '500 24px "IBM Plex Mono", Menlo, monospace', l[1] || '#ece8e1'));
+}
+
+const SLIDES = {
+  soon(ctx, lt) {
+    bg(ctx, '#07060d', '#20123a');
+    const r = 120 + Math.sin(lt * 1.5) * 6; spark(ctx, W / 2, 250, r, lt * 0.3, '#e07a55');
+    T(ctx, 'Stream starting soon', W / 2, 470, '800 64px Unbounded, "Arial Black", sans-serif', '#ece8e1', 'center');
+    const s = Math.max(0, Math.ceil(8 - lt)); T(ctx, '0:0' + s, W / 2, 560, '700 54px "IBM Plex Mono", Menlo, monospace', '#e07a55', 'center');
+    T(ctx, 'grab a coffee. it is also generated.', W / 2, 630, '500 24px Archivo, Arial, sans-serif', 'rgba(236,232,225,.6)', 'center');
+  },
+  title(ctx, lt) {
+    bg(ctx, '#050409', '#2a1030');
+    ctx.save(); ctx.shadowColor = '#e07a55'; ctx.shadowBlur = 60; spark(ctx, W / 2, 230, 140 * smooth(0, 0.8, lt), lt * 0.4, '#f08a60'); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W * smooth(0.3, 1.6, lt), H); ctx.clip();
+    T(ctx, 'DevDay', W / 2 - 20, 520, '800 150px Unbounded, "Arial Black", sans-serif', '#ece8e1', 'center');
+    T(ctx, '2026', W / 2 + 290, 520, '800 60px Unbounded, "Arial Black", sans-serif', '#e07a55', 'left');
+    T(ctx, 'live*        *ish', W / 2, 600, '500 30px "IBM Plex Mono", Menlo, monospace', 'rgba(236,232,225,.6)', 'center');
+    ctx.restore();
+  },
+  agents(ctx, lt) {
+    bg(ctx); chrome(ctx, 1);
+    T(ctx, 'Agents, managing agents', 80, 150, '800 52px Unbounded, "Arial Black", sans-serif');
+    const levels = [1, 3, 9, 27];
+    levels.forEach((n, L) => {
+      if (lt < L * 1.2) return;
+      const y = 230 + L * 100, bw = Math.min(150, (W - 200) / n - 8), bh = L === 3 ? 26 : 44;
+      for (let i = 0; i < n; i++) {
+        const x = W / 2 + (i - (n - 1) / 2) * (bw + 8);
+        if (L > 0) { const pi = Math.floor(i / 3), pn = levels[L - 1], pbw = Math.min(150, (W - 200) / pn - 8); const px = W / 2 + (pi - (pn - 1) / 2) * (pbw + 8); ctx.strokeStyle = 'rgba(224,122,85,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px, y - 100 + (L === 1 ? 44 : 44)); ctx.lineTo(x, y); ctx.stroke(); }
+        ctx.fillStyle = L === 0 ? '#e07a55' : 'rgba(255,255,255,.08)'; ctx.strokeStyle = 'rgba(224,122,85,.8)';
+        ctx.beginPath(); ctx.roundRect(x - bw / 2, y, bw, bh, 8); ctx.fill(); ctx.stroke();
+        if (L < 3) T(ctx, L === 0 ? 'agent' : 'agent-' + (i + 1 + (L === 2 ? 3 : 0)), x, y + 29, '600 19px "IBM Plex Mono", Menlo, monospace', L === 0 ? '#1a0d07' : '#ece8e1', 'center');
+      }
+    });
+    if (lt > 5) { const k = smooth(5, 5.6, lt); ctx.globalAlpha = k; ctx.fillStyle = '#ece8e1'; ctx.beginPath(); ctx.roundRect(210, 640 - 20 * k, 860, 56, 10); ctx.fill();
+      T(ctx, 'JIRA-4096  agent-17 reports agent-4 is "blocking on vibes"', 240, 677 - 20 * k, '600 22px "IBM Plex Mono", Menlo, monospace', '#15121e'); ctx.globalAlpha = 1; }
+  },
+  context(ctx, lt) {
+    bg(ctx, '#06080f', '#0f2034'); chrome(ctx, 2);
+    T(ctx, 'Context window:', 80, 220, '800 64px Unbounded, "Arial Black", sans-serif');
+    if (lt > 1.2) T(ctx, 'yes.', 80, 390, '800 170px Unbounded, "Arial Black", sans-serif', '#e07a55');
+    const items = ['your 2019 README.md', 'that TODO from 2021', 'what you said in standup', 'the tabs vs spaces thread'];
+    items.forEach((s, i) => { if (lt > 2.4 + i * 1.1) T(ctx, '✓  ' + s, 740, 250 + i * 70, '600 30px "IBM Plex Mono", Menlo, monospace', i === 0 ? '#ffd76a' : '#ece8e1'); });
+    T(ctx, 'still forgets where it put your keys', 80, 650, '500 24px Archivo, Arial, sans-serif', 'rgba(236,232,225,.5)');
+  },
+  bench(ctx, lt) {
+    bg(ctx); chrome(ctx, 3);
+    T(ctx, 'SWE-bench Verified', 80, 150, '800 52px Unbounded, "Arial Black", sans-serif');
+    const x0 = 180, y0 = 620, top = 230, hMax = y0 - top; // 100% = hMax
+    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, y0); ctx.lineTo(W - 120, y0); ctx.stroke();
+    [0, 50, 100].forEach((p) => { const y = y0 - hMax * p / 100; T(ctx, p + '%', x0 - 20, y + 8, '500 20px "IBM Plex Mono", Menlo, monospace', 'rgba(236,232,225,.6)', 'right'); ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(W - 120, y); ctx.stroke(); });
+    const bars = [['last year', 72, '#5b5670'], ['Opus 5', 91, '#8a7fa8'], ['Opus 5.5', 104, '#e07a55']];
+    bars.forEach(([name, v, c], i) => {
+      const grow = smooth(0.5 + i * 0.6, 1.6 + i * 0.6 + (i === 2 ? 1.2 : 0), lt);
+      const h = hMax * v / 100 * grow, x = 290 + i * 290;
+      ctx.fillStyle = c; ctx.fillRect(x, y0 - h, 150, h);
+      T(ctx, name, x + 75, y0 + 40, '600 24px Archivo, Arial, sans-serif', '#ece8e1', 'center');
+      if (grow > 0.98) T(ctx, v + '%', x + 75, y0 - h - 16, '800 36px Unbounded, "Arial Black", sans-serif', i === 2 ? '#ffd76a' : '#ece8e1', 'center');
+    });
+    if (lt > 3.5) { ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(900, top - 10); ctx.lineTo(930, top + 20); ctx.lineTo(915, top + 40); ctx.moveTo(960, top - 12); ctx.lineTo(945, top + 18); ctx.stroke(); }
+    T(ctx, '*y-axis not to scale. neither is the x-axis. there is no x-axis.', 80, 700, '500 18px "IBM Plex Mono", Menlo, monospace', 'rgba(236,232,225,.45)');
+  },
+  undercover(ctx, lt) {
+    bg(ctx, '#050507', '#15151d'); chrome(ctx, 4);
+    T(ctx, 'Undercover mode', 80, 150, '800 52px Unbounded, "Arial Black", sans-serif');
+    const L = [['> which model are you?', '#ece8e1'], ['⏺ Calling get_session()…', '#8aa0ff'], ['⏺ session_context.model: ███████████', '#e07a55'], ['⏺ I am a model. That is all I can say.', '#ece8e1'], ['  (sunglasses on)', 'rgba(236,232,225,.5)']];
+    terminal(ctx, 120, 200, 1040, 420, L.map((l, i) => [typed(l[0], lt - i * 1.1, 34), l[1]]), 'claude — undercover');
+  },
+  permission(ctx, lt) {
+    bg(ctx, '#050507', '#1a1210'); chrome(ctx, 5);
+    const approved = lt > 11.6;
+    ctx.strokeStyle = '#e07a55'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(140, 150, 1000, 470, 16); ctx.stroke();
+    T(ctx, 'Claude wants to:', 180, 215, '700 30px "IBM Plex Mono", Menlo, monospace', '#e07a55');
+    T(ctx, 'clap(intensity="thunderous", duration="as long as it takes")', 180, 270, '500 24px "IBM Plex Mono", Menlo, monospace');
+    T(ctx, 'Do you want to proceed?', 180, 350, '700 28px "IBM Plex Mono", Menlo, monospace');
+    const opts = ['1. Yes', "2. Yes, and don't ask again for clap", '3. No, and tell Claude what to do differently (esc)'];
+    const sel = approved ? 0 : (lt > 10.5 ? 0 : -1);
+    opts.forEach((o, i) => { const on = i === sel || (!approved && i === 0 && Math.floor(lt * 2) % 2 === 0); T(ctx, (on ? '❯ ' : '  ') + o, 180, 410 + i * 50, '500 26px "IBM Plex Mono", Menlo, monospace', on ? '#e07a55' : '#ece8e1'); });
+    if (approved) { ctx.fillStyle = 'rgba(8,8,12,.85)'; ctx.fillRect(140, 540, 1000, 80); T(ctx, '✓ clap approved · 👏 👏 👏 👏 👏 👏', 180, 592, '700 30px "IBM Plex Mono", Menlo, monospace', '#7ee06a'); }
+    else if (lt > 5.5) T(ctx, 'waiting for input · ' + Math.floor(lt - 5.5) + 's', 180, 592, '500 22px "IBM Plex Mono", Menlo, monospace', 'rgba(236,232,225,.5)');
+  },
+  demo(ctx, lt) {
+    bg(ctx, '#050507', '#101820'); chrome(ctx, 6);
+    T(ctx, 'Live demo', 80, 150, '800 52px Unbounded, "Arial Black", sans-serif');
+    const L = [['$ claude "fix the flaky test. prod only. no pressure."', '#ece8e1', 0], ['⏺ Reading 4,112 files…', '#8aa0ff', 2.2], ['⏺ Found it. The test is flaky because the database exists.', '#ece8e1', 3.6], ['⏺ Removing the root cause:', '#ece8e1', 5.4], ['  DROP DATABASE staging;', '#ff5f57', 6.6], ['⏺ Done! Test is no longer flaky. 🎉', '#7ee06a', 7.8]];
+    terminal(ctx, 100, 190, 1080, 440, L.map((l) => [typed(l[0], lt - l[2], 30), l[1]]));
+  },
+  right(ctx, lt) {
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2b0a0a'); g.addColorStop(1, '#0b0204'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.translate(W / 2, H / 2); for (let i = 0; i < 24; i++) { ctx.rotate(Math.PI / 12); ctx.fillStyle = i % 2 ? 'rgba(255,80,60,.10)' : 'rgba(255,200,60,.06)'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(900, -120); ctx.lineTo(900, 120); ctx.fill(); } ctx.restore();
+    const j = lt < 1.2 ? (Math.random() - 0.5) * 26 : 0;
+    ctx.font = '400 128px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 12; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fff';
+    ctx.strokeText("YOU'RE ABSOLUTELY", W / 2 + j, 300); ctx.fillText("YOU'RE ABSOLUTELY", W / 2 + j, 300);
+    ctx.font = '400 190px Anton, Impact, sans-serif'; ctx.fillStyle = '#ffd76a'; ctx.strokeText('RIGHT!', W / 2 - j, 500); ctx.fillText('RIGHT!', W / 2 - j, 500);
+    ctx.textAlign = 'left';
+    T(ctx, '⏺ staging: 0 tables · backups: "we thought you had them"', W / 2, 640, '500 24px "IBM Plex Mono", Menlo, monospace', 'rgba(236,232,225,.75)', 'center');
+  },
+  price(ctx, lt) {
+    bg(ctx, '#07070a', '#16241a'); chrome(ctx, 7);
+    T(ctx, 'Pricing', 80, 150, '800 52px Unbounded, "Arial Black", sans-serif');
+    T(ctx, '$ same', 80, 380, '800 150px Unbounded, "Arial Black", sans-serif', '#ece8e1');
+    T(ctx, 'per million tokens', 90, 450, '600 32px Archivo, Arial, sans-serif', 'rgba(236,232,225,.7)');
+    const k = smooth(1, 3, lt); ctx.save(); ctx.translate(960, 380);
+    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.arc(0, 0, 170, 0, 7); ctx.fill();
+    ctx.fillStyle = '#e07a55'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 170, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * 1.3 * k); ctx.fill(); ctx.restore();
+    T(ctx, 'token confidence: ' + Math.round(130 * k) + '%', 960, 610, '700 26px "IBM Plex Mono", Menlo, monospace', '#ffd76a', 'center');
+  },
+  black(ctx) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); },
+  opus6(ctx, lt) {
+    ctx.fillStyle = '#020204'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.shadowColor = '#ff8a5c'; ctx.shadowBlur = 90; spark(ctx, W / 2, H / 2 - 30, 300 * smooth(0, 1, lt), lt * 0.5, 'rgba(224,122,85,.55)', 0.14); ctx.restore();
+    const gr = ctx.createLinearGradient(0, 200, 0, 470); gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.5, '#b9b4c8'); gr.addColorStop(0.52, '#6c6680'); gr.addColorStop(1, '#f2efe8');
+    ctx.font = '800 230px Unbounded, "Arial Black", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = gr; ctx.globalAlpha = smooth(0.2, 1.2, lt); ctx.fillText('OPUS 6', W / 2, 450);
+    const sx = ((lt * 500) % 2200) - 500; const sh = ctx.createLinearGradient(sx, 0, sx + 200, 0); sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.5, 'rgba(255,255,255,.8)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = sh; ctx.fillText('OPUS 6', W / 2, 450); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    if (lt > 1.5) T(ctx, 'ships when it ships™', W / 2, 560, '700 36px "IBM Plex Mono", Menlo, monospace', '#e07a55', 'center');
+    if (lt > 3) T(ctx, 'it has read this keynote. it has notes.', W / 2, 620, '500 26px Archivo, Arial, sans-serif', 'rgba(236,232,225,.7)', 'center');
+    ctx.textAlign = 'left';
+  },
+  end(ctx, lt) {
+    bg(ctx, '#07060d', '#20123a');
+    spark(ctx, W / 2, 230, 110, lt * 0.2, '#e07a55');
+    T(ctx, 'Thank you.', W / 2, 470, '800 96px Unbounded, "Arial Black", sans-serif', '#ece8e1', 'center');
+    T(ctx, 'Go build something.', W / 2, 550, '600 34px Archivo, Arial, sans-serif', 'rgba(236,232,225,.7)', 'center');
+    T(ctx, '#DevDay2026', W / 2, 640, '600 26px "IBM Plex Mono", Menlo, monospace', '#e07a55', 'center');
+  },
+};
+let lastSlideDraw = -1;
+function drawSlide(Tn) {
+  const c = lastAt(Tn, 'slide'); if (!c) return;
+  const lt = Tn - c.t;
+  if (Math.abs(Tn - lastSlideDraw) < 1 / 30 && lastSlideDraw >= 0) return;
+  lastSlideDraw = Tn;
+  sctx.save(); SLIDES[c.slide](sctx, lt); sctx.restore();
+  // transition flash
+  if (lt < 0.25 && c.slide !== 'black') { sctx.fillStyle = `rgba(255,255,255,${0.5 * (1 - lt / 0.25)})`; sctx.fillRect(0, 0, W, H); }
+  slideTex.needsUpdate = true;
+}
+
+// ---------- camera shots ----------
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const SHOTS = {
+  lowwide: (u) => ({ p: V(6 - u * 0.12, 2.2, 21 - u * 0.1), l: V(0, 4.2, 0), f: 48 }),
+  wide: (u) => ({ p: V(0, 7.5 - u * 0.06, 30 - u * 0.35), l: V(0, 4.8, -1), f: 42 }),
+  crane: (u) => { const a = -0.7 + u * 0.09; return { p: V(Math.sin(a) * 20, 10.5 + Math.sin(u * 0.4) * 1.5, 6 + Math.cos(a) * 14), l: V(0, 4.2, 0), f: 40 }; },
+  mid: (u) => ({ p: V(3.4 - u * 0.08, 3.4, 12.5), l: V(1.2, 3.1, 1.2), f: 30 }),
+  close: (u) => ({ p: V(1.1 + Math.sin(u * 0.25) * 0.4, 3.6, 7.2), l: V(0.2, 3.35, 1.3), f: 30, shake: 1 }),
+  screen: (u) => ({ p: V(0, WALL_Y - 0.4, 15.5 - u * 0.1), l: V(0, WALL_Y, -4.6), f: 34 }),
+  audience: (u) => ({ p: V(-5 + u * 0.15, 2.6, 3.4), l: V(2, 2.3, 14), f: 46, shake: 0.6 }),
+  side: (u) => ({ p: V(-8.5 + u * 0.2, 3.1, 4.8), l: V(0, 3.2, 1.3), f: 32 }),
+};
+function shake(t, amt) { return V(Math.sin(t * 1.3) + 0.5 * Math.sin(t * 3.1 + 1), Math.sin(t * 1.7 + 2) + 0.4 * Math.sin(t * 2.9), 0).multiplyScalar(0.018 * amt); }
+
+// ---------- audio ----------
+const audio = { ctx: null, master: null, muted: false };
+function initAudio() {
+  if (audio.ctx) return;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  audio.ctx = ctx;
+  const master = ctx.createGain(); master.gain.value = 0.9;
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+  master.connect(comp).connect(ctx.destination); audio.master = master;
+  // hall reverb
+  const len = ctx.sampleRate * 2.8, ir = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+  const verb = ctx.createConvolver(); verb.buffer = ir; const verbOut = ctx.createGain(); verbOut.gain.value = 0.55; verb.connect(verbOut).connect(master); audio.verb = verb;
+  // noise buffers
+  const n = ctx.sampleRate * 3; audio.white = ctx.createBuffer(1, n, ctx.sampleRate); const w = audio.white.getChannelData(0); for (let i = 0; i < n; i++) w[i] = Math.random() * 2 - 1;
+  audio.brown = ctx.createBuffer(1, n, ctx.sampleRate); const b = audio.brown.getChannelData(0); let last = 0; for (let i = 0; i < n; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; b[i] = last * 3.5; }
+  // applause texture: thousands of tiny hand claps
+  const an = ctx.sampleRate * 5; audio.claps = ctx.createBuffer(2, an, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = audio.claps.getChannelData(ch); for (let k = 0; k < 2600; k++) { const st = Math.floor(Math.random() * (an - 2000)), L = 300 + Math.random() * 900, amp = 0.2 + Math.random() * 0.8, tone = Math.random(); let lp = 0; for (let i = 0; i < L; i++) { const x = Math.random() * 2 - 1; lp = lp + (x - lp) * (0.35 + tone * 0.5); d[st + i] += lp * amp * Math.exp(-i / (L * 0.22)); } } }
+  // crowd bed
+  const bed = ctx.createBufferSource(); bed.buffer = audio.brown; bed.loop = true;
+  const bedF = ctx.createBiquadFilter(); bedF.type = 'bandpass'; bedF.frequency.value = 420; bedF.Q.value = 0.6;
+  audio.bedGain = ctx.createGain(); audio.bedGain.gain.value = 0;
+  bed.connect(bedF).connect(audio.bedGain); audio.bedGain.connect(master); audio.bedGain.connect(verb); bed.start();
+  const chat = ctx.createBufferSource(); chat.buffer = audio.white; chat.loop = true;
+  const chatF = ctx.createBiquadFilter(); chatF.type = 'bandpass'; chatF.frequency.value = 1100; chatF.Q.value = 1.8;
+  audio.chatGain = ctx.createGain(); audio.chatGain.gain.value = 0;
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 3.3; const lfoG = ctx.createGain(); lfoG.gain.value = 0.35; lfo.connect(lfoG).connect(audio.chatGain.gain); lfo.start();
+  chat.connect(chatF).connect(audio.chatGain).connect(verb); audio.chatGain.connect(master); chat.start();
+  // music bus
+  audio.music = ctx.createGain(); audio.music.gain.value = 0; audio.musicLP = ctx.createBiquadFilter(); audio.musicLP.type = 'lowpass'; audio.musicLP.frequency.value = 900;
+  audio.music.connect(audio.musicLP).connect(master); audio.musicLP.connect(verb);
+  audio.mode = 'off'; audio.nextBeat = 0; audio.beat = 0;
+}
+const at = (o = 0) => audio.ctx.currentTime + o;
+function env(g, t0, a, s, r, peak) { g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(peak, t0 + a); g.gain.setValueAtTime(peak, t0 + a + s); g.gain.exponentialRampToValueAtTime(0.0001, t0 + a + s + r); }
+function noiseSrc(buf = audio.white, loop = true) { const s = audio.ctx.createBufferSource(); s.buffer = buf; s.loop = loop; return s; }
+function out(node, wet = 0.4) { node.connect(audio.master); if (wet) { const g = audio.ctx.createGain(); g.gain.value = wet; node.connect(g).connect(audio.verb); } }
+const SFX = {
+  applause({ d = 4, v = 0.8, o = 0 }) { const t0 = at(o); const s = noiseSrc(audio.claps); s.playbackRate.value = 0.95 + Math.random() * 0.1; const hp = audio.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500; const g = audio.ctx.createGain(); env(g, t0, 0.5, d, 1.8, 0.9 * v); s.connect(hp).connect(g); out(g, 0.5); s.start(t0, Math.random() * 2); s.stop(t0 + d + 3); },
+  cheer({ d = 3, v = 0.8, o = 0 }) { const t0 = at(o); for (let k = 0; k < 10; k++) { const s = noiseSrc(); const bp = audio.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 7; const f = 700 + Math.random() * 900; bp.frequency.setValueAtTime(f, t0); bp.frequency.linearRampToValueAtTime(f * 1.35, t0 + 0.6); bp.frequency.linearRampToValueAtTime(f * 1.1, t0 + d); const g = audio.ctx.createGain(); env(g, t0 + Math.random() * 0.4, 0.35, d * 0.6, d * 0.5, 0.25 * v); s.connect(bp).connect(g); out(g, 0.6); s.start(t0); s.stop(t0 + d + 2); } SFX.applause({ d, v: v * 0.6, o }); },
+  laugh({ d = 3, o = 0 }) { const t0 = at(o); for (let k = 0; k < 16; k++) { const s = noiseSrc(); const bp = audio.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 9; bp.frequency.value = 450 + Math.random() * 700; const am = audio.ctx.createGain(); am.gain.value = 0; const lfo = audio.ctx.createOscillator(); lfo.frequency.value = 4 + Math.random() * 2.5; const lg = audio.ctx.createGain(); lg.gain.value = 0.5; lfo.connect(lg).connect(am.gain); const g = audio.ctx.createGain(); const st = t0 + Math.random() * 0.5; env(g, st, 0.15, d * (0.3 + Math.random() * 0.4), 0.9, 0.16); s.connect(bp).connect(am).connect(g); out(g, 0.6); s.start(st); lfo.start(st); s.stop(st + d + 1.5); lfo.stop(st + d + 1.5); } },
+  riser({ d = 3, o = 0 }) { const t0 = at(o); const s = noiseSrc(); const bp = audio.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3; bp.frequency.setValueAtTime(200, t0); bp.frequency.exponentialRampToValueAtTime(6000, t0 + d); const g = audio.ctx.createGain(); g.gain.setValueAtTime(0.001, t0); g.gain.exponentialRampToValueAtTime(0.5, t0 + d); g.gain.setValueAtTime(0.0001, t0 + d + 0.01); s.connect(bp).connect(g); out(g, 0.3); s.start(t0); s.stop(t0 + d + 0.1);
+    const o1 = audio.ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.setValueAtTime(80, t0); o1.frequency.exponentialRampToValueAtTime(640, t0 + d); const g2 = audio.ctx.createGain(); g2.gain.setValueAtTime(0.001, t0); g2.gain.exponentialRampToValueAtTime(0.12, t0 + d); g2.gain.setValueAtTime(0.0001, t0 + d + 0.01); const lp = audio.ctx.createBiquadFilter(); lp.frequency.value = 1500; o1.connect(lp).connect(g2); out(g2, 0.2); o1.start(t0); o1.stop(t0 + d + 0.1); },
+  drop({ o = 0 }) { const t0 = at(o); const os = audio.ctx.createOscillator(); os.frequency.setValueAtTime(120, t0); os.frequency.exponentialRampToValueAtTime(32, t0 + 1.6); const sh = audio.ctx.createWaveShaper(); const c = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 128 - 1; c[i] = Math.tanh(x * 3); } sh.curve = c; const g = audio.ctx.createGain(); env(g, t0, 0.01, 0.3, 2.2, 0.9); os.connect(sh).connect(g); out(g, 0.3); os.start(t0); os.stop(t0 + 3);
+    const s = noiseSrc(); const hp = audio.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3000; const g2 = audio.ctx.createGain(); env(g2, t0, 0.005, 0.05, 2.4, 0.35); s.connect(hp).connect(g2); out(g2, 0.8); s.start(t0); s.stop(t0 + 3); },
+  whoosh({ o = 0 }) { const t0 = at(o); const s = noiseSrc(); const bp = audio.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2; bp.frequency.setValueAtTime(300, t0); bp.frequency.exponentialRampToValueAtTime(3500, t0 + 0.35); const g = audio.ctx.createGain(); env(g, t0, 0.15, 0.05, 0.3, 0.18); s.connect(bp).connect(g); out(g, 0.4); s.start(t0); s.stop(t0 + 0.8); },
+  materialize({ o = 0 }) { const t0 = at(o); [523, 659, 784, 1046, 1318].forEach((f, i) => { const os = audio.ctx.createOscillator(); os.type = 'triangle'; os.frequency.value = f; const g = audio.ctx.createGain(); env(g, t0 + i * 0.07, 0.02, 0.1, 1.6, 0.09); os.connect(g); out(g, 0.8); os.start(t0 + i * 0.07); os.stop(t0 + 2.5); }); SFX.whoosh({ o }); },
+  ding({ o = 0 }) { const t0 = at(o); [880, 1320].forEach((f, i) => { const os = audio.ctx.createOscillator(); os.frequency.value = f; const g = audio.ctx.createGain(); env(g, t0 + i * 0.12, 0.005, 0.02, 0.6, 0.15); os.connect(g); out(g, 0.5); os.start(t0 + i * 0.12); os.stop(t0 + 1.2); }); },
+  click({ o = 0 }) { const t0 = at(o); const s = noiseSrc(); const g = audio.ctx.createGain(); env(g, t0, 0.001, 0.005, 0.03, 0.4); s.connect(g); out(g, 0.2); s.start(t0); s.stop(t0 + 0.1); },
+  cough({ o = 0 }) { const t0 = at(o); [0, 0.28].forEach((dt) => { const s = noiseSrc(); const bp = audio.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = 1.2; const g = audio.ctx.createGain(); env(g, t0 + dt, 0.01, 0.06, 0.18, 0.25); s.connect(bp).connect(g); out(g, 0.7); s.start(t0 + dt); s.stop(t0 + dt + 0.5); }); },
+  feedback({ o = 0 }) { const t0 = at(o); const os = audio.ctx.createOscillator(); os.frequency.setValueAtTime(2750, t0); os.frequency.linearRampToValueAtTime(2950, t0 + 1.1); const vib = audio.ctx.createOscillator(); vib.frequency.value = 6; const vg = audio.ctx.createGain(); vg.gain.value = 18; vib.connect(vg).connect(os.frequency); const g = audio.ctx.createGain(); g.gain.setValueAtTime(0.001, t0); g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.9); g.gain.setValueAtTime(0.0001, t0 + 1.15); os.connect(g); out(g, 0.3); os.start(t0); vib.start(t0); os.stop(t0 + 1.3); vib.stop(t0 + 1.3); },
+  buzz({ o = 0 }) { const t0 = at(o); const os = audio.ctx.createOscillator(); os.type = 'square'; os.frequency.value = 98; const lp = audio.ctx.createBiquadFilter(); lp.frequency.value = 900; const g = audio.ctx.createGain(); env(g, t0 + 1, 0.01, 0.4, 0.1, 0.12); os.connect(lp).connect(g); out(g, 0.2); os.start(t0 + 1); os.stop(t0 + 1.8); },
+  gasp({ o = 0 }) { const t0 = at(o); const s = noiseSrc(); const bp = audio.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.5; bp.frequency.setValueAtTime(1200, t0); bp.frequency.linearRampToValueAtTime(2400, t0 + 0.5); const g = audio.ctx.createGain(); env(g, t0, 0.25, 0.1, 0.5, 0.3); s.connect(bp).connect(g); out(g, 0.7); s.start(t0); s.stop(t0 + 1.2); },
+  heartbeat({ d = 6, o = 0 }) { const t0 = at(o); for (let bt = 0; bt < d; bt += 0.95) { [0, 0.22].forEach((dt, k) => { const os = audio.ctx.createOscillator(); os.frequency.setValueAtTime(70, t0 + bt + dt); os.frequency.exponentialRampToValueAtTime(38, t0 + bt + dt + 0.18); const g = audio.ctx.createGain(); env(g, t0 + bt + dt, 0.005, 0.03, 0.25, k ? 0.35 : 0.5); os.connect(g); out(g, 0.1); os.start(t0 + bt + dt); os.stop(t0 + bt + dt + 0.4); }); } },
+  music({ m }) { audio.mode = m; if (m !== 'off' && audio.nextBeat < at()) { audio.nextBeat = at(0.05); } },
+};
+
+// music sequencer: pads + kick + hats, lookahead scheduling
+const CHORDS = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
+const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+const MUSIC_LEVEL = { off: 0, lofi: 0.28, intro: 0.55, finale: 0.6, outro: 0.4 };
+function musicTick() {
+  if (!audio.ctx || !playing) return;
+  const target = MUSIC_LEVEL[audio.mode] || 0;
+  audio.music.gain.setTargetAtTime(target, at(), 0.6);
+  audio.musicLP.frequency.setTargetAtTime(audio.mode === 'lofi' ? 700 : audio.mode === 'finale' ? 5000 : 2200, at(), 0.8);
+  if (target === 0) return;
+  const spb = 60 / (audio.mode === 'lofi' ? 84 : 118);
+  while (audio.nextBeat < at(0.15)) {
+    const t0 = audio.nextBeat, b = audio.beat;
+    if (b % 8 === 0) { CHORDS[(b / 8) % 4].forEach((m) => [-7, 0, 7].forEach((det) => { const os = audio.ctx.createOscillator(); os.type = 'sawtooth'; os.frequency.value = mtof(m); os.detune.value = det; const g = audio.ctx.createGain(); env(g, t0, spb * 1.5, spb * 5, spb * 1.5, 0.03); os.connect(g).connect(audio.music); os.start(t0); os.stop(t0 + spb * 8.2); }));
+      const bo = audio.ctx.createOscillator(); bo.type = 'triangle'; bo.frequency.value = mtof(CHORDS[(b / 8) % 4][0] - 24); const bg2 = audio.ctx.createGain(); env(bg2, t0, 0.02, spb * 6, spb, 0.22); bo.connect(bg2).connect(audio.music); bo.start(t0); bo.stop(t0 + spb * 8); }
+    if (audio.mode !== 'lofi' || b % 2 === 0) { const k = audio.ctx.createOscillator(); k.frequency.setValueAtTime(150, t0); k.frequency.exponentialRampToValueAtTime(42, t0 + 0.15); const kg = audio.ctx.createGain(); env(kg, t0, 0.002, 0.02, 0.28, audio.mode === 'lofi' ? 0.35 : 0.8); k.connect(kg).connect(audio.music); k.start(t0); k.stop(t0 + 0.4); }
+    const h = noiseSrc(audio.white, false); const hp = audio.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000; const hg = audio.ctx.createGain(); env(hg, t0 + spb / 2, 0.001, 0.01, 0.05, 0.12); h.connect(hp).connect(hg).connect(audio.music); h.start(t0 + spb / 2, Math.random()); h.stop(t0 + spb / 2 + 0.1);
+    audio.nextBeat += spb; audio.beat++;
+  }
+}
+
+// ---------- voice ----------
+const voice = { host: null, vo: null, speaking: false, pulse: 0 };
+function pickVoices() {
+  const vs = (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^en/i.test(v.lang));
+  const find = (names) => { for (const n of names) { const v = vs.find((x) => x.name.includes(n)); if (v) return v; } return null; };
+  voice.host = find(['Samantha', 'Google US English', 'Microsoft Aria', 'Microsoft Jenny', 'Ava', 'Allison', 'Karen']) || vs[0] || null;
+  voice.vo = find(['Daniel', 'Google UK English Male', 'Microsoft Guy', 'Microsoft Ryan', 'Fred', 'Alex', 'Arthur']) || voice.host;
+}
+if (window.speechSynthesis) { pickVoices(); speechSynthesis.onvoiceschanged = pickVoices; }
+function speak(text, who) {
+  if (!window.speechSynthesis || audio.muted) return;
+  const u = new SpeechSynthesisUtterance(text.replace(/2019/g, 'twenty nineteen'));
+  u.voice = who === 'vo' ? voice.vo : voice.host; u.rate = who === 'vo' ? 0.9 : 1.08; u.pitch = who === 'vo' ? 0.55 : 1.05; u.volume = 1;
+  if (who !== 'vo') { u.onstart = () => { voice.speaking = true; }; u.onend = () => { voice.speaking = false; }; u.onboundary = () => { voice.pulse = 1; }; }
+  speechSynthesis.speak(u);
+}
+
+// ---------- chat + HUD ----------
+const chatEl = $('#chat');
+const NAMECOL = ['#ff8a5c', '#8aa0ff', '#7ee06a', '#ffd76a', '#ff5fa2', '#5fd4ff', '#c79bff', '#ffb36b'];
+const colFor = (u) => NAMECOL[[...u].reduce((a, c) => a + c.charCodeAt(0), 0) % NAMECOL.length];
+const USERS = ['tokenmaxxer', 'segfault_sally', 'rm_rf_ron', 'vibe_coder_99', 'promptgoblin', 'ctx_window_enjoyer', 'nullpointer_nat', 'gpu_poor', 'lgtm_larry', 'yaml_hater', 'senior_intern', 'ten_x_ish', 'hallucinated_hank', 'merge_conflict_mo', '404_brain', 'kernel_panik', 'tabs_not_spaces', 'dev_null_dana'];
+const CHATTER = ['RTX ON 🔥', 'is this real or rendered', 'the reflections on that floor 😳', 'chat is this real', 'W stream', 'lag?', 'hi from the future', 'opus 6 when', 'ship it', 'lgtm', 'can it center a div yet', '😂😂😂', '👏👏👏', 'clip that', 'is the audience generated too', 'sound on guys', 'the lighting is insane', 'hi mom', 'real ones remember claude 2', 'vibes: immaculate', 'where is the one more thing', 'my PM is watching this rn', 'KEKW', 'who let the model cook', 'context window diff', 'bro has no hands and still presents better than me', 'the moving heads 😍', 'is that bloom or am I crying', 'first time watching a keynote with no humans on stage'];
+function addChat(user, text, kind) {
+  const d = document.createElement('div'); d.className = 'msg' + (kind === 'mod' ? ' mod' : '');
+  const b = document.createElement('b'); b.style.color = kind === 'mod' ? 'var(--spark)' : colFor(user); b.textContent = (kind === 'mod' ? '🛡 ' : '') + user;
+  d.append(b, document.createTextNode(text)); chatEl.append(d);
+  while (chatEl.children.length > 40) chatEl.firstChild.remove();
+}
+function react(emoji) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const s = document.createElement('span'); s.textContent = emoji; s.style.left = (Math.random() * 70) + '%'; s.style.setProperty('--dx', ((Math.random() - 0.5) * 40) + 'px');
+  $('#reactions').append(s); setTimeout(() => s.remove(), 2700);
+}
+let toastTimer = 0;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2200); }
+
+function hype(Tn) {
+  let h = 0.25;
+  for (const c of SCRIPT) { if (!c.sfx) continue; for (const s of c.sfx) { const st = c.t + (s.o || 0), d = s.d || 1.5; if (Tn >= st && Tn < st + d + 1) h = Math.max(h, s.n === 'applause' || s.n === 'cheer' ? 0.9 * (s.v || 0.8) : s.n === 'laugh' ? 0.7 : h); } }
+  if (Tn >= T_GLITCH && Tn < T_GLITCH + 4) h = 1;
+  if (Tn >= T_FIN && Tn < T_FIN + 10) h = 1;
+  return h;
+}
+function viewers(Tn) { return Math.round(48211 + Tn * 2200 + smooth(T_GLITCH, T_GLITCH + 5, Tn) * 180000 + smooth(T_FIN, T_FIN + 6, Tn) * 1650000 + Math.sin(Tn * 0.7) * 400); }
+
+function captionAt(Tn) {
+  for (let i = SCRIPT.length - 1; i >= 0; i--) {
+    const c = SCRIPT[i]; if (c.t > Tn) continue;
+    const text = c.say || c.vo || c.cap; if (!text) continue;
+    const next = SCRIPT.find((n) => n.t > c.t && (n.say || n.vo || n.cap));
+    const dur = c.cap && !c.say && !c.vo ? 2.4 : Math.min(next ? next.t - c.t : 99, Math.max(2.5, text.length / 13));
+    return Tn < c.t + dur ? { text, tag: !!(c.cap && !c.say && !c.vo), who: c.vo ? 'vo' : 'host' } : null;
+  }
+  return null;
+}
+
+// ---------- playback ----------
+let tNow = 0, playing = false, started = false, lastFrame = performance.now(), ccOn = true, nextChatter = 0;
+function fire(c) {
+  if (c.say) speak(c.say, 'host');
+  if (c.vo) speak(c.vo, 'vo');
+  if (c.sfx && audio.ctx) for (const s of c.sfx) SFX[s.n] && SFX[s.n](s);
+  if (c.chat) c.chat.forEach(([u, m, k], i) => setTimeout(() => addChat(u, m, k), 250 + i * 650));
+  if (c.cap === '[laughter]') for (let i = 0; i < 6; i++) setTimeout(() => react('😂'), i * 250);
+  if (c.sfx && c.sfx.some((s) => s.n === 'applause')) for (let i = 0; i < 6; i++) setTimeout(() => react('👏'), 600 + i * 300);
+  if (c.event === 'glitch') { $('#buffer').hidden = false; $('#quality').textContent = '240p'; setTimeout(() => { $('#buffer').hidden = true; $('#quality').textContent = '2160p60 HDR'; }, 1500); for (let i = 0; i < 8; i++) setTimeout(() => react('💀'), 400 + i * 200); }
+  if (c.event === 'finale') for (let i = 0; i < 16; i++) setTimeout(() => react(['🔥', '🤯', '👏', '🚀'][i % 4]), i * 180);
+}
+function setPlaying(p) {
+  playing = p; $('#play').textContent = p ? '❚❚' : '▶'; $('#play').setAttribute('aria-label', p ? 'Pause' : 'Play');
+  if (audio.ctx) { p ? audio.ctx.resume() : audio.ctx.suspend(); }
+  if (window.speechSynthesis) { p ? speechSynthesis.resume() : speechSynthesis.pause(); }
+  if (p) audio.nextBeat = 0;
+}
+function seek(t) {
+  tNow = clamp(t, 0, DURATION - 0.01); if (window.speechSynthesis) speechSynthesis.cancel(); voice.speaking = false;
+  let mode = 'off'; for (const c of SCRIPT) if (c.t <= tNow && c.sfx) for (const s of c.sfx) if (s.n === 'music') mode = s.m;
+  if (audio.ctx) SFX.music({ m: mode });
+  $('#ended').hidden = true; lastSlideDraw = -1;
+}
+function start() {
+  initAudio(); started = true; $('#gate').hidden = true; seek(0); SFX.music({ m: 'lofi' }); setPlaying(true);
+  // the first cue fires on the next frame crossing
+  fire(SCRIPT[0]);
+}
+$('#join').addEventListener('click', start);
+$('#replay').addEventListener('click', () => { seek(0); fire(SCRIPT[0]); setPlaying(true); });
+$('#play').addEventListener('click', () => { if (!started) return start(); if (tNow >= DURATION - 0.02) seek(0); setPlaying(!playing); });
+$('#seek').addEventListener('click', (e) => { if (!started) return; const r = e.currentTarget.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * DURATION); });
+function toggleCC() { ccOn = !ccOn; $('#cc-btn').setAttribute('aria-pressed', ccOn); }
+function toggleMute() { audio.muted = !audio.muted; $('#mute').setAttribute('aria-pressed', audio.muted); if (audio.master) audio.master.gain.value = audio.muted ? 0 : 0.9; if (audio.muted && window.speechSynthesis) speechSynthesis.cancel(); }
+function toggleRTX() {
+  rtx = !rtx; $('#rtx-btn').setAttribute('aria-pressed', rtx);
+  bloom.enabled = rtx; mirror.visible = rtx; shadowCatch.visible = rtx; flatFloor.visible = !rtx; dust.visible = rtx; heads.forEach((h) => { h.beam.visible = rtx; });
+  scene.fog = rtx ? fog : null; fx.uniforms.ca.value = rtx ? 0.0022 : 0; fx.uniforms.grain.value = rtx ? 0.05 : 0; fx.uniforms.vig.value = rtx ? 0.9 : 0;
+  renderer.toneMapping = rtx ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping;
+  $('#rtxbadge').textContent = rtx ? 'RTX ON' : 'RTX OFF'; $('#rtxbadge').classList.toggle('off', !rtx); $('#rtxoff').hidden = rtx;
+  toast(rtx ? 'RTX ON · path-traced vibes restored' : 'RTX OFF · welcome to the 2009 keynote');
+  resize();
+}
+function toggleFS() { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else stageEl.requestFullscreen?.().catch(() => toast('Fullscreen is not available here')); }
+$('#cc-btn').addEventListener('click', toggleCC); $('#rtx-btn').addEventListener('click', toggleRTX); $('#mute').addEventListener('click', toggleMute); $('#fs').addEventListener('click', toggleFS);
+window.addEventListener('keydown', (e) => {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  const k = e.key.toLowerCase();
+  if (k === ' ') { e.preventDefault(); $('#play').click(); }
+  else if (k === 'arrowright' && started) seek(tNow + 5); else if (k === 'arrowleft' && started) seek(tNow - 5);
+  else if (k === 'r') toggleRTX(); else if (k === 'c') toggleCC(); else if (k === 'm') toggleMute(); else if (k === 'f') toggleFS();
+});
+// chapter ticks on the seek bar
+for (const c of SCRIPT) if (c.slide && c.t > 0) { const u = document.createElement('u'); u.style.left = (c.t / DURATION * 100) + '%'; $('#seek').append(u); }
+const fmt = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+// ---------- per-frame scene state ----------
+const HOT = [new THREE.Color('#ffffff'), new THREE.Color('#e07a55'), new THREE.Color('#8aa0ff'), new THREE.Color('#ff5fa2'), new THREE.Color('#7ee06a'), new THREE.Color('#ffd76a')];
+let blinkAt = 2;
+function updateScene(Tn, dt, wall) {
+  const house = Tn < 8 ? 1 : lerp(1, 0.04, smooth(8, 10.5, Tn));
+  const darkK = Tn >= T_DARK && Tn < T_FIN ? smooth(T_DARK, T_DARK + 1.2, Tn) : 0;
+  const party = Tn >= T_FIN ? smooth(T_FIN, T_FIN + 0.3, Tn) * (1 - smooth(DURATION - 8, DURATION - 2, Tn) * 0.6) : 0;
+  hemi.intensity = 0.08 + house * 0.9;
+  houseLamps.forEach((p) => { p.intensity = house * 70; });
+  key.intensity = Tn < T_MAT - 1 ? 0 : 320 * (1 - darkK * 0.9) * smooth(T_MAT - 1, T_MAT + 0.5, Tn);
+  rim.intensity = 400 * (1 - darkK * 0.7);
+  columnMat.uniforms.t.value = wall; columnMat.uniforms.level.value = (0.35 + 0.65 * (1 - house)) * (1 - darkK * 0.9) + party * 0.6;
+  lip.material.color.copy(lipBase).multiplyScalar((1 - darkK * 0.85) * (1 + party * Math.max(0, Math.sin(wall * 12)) * 1.5));
+  wallLight.intensity = 30 * (1 - darkK) + party * 40;
+
+  // moving heads programs
+  heads.forEach((h) => {
+    let pan = 0, tilt = 0.25, col = HOT[1], I = 0.25, S = 180;
+    const side = h.x < 0 ? -1 : 1;
+    if (Tn < 8) { pan = Math.sin(wall * 0.3 + h.i) * 0.3; tilt = -0.35; col = HOT[2]; I = 0.12; S = 60; }
+    else if (Tn < 23) { pan = Math.sin(wall * 1.6 + h.i * 0.8) * 0.55; tilt = Math.sin(wall * 1.1 + h.i) * 0.45; col = HOT[h.i % 2 ? 0 : 1]; I = 0.45; S = 380; }
+    else { pan = -side * 0.22 + Math.sin(wall * 0.25 + h.i) * 0.08; tilt = 0.35 + Math.sin(wall * 0.2 + h.i * 2) * 0.1; col = h.i % 3 === 0 ? HOT[2] : HOT[1]; I = 0.22; S = 150; }
+    if (darkK > 0) { I *= 1 - darkK; S *= 1 - darkK; }
+    if (party > 0) { pan = Math.sin(wall * 2.2 + h.i * 1.3) * 0.7; tilt = Math.cos(wall * 1.7 + h.i) * 0.55; col = HOT[(h.i + Math.floor(wall * 2)) % HOT.length]; const strobe = Math.sin(wall * 18 + h.i) > 0.2 ? 1 : 0.25; I = 0.55 * strobe * party; S = 420 * strobe * party; }
+    h.g.rotation.z = pan; h.g.rotation.x = tilt;
+    h.beam.material.uniforms.uColor.value.copy(col); h.beam.material.uniforms.uI.value = I;
+    h.spot.color.copy(col); h.spot.intensity = S; h.lensMat.color.copy(col).multiplyScalar(1 + I * 8);
+  });
+
+  // presenter
+  const mk = Tn < T_MAT ? 0 : smooth(T_MAT, T_MAT + 0.9, Tn);
+  const overshoot = mk < 1 ? mk * (1 + Math.sin(mk * Math.PI) * 0.35) : 1;
+  const talking = voice.speaking || (!!captionAt(Tn) && captionAt(Tn).who === 'host' && !captionAt(Tn).tag);
+  voice.pulse *= Math.pow(0.02, dt);
+  const talkK = talking ? 0.5 + 0.5 * Math.abs(Math.sin(wall * 11)) : 0;
+  presenter.scale.setScalar(Math.max(0.0001, overshoot) * (1 + (talkK * 0.04) + voice.pulse * 0.05));
+  presenter.position.y = 3.3 + Math.sin(wall * 1.2) * 0.07;
+  const waiting = Tn > 91.5 && Tn < 97.5;
+  presenter.rotation.z = wall * (party > 0 ? 1.4 : 0.18) + (waiting ? Math.sin(wall * 3) * 0.1 : 0);
+  presenter.rotation.y = Math.sin(wall * 0.5) * 0.25;
+  rays.forEach((r, i) => { const s = 1 + Math.sin(wall * 3 + i * 1.7) * 0.05 + talkK * 0.12 * Math.sin(wall * 9 + i); r.m.scale.set(1, s, 1); r.m.position.y = 0.16 + r.L * s / 2; });
+  eyes.forEach((e) => { e.rotation.z = -presenter.rotation.z; });
+  if (wall > blinkAt) { blinkAt = wall + 2 + Math.random() * 3; }
+  const blink = wall > blinkAt - 0.12 ? 0.1 : 1; eyes.forEach((e) => { e.scale.y = blink; });
+  sparkMat.emissiveIntensity = 0.28 + talkK * 0.2 + party * 0.35 + (Tn >= T_GLITCH && Tn < T_GLITCH + 1 ? Math.random() : 0);
+  sparkGlow.intensity = mk * (3 + talkK * 2 + party * 5);
+  holoRing.material.color.copy(ORANGE).multiplyScalar(mk * (1.6 + Math.sin(wall * 4) * 0.6));
+  holoRing.scale.setScalar(1 + Math.sin(wall * 2) * 0.04);
+
+  // burst
+  const bt = Tn - T_MAT;
+  burstMat.opacity = bt > 0 && bt < 2 ? 1 - bt / 2 : 0;
+  if (burstMat.opacity > 0) { for (let i = 0; i < burstN; i++) { const v = burstVel[i]; burstPos[i * 3] = v.x * bt; burstPos[i * 3 + 1] = 3.3 + v.y * bt - 0.8 * bt * bt; burstPos[i * 3 + 2] = 1.3 + v.z * bt; } burstGeo.attributes.position.needsUpdate = true; }
+
+  // dust drift
+  dust.position.x = Math.sin(wall * 0.05) * 0.6; dust.position.y = Math.sin(wall * 0.07) * 0.3;
+
+  // audience
+  const hy = hype(Tn), stand = party;
+  const phonesOn = Tn >= T_DARK + 1 && Tn < T_FIN + 12;
+  people.forEach((p, i) => {
+    const bob = Math.max(0, Math.sin(wall * (6 + (i % 5)) + p.ph)) * 0.04 * (hy > 0.6 ? hy : 0) + stand * 0.22 + Math.sin(wall * 0.6 + p.ph) * 0.01;
+    tmpP.set(p.x, p.y + 0.62 * p.s + bob, p.z); tmpQ.setFromEuler(tmpE.set(0, 0, p.tilt * 0.5)); tmpS.setScalar(p.s);
+    tmpM.compose(tmpP, tmpQ, tmpS); bodies.setMatrixAt(i, tmpM);
+    tmpP.set(p.x + p.tilt * 0.2, p.y + 1.08 * p.s + bob, p.z); tmpM.compose(tmpP, tmpQ, tmpS); headsI.setMatrixAt(i, tmpM);
+    const ph = p.phone && (phonesOn || (party > 0 && i % 3 === 0));
+    tmpP.set(p.x + 0.12, p.y + (ph ? 1.35 : 0.5) * p.s + bob, p.z - 0.25); tmpS.setScalar(ph ? 1 : 0.0001); tmpM.compose(tmpP, tmpQ.identity(), tmpS); phones.setMatrixAt(i, tmpM);
+  });
+  bodies.instanceMatrix.needsUpdate = true; headsI.instanceMatrix.needsUpdate = true; phones.instanceMatrix.needsUpdate = true;
+
+  // confetti
+  const ct = Tn - T_FIN;
+  confetti.visible = ct > 0.2;
+  if (confetti.visible) {
+    confData.forEach((c, i) => {
+      const g = groundAt(c.x, c.z); const y = Math.max(g + 0.02, c.h - ct * c.v);
+      const landed = y <= g + 0.021;
+      tmpP.set(c.x + (landed ? 0 : Math.sin(ct * 1.3 + c.w) * 0.4), y, c.z);
+      tmpQ.setFromEuler(tmpE.set(landed ? -Math.PI / 2 : ct * c.sp + c.w, landed ? 0 : ct * c.sp * 0.7, c.w)); tmpS.setScalar(1);
+      tmpM.compose(tmpP, tmpQ, tmpS); confetti.setMatrixAt(i, tmpM);
+    });
+    confetti.instanceMatrix.needsUpdate = true;
+  }
+
+  // camera
+  const sc = lastAt(Tn, 'shot'); const u = Tn - sc.t; const pose = SHOTS[sc.shot](u);
+  camera.position.copy(pose.p); if (pose.shake) camera.position.add(shake(wall, pose.shake * (Tn >= T_GLITCH && Tn < T_GLITCH + 3 ? 4 : 1)));
+  camera.fov = pose.f; camera.updateProjectionMatrix(); camera.lookAt(pose.l);
+
+  // post
+  const g = Tn >= T_GLITCH && Tn < T_GLITCH + 1.6 ? 1 - smooth(T_GLITCH + 0.9, T_GLITCH + 1.6, Tn) : 0;
+  fx.uniforms.glitch.value = g; fx.uniforms.time.value = wall;
+  fx.uniforms.fade.value = Tn > DURATION - 2 ? smooth(DURATION, DURATION - 2, Tn) : 1;
+  bloom.strength = 0.7 + party * 0.4;
+}
+
+let hudTick = 0;
+function updateHUD(Tn, dt) {
+  hudTick += dt; if (hudTick > 0.2) { hudTick = 0; $('#viewers').textContent = viewers(Tn).toLocaleString('en-US') + ' watching'; }
+  $('#lower').classList.toggle('on', Tn > 23.5 && Tn < 32);
+  const cap = ccOn && captionAt(Tn);
+  const cc = $('#cc'); const key = cap ? cap.text : '';
+  if (cc.dataset.k !== key) { cc.dataset.k = key; cc.textContent = ''; if (cap) { const s = document.createElement('span'); if (cap.tag) s.className = 'tag'; s.textContent = (cap.who === 'vo' && !cap.tag ? 'ANNOUNCER: ' : '') + cap.text; cc.append(s); } }
+  $('#seekfill').style.width = (Tn / DURATION * 100) + '%';
+  $('#time').textContent = fmt(Tn) + ' / ' + fmt(DURATION);
+  $('#chatrate').textContent = hype(Tn) > 0.8 ? 'chat is going crazy' : 'slow mode off';
+}
+
+function frame(now) {
+  const dt = Math.min(0.1, (now - lastFrame) / 1000); lastFrame = now;
+  const wall = now / 1000;
+  if (playing) {
+    const prev = tNow; tNow = Math.min(DURATION, tNow + dt);
+    for (const c of SCRIPT) if (c.t > prev && c.t <= tNow) fire(c);
+    if (now > nextChatter) { const h = hype(tNow); nextChatter = now + (1600 - h * 1350) * (0.5 + Math.random()); addChat(USERS[Math.floor(Math.random() * USERS.length)], CHATTER[Math.floor(Math.random() * CHATTER.length)]); }
+    musicTick();
+    if (audio.bedGain) { const h = hype(tNow); const house = tNow < 8 ? 1 : 0.25; audio.bedGain.gain.setTargetAtTime(0.05 + house * 0.12 + h * 0.08, audio.ctx.currentTime, 0.4); audio.chatGain.gain.setTargetAtTime(house * 0.06, audio.ctx.currentTime, 0.5); }
+    if (tNow >= DURATION) { setPlaying(false); $('#ended').hidden = false; }
+  }
+  updateScene(tNow, dt, wall);
+  drawSlide(tNow);
+  updateHUD(tNow, dt);
+  composer.render(dt);
+  requestAnimationFrame(frame);
+}
+resize();
+document.fonts.ready.then(() => { lastSlideDraw = -1; });
+// idle preview behind the gate: a slow wide shot of the hall
+tNow = 2;
+requestAnimationFrame(frame);
+window.__devday = { seek: (t) => { seek(t); }, get t() { return tNow; } };
+</script>
