@@ -1,5 +1,5 @@
-<title>Mahoraga vs Itadori</title>
-<meta name="description" content="Stickman fan animation set in Tokyo. Part 1, Chapter 1: The Wheel Turns.">
+<title>Mahoraga vs Itadori Part 2</title>
+<meta name="description" content="Stickman fan animation set in Tokyo. Part 2, Chapter 2: Black Flash.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Zen+Kaku+Gothic+New:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
@@ -46,10 +46,10 @@
 <div class="wrap">
   <header>
     <h1><span class="m">MAHORAGA</span><span class="vs">vs</span><span class="y">ITADORI</span></h1>
-    <span class="tag">Part 1 · Chapter 1 · The Wheel Turns</span>
+    <span class="tag">Part 2 · Chapter 2 · Black Flash</span>
   </header>
 
-  <div class="stage"><canvas id="cv" width="1280" height="720" aria-label="Stickman animation: Itadori fights Mahoraga in Shibuya, Tokyo"></canvas></div>
+  <div class="stage"><canvas id="cv" width="1280" height="720" aria-label="Stickman animation: Itadori erases Mahoraga with Black Flash, and Mahoraga returns in a red Black Flash form"></canvas></div>
   <p class="sr" id="live" aria-live="polite"></p>
 
   <div class="bar">
@@ -61,7 +61,7 @@
 
   <ol class="chapters" id="chapters"></ol>
 
-  <p class="note">A stickman fan animation. A curtain falls over Shibuya, Itadori walks in alone, and the Ten Shadows' strongest shikigami rises to meet him. Every time Mahoraga's wheel turns, it adapts. All dialogue is original. Space bar plays and pauses.</p>
+  <p class="note">Chapter 2 picks up at the first Black Flash. Itadori chains them faster than the wheel can turn and erases Mahoraga. Then the fallen wheel clicks once more, and Mahoraga comes back built from Itadori's own technique. All dialogue is original. Space bar plays and pauses.</p>
 </div>
 
 <script>
@@ -72,7 +72,7 @@ const W = 1280, H = 720, GY = 600;
 const buf = document.createElement('canvas'); buf.width = W; buf.height = H;
 const c = buf.getContext('2d');
 
-const COL = { yuji: '#ff5a45', yujiLine: '#f3ede4', maho: '#e8c464', mahoLine: '#dcdaf0', paper: '#f3ede4', ink: '#070910', blue: '#5aa8ff' };
+const COL = { yuji: '#ff5a45', yujiLine: '#f3ede4', maho: '#e8c464', mahoLine: '#dcdaf0', paper: '#f3ede4', ink: '#070910', blue: '#5aa8ff', red: '#ff2a2a' };
 const F = { display: '"Reggae One", "Hiragino Sans", "Arial Black", Impact, sans-serif', body: '"Zen Kaku Gothic New", "Segoe UI", sans-serif', mono: '"JetBrains Mono", Menlo, monospace' };
 
 // ---------- helpers ----------
@@ -144,12 +144,16 @@ function stick(o) {
   if (air < 200 && gy <= GY) { c.fillStyle = `rgba(0,0,0,${.45 * (1 - air / 200)})`; c.beginPath(); c.ellipse(o.x, GY + 4, 46 * s, 8 * s, 0, 0, 7); c.fill(); }
   c.translate(o.x, gy - low - air);
   if (o.spin) { c.translate(0, -40 * s); c.rotate(o.spin * f); c.translate(0, 40 * s); }
-  const line = isM ? COL.mahoLine : COL.yujiLine;
-  const back = isM ? '#9f9cb8' : '#b9b2a8';
+  const line = o.flash ? '#1c0609' : isM ? COL.mahoLine : COL.yujiLine;
+  const back = o.flash ? '#0d0204' : isM ? '#9f9cb8' : '#b9b2a8';
   c.lineCap = 'round'; c.lineJoin = 'round';
-  c.shadowColor = hexA(isM ? COL.maho : COL.yuji, .75); c.shadowBlur = 16;
+  c.shadowColor = o.flash ? COL.red : hexA(isM ? COL.maho : COL.yuji, .75); c.shadowBlur = o.flash ? 26 : 16;
   const w = (isM ? 9 : 7) * s;
-  const poly = (...pts) => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]); c.stroke(); };
+  const poly = (...pts) => {
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]);
+    if (o.flash) { const lw = c.lineWidth, ss = c.strokeStyle; c.strokeStyle = '#ff3b3b'; c.lineWidth = lw + 5; c.stroke(); c.strokeStyle = ss; c.lineWidth = lw; } // red rim
+    c.stroke();
+  };
   // back limbs
   c.strokeStyle = back; c.lineWidth = w * .9;
   poly(S.hip, S.kB, S.fB); poly(S.sh, S.eB, S.hB);
@@ -168,7 +172,7 @@ function stick(o) {
   if (isM && o.blade !== false) {
     const dx = S.hF[0] - S.eF[0], dy = S.hF[1] - S.eF[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
     const tip = [S.hF[0] + ux * 92 * s, S.hF[1] + uy * 92 * s];
-    c.fillStyle = '#f4f2ff'; c.shadowColor = hexA('#ffffff', .9);
+    c.fillStyle = o.flash ? '#ff3b3b' : '#f4f2ff'; c.shadowColor = o.flash ? '#000' : hexA('#ffffff', .9);
     c.beginPath(); c.moveTo(S.eF[0] - uy * 4 * s, S.eF[1] + ux * 4 * s); c.lineTo(tip[0], tip[1]); c.lineTo(S.hF[0] + uy * 7 * s, S.hF[1] - ux * 7 * s); c.closePath(); c.fill();
   }
   const [hx, hy] = S.head, r = 15 * s;
@@ -178,9 +182,10 @@ function stick(o) {
     c.strokeStyle = COL.yuji; c.lineWidth = 6 * s; poly([S.neck[0] - 6 * s * f, S.neck[1] + 2], [S.neck[0] + 7 * s * f, S.neck[1] + 4]);
   } else { // head wings
     c.fillStyle = line;
-    for (const side of [-1, 1]) { c.beginPath(); c.moveTo(hx + side * 8 * s, hy - 4 * s); c.lineTo(hx + side * 30 * s, hy - 24 * s); c.lineTo(hx + side * 26 * s, hy - 2 * s); c.lineTo(hx + side * 12 * s, hy + 6 * s); c.closePath(); c.fill(); }
+    for (const side of [-1, 1]) { c.beginPath(); c.moveTo(hx + side * 8 * s, hy - 4 * s); c.lineTo(hx + side * 30 * s, hy - 24 * s); c.lineTo(hx + side * 26 * s, hy - 2 * s); c.lineTo(hx + side * 12 * s, hy + 6 * s); c.closePath(); c.fill(); if (o.flash) { c.strokeStyle = '#ff3b3b'; c.lineWidth = 2.5; c.stroke(); } }
   }
   c.fillStyle = line; c.beginPath(); c.arc(hx, hy, r, 0, 7); c.fill();
+  if (o.flash) { c.strokeStyle = '#ff3b3b'; c.lineWidth = 3; c.stroke(); }
   c.shadowBlur = 0;
   if (!isM) { // hair spikes and one eye
     c.fillStyle = '#f19aa0';
@@ -189,16 +194,22 @@ function stick(o) {
     c.lineTo(hx + r * f, hy - 2 * s); c.closePath(); c.fill();
     c.fillStyle = '#1a1414'; c.fillRect(hx + f * 5 * s - (f < 0 ? 5 * s : 0), hy - 1 * s, 5 * s, 2.5 * s);
   } else { // no eyes, just the eye-wings' seam
-    c.strokeStyle = '#6d6a86'; c.lineWidth = 2; poly([hx - 9 * s, hy - 2 * s], [hx + 9 * s, hy - 2 * s]);
+    c.strokeStyle = o.flash ? '#ff3b3b' : '#6d6a86'; c.lineWidth = o.flash ? 3 : 2; poly([hx - 9 * s, hy - 2 * s], [hx + 9 * s, hy - 2 * s]);
   }
-  if (isM) wheel(hx, hy - 58 * s, 24 * s, o.wheel ?? 0, 1);
+  if (o.flash) { // red Black Flash veins crackling along every limb
+    c.save(); c.shadowColor = COL.red; c.shadowBlur = 12; c.lineCap = 'round';
+    [[S.hip, S.neck], [S.hip, S.kF], [S.kF, S.fF], [S.hip, S.kB], [S.kB, S.fB], [S.sh, S.eF], [S.eF, S.hF], [S.sh, S.eB], [S.eB, S.hB]]
+      .forEach(([a, b], i) => bolt(a[0], a[1], b[0], b[1], '#ff3b3b', 2.2, 9 * s, (o.seed || 0) * 31 + i));
+    c.restore();
+  }
+  if (isM) wheel(hx, hy - 58 * s, 24 * s, o.wheel ?? 0, 1, o.flash ? COL.red : COL.maho);
   c.restore();
   return S;
 }
 // Mahoraga's eight-handled wheel
-function wheel(x, y, r, rot, a) {
+function wheel(x, y, r, rot, a, col = COL.maho) {
   c.save(); c.globalAlpha *= a; c.translate(x, y); c.rotate(rot);
-  c.strokeStyle = COL.maho; c.fillStyle = COL.maho; c.shadowColor = hexA(COL.maho, .9); c.shadowBlur = 18; c.lineCap = 'round';
+  c.strokeStyle = col; c.fillStyle = col; c.shadowColor = hexA(col, .9); c.shadowBlur = 18; c.lineCap = 'round';
   c.lineWidth = r * .16; c.beginPath(); c.arc(0, 0, r, 0, 7); c.stroke();
   c.beginPath(); c.arc(0, 0, r * .22, 0, 7); c.fill();
   c.lineWidth = r * .1;
@@ -401,206 +412,247 @@ function stamp(text, t) { // typewriter location card
   c.fillStyle = COL.paper; c.fillText(text.slice(0, n) + (n < text.length || Math.floor(t * 3) % 2 ? '▌' : ''), 50, 57); c.restore();
 }
 
+// ---------- chapter 2 effects ----------
+const toScreen = (cm, x, y) => [(x - cm.x) * cm.z + W / 2, (y - cm.y) * cm.z + H / 2];
+function redSpark(x, y, len, seed, n = 5) { // Mahoraga's version: red lightning with a black rim
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) {
+    const a = r() * 6.283, l = len * (.5 + r() * .7), ex = x + Math.cos(a) * l, ey = y + Math.sin(a) * l;
+    c.save(); c.lineCap = 'round'; c.shadowColor = '#000'; c.shadowBlur = 18;
+    bolt(x, y, ex, ey, '#050005', 11, 36, seed * 7 + i); c.shadowColor = COL.red; c.shadowBlur = 14; bolt(x, y, ex, ey, '#ff3b3b', 4, 36, seed * 7 + i);
+    c.restore();
+  }
+}
+// The impact frame every Black Flash gets: the world goes dark red, lightning tears out of the hit point.
+function flashFrame(t, t0, sx, sy, seed, { red = false, len = 520, dur = .45, n = 12 } = {}) {
+  const a = t - t0; if (a < 0 || a > dur) return;
+  c.save();
+  c.fillStyle = red ? `rgba(46,0,6,${.9 * (1 - seg(a, dur * .6, dur))})` : `rgba(20,0,0,${.88 * (1 - seg(a, dur * .6, dur))})`; c.fillRect(0, 0, W, H);
+  c.globalAlpha = 1 - seg(a, dur * .55, dur);
+  (red ? redSpark : blackSpark)(sx, sy, len, seed + Math.floor(a * 16), n);
+  c.restore();
+}
+// Mahoraga's body as loose ash. k = 0 is a whole body, k = 1 is fully scattered.
+const BODY_SEGS = S => [[S.hip, S.neck], [S.hip, S.kF], [S.kF, S.fF], [S.hip, S.kB], [S.kB, S.fB], [S.sh, S.eF], [S.eF, S.hF], [S.sh, S.eB], [S.eB, S.hB], [S.neck, S.head]];
+function ashBody(x, f, pose, k, seed, { reform = false } = {}) {
+  if (k <= 0) return;
+  const s = 1.75, S = skeleton(pose, s, f), oy = GY - Math.max(S.fF[1], S.fB[1]), r = rng(seed);
+  c.save(); c.shadowBlur = 8;
+  for (const [a, b] of BODY_SEGS(S)) for (let i = 0; i < 16; i++) {
+    const u = r(), px = x + lerp(a[0], b[0], u) + (r() - .5) * 14, py = oy + lerp(a[1], b[1], u) + (r() - .5) * 14;
+    const dx = (r() - .5) * 460 - f * 140, dy = -(160 + r() * 540), delay = r() * .35;
+    const e = easeOut(clamp((k - delay) / (1 - delay)));
+    const swirl = reform ? Math.sin(e * 5 + u * 9) * 60 * e : 0;
+    const sz = 3 + r() * 5, pick = r();
+    c.globalAlpha = (reform ? 1 - e * .5 : 1 - e * .8);
+    c.fillStyle = reform ? (pick < .45 ? '#ff3b3b' : '#1c0609') : (e < .12 ? COL.mahoLine : pick < .3 ? '#ff3b3b' : '#6d6a86');
+    c.shadowColor = c.fillStyle === '#ff3b3b' ? COL.red : 'transparent';
+    c.fillRect(px + dx * e + swirl, py + dy * e, sz, sz);
+  }
+  c.restore();
+}
+function chip(t, a, b, lines) { // mono readout card, top left
+  if (t < a || t > b) return;
+  c.save(); c.globalAlpha = seg(t, a, a + .3) * (1 - seg(t, b - .3, b)); c.font = `500 16px ${F.mono}`;
+  c.fillStyle = 'rgba(6,7,14,.78)'; c.fillRect(60, 60, 330, 26 + lines.length * 22);
+  lines.forEach(([txt, col], i) => { c.fillStyle = col; c.fillText(txt, 78, 84 + i * 22); });
+  c.restore();
+}
+function fallingAsh(t, alpha, seed = 4) {
+  if (alpha <= 0) return;
+  const r = rng(seed); c.save();
+  for (let i = 0; i < 70; i++) {
+    const x = (r() * W + Math.sin(t * .8 + i) * 30), y = ((r() * H + t * (30 + r() * 50)) % H), sz = 2 + r() * 3;
+    c.globalAlpha = alpha * (.3 + r() * .5); c.fillStyle = r() < .2 ? '#ff5a4a' : '#8f8aa3'; c.fillRect(x, y, sz, sz);
+  }
+  c.restore();
+}
+
 // ---------- scenes ----------
 const cam = (x = 640, y = 360, z = 1) => ({ x, y, z });
+const WR = 24 * 1.75; // Mahoraga's wheel radius
 const scenes = [
   { name: 'Title', dur: 3, draw(t) {
     c.fillStyle = '#05060b'; c.fillRect(0, 0, W, H);
-    wheel(W / 2, 300, 130, t * .25, .18);
-    const sw = easeOut(seg(t, .15, .55)); // red brush slash
-    c.save(); c.fillStyle = COL.yuji; c.globalAlpha = .9; c.beginPath(); c.moveTo(120, 380); c.lineTo(lerp(120, 1160, sw), lerp(380, 300, sw)); c.lineTo(lerp(120, 1160, sw), lerp(396, 316, sw)); c.lineTo(120, 404); c.closePath(); c.fill(); c.restore();
+    const red = seg(t, 2, 2.2);
+    wheel(W / 2, 300, 130, Math.PI / 4 + t * .25, .18, red > 0 ? COL.red : COL.maho);
+    const sw = easeOut(seg(t, .15, .55)); // black brush slash with a red edge
+    c.save(); c.shadowColor = COL.red; c.shadowBlur = 18; c.fillStyle = '#000'; c.strokeStyle = COL.red; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(120, 380); c.lineTo(lerp(120, 1160, sw), lerp(380, 300, sw)); c.lineTo(lerp(120, 1160, sw), lerp(404, 324, sw)); c.lineTo(120, 410); c.closePath(); c.fill(); c.stroke(); c.restore();
     const a = seg(t, .35, .9) * (1 - seg(t, 2.7, 3));
     c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.lineJoin = 'round'; c.lineWidth = 12; c.strokeStyle = '#000';
     c.font = `96px ${F.display}`; c.strokeText('MAHORAGA', W / 2, 250); c.fillStyle = COL.maho; c.fillText('MAHORAGA', W / 2, 250);
     c.font = `34px ${F.display}`; c.fillStyle = '#8f93ab'; c.fillText('vs', W / 2, 312);
     c.font = `96px ${F.display}`; c.strokeText('ITADORI', W / 2, 420); c.fillStyle = COL.yuji; c.fillText('ITADORI', W / 2, 420); c.restore();
     c.save(); c.globalAlpha = seg(t, 1, 1.5) * (1 - seg(t, 2.7, 3)); c.textAlign = 'center';
-    c.font = `28px ${F.display}`; c.fillStyle = COL.paper; c.fillText('第一話 · THE WHEEL TURNS', W / 2, 500);
-    c.font = `500 15px ${F.mono}`; c.fillStyle = '#8f93ab'; c.fillText('PART 1  ·  CHAPTER 1  ·  A STICKMAN FAN ANIMATION', W / 2, 540); c.restore();
+    c.font = `28px ${F.display}`; c.fillStyle = COL.paper; c.fillText('第二話 · BLACK FLASH', W / 2, 500);
+    c.font = `500 15px ${F.mono}`; c.fillStyle = '#8f93ab'; c.fillText('PART 2  ·  CHAPTER 2  ·  A STICKMAN FAN ANIMATION', W / 2, 540); c.restore();
+    flashAt(t, 2.2, COL.red, .5, .3);
   }},
-  { name: 'Curtain over Shibuya', dur: 4, draw(t) {
-    const cm = cam(lerp(420, 860, ease(t / 4)));
-    sky(0);
-    withCam(cm, () => city(cm));
-    // the curtain pours over the whole frame
-    const v = ease(seg(t, .6, 3.6));
-    c.save(); c.globalAlpha = .75; drawVeilFront(v); c.restore();
-    stamp('SHIBUYA, TOKYO  ·  23:47', t);
-    dialogue(t, [
-      [.4, 2.1, 'nar', 'Shibuya, Tokyo. 11:47 PM. A curtain falls over the city.'],
-      [2.1, 4, 'nar', 'Inside it, something is waiting to be summoned.'],
-    ]);
-  }},
-  { name: 'Itadori arrives', dur: 4, draw(t) {
-    const cm = cam(560, lerp(330, 360, seg(t, .6, 1)), lerp(1, 1.12, ease(seg(t, .7, 3))));
+  { name: 'Three Black Flashes', dur: 6, draw(t) {
+    const follow = ease(seg(t, 3.6, 4.3));
+    const cm = cam(lerp(720, 960, follow), 350, 1);
     nightSky();
-    const land = .7, fall = easeIn(seg(t, 0, land));
-    impact(t, land, 16);
+    const hits = [.3, 1.9, 3.6];
+    // Itadori
+    let yx = 660, yp = P.guard;
+    if (t < .3) yp = mix(P.charge, P.punch, ease(seg(t, .2, .3)));
+    else if (t < 1.4) yp = mix(P.punch, P.guard, ease(seg(t, .6, .9)));
+    else if (t < 1.9) { yx = lerp(660, 760, ease(seg(t, 1.4, 1.75))); yp = t < 1.75 ? runPose(t * 24) : mix(P.guard, P.kick, ease(seg(t, 1.75, 1.9))); }
+    else if (t < 3.0) { yx = 760; yp = mix(P.kick, P.guard, ease(seg(t, 2.2, 2.6))); }
+    else if (t < 3.6) { yx = lerp(760, 880, ease(seg(t, 3.4, 3.6))); yp = t < 3.4 ? mix(P.guard, P.charge, ease(seg(t, 3, 3.25))) : mix(P.charge, P.punch2, ease(seg(t, 3.5, 3.6))); }
+    else { yx = 880; yp = mix(P.punch2, P.guard, ease(seg(t, 4, 4.5))); }
+    // Mahoraga: pushed further back with every hit; the wheel shudders but never gets a turn in
+    let mx = 780, mp = P.mHurt, mAir = 0, mSpin = 0;
+    if (t >= .3 && t < 1.9) { mx = lerp(780, 860, easeOut(seg(t, .3, .6))); mp = mix(P.mHurt, P.mIdle, ease(seg(t, .8, 1.4))); }
+    else if (t >= 1.9 && t < 3.6) { mx = lerp(860, 980, easeOut(seg(t, 1.9, 2.3))); mp = mix(P.mHurt, P.mIdle, ease(seg(t, 2.4, 3.0))); }
+    else if (t >= 3.6) { const fl = seg(t, 3.6, 4.1); mx = lerp(980, 1300, easeOut(fl)); mp = P.mHurt; mAir = Math.sin(fl * Math.PI) * 110; mSpin = -fl * .7; }
+    const count = hits.filter(h => t >= h).length;
+    const shud = hits.reduce((v, h) => v + (t >= h ? Math.exp(-(t - h) * 8) : 0), 0);
+    const wr = Math.PI / 4 + Math.sin(t * 60) * .06 * shud;
+    hits.forEach((h, i) => impact(t, h, i === 2 ? 40 : 28));
+    impact(t, 4.1, 20);
     withCam(cm, () => {
-      city(cm, { cracks: t >= land ? 480 : 0 });
-      dust(t, land, 480, GY, 3);
-      const pose = t < land ? P.fly : t < 1.2 ? P.crouch : mix(P.crouch, P.guard, ease(seg(t, 1.2, 1.6)));
-      stick({ who: 'yuji', x: 480, f: 1, pose, air: (1 - fall) * 700 });
-      burstAt(t, land, 480, GY - 6, '#cfc8e8', 14, 2, 420);
-    });
-    speedLines(t, t < land ? .35 : 0, 1, 9);
-    dialogue(t, [[1.5, 4, 'yuji', 'All this cursed energy... it\'s coming from one place.']]);
-  }},
-  { name: 'The summoning', dur: 4.5, draw(t) {
-    const cm = cam(680, 330, 1);
-    nightSky();
-    const rise = ease(seg(t, .9, 2.6));
-    impact(t, 2.6, 18); flashAt(t, 2.6, '#f4e2a8', .8, .4);
-    impact(t, .9 + Math.floor(seg(t, .9, 2.6) * 8) * .21, 3);
-    withCam(cm, () => {
-      city(cm, { cracks: 480 });
-      stick({ who: 'yuji', x: 480, f: 1, pose: P.guard });
-      // shadow pool
-      const pw = lerp(0, 280, easeOut(seg(t, 0, .8))) * (1 - seg(t, 3, 4) * .6);
-      if (pw > 0) { c.save(); c.fillStyle = '#020104'; c.shadowColor = '#8d6bff'; c.shadowBlur = 24; c.beginPath(); c.ellipse(900, GY + 10, pw / 2, pw / 9, 0, 0, 7); c.fill(); c.restore(); }
-      c.save(); c.beginPath(); c.rect(-3000, -3000, 8000, 3000 + GY + 8); c.clip();
-      if (t > .9) stick({ who: 'maho', x: 900, f: -1, pose: P.mIdle, gy: GY + (1 - rise) * 440, wheel: 0 });
-      c.restore();
-      if (t > .9 && t < 2.8) { const r = rng(Math.floor(t * 20)); c.save(); c.strokeStyle = 'rgba(141,107,255,.6)'; c.lineWidth = 2; for (let i = 0; i < 6; i++) { const x = 900 + (r() - .5) * pw * .9; ln(x, GY, x + (r() - .5) * 10, GY - 40 - r() * 120); } c.restore(); }
-    });
-    big('DIVINE GENERAL MAHORAGA', '八握剣異戒神将魔虚羅', seg(t, 2.7, 3) * (1 - seg(t, 4.1, 4.5)), COL.maho, 150, 60);
-    dialogue(t, [[3.2, 4.5, 'yuji', '...Okay. That\'s big.']]);
-  }},
-  { name: 'Divergent Fist', dur: 5.5, draw(t) {
-    const follow = ease(seg(t, 3.1, 3.9));
-    const cm = cam(lerp(700, 900, follow), 340, lerp(1.05, 1, follow));
-    nightSky();
-    // Itadori: dash, six-hit combo, wind-up, divergent fist
-    let yx, yp;
-    if (t < .5) { yx = lerp(480, 760, ease(seg(t, 0, .5))); yp = runPose(t * 22); }
-    else if (t < 2.3) {
-      const b = Math.floor((t - .5) / .3), bt = ((t - .5) % .3) / .3;
-      const strike = [P.punch, P.punch2, P.kick][b % 3];
-      yp = bt < .35 ? mix(P.guard, strike, ease(bt / .35)) : mix(strike, P.guard, ease((bt - .35) / .65) * .6);
-      yx = 760 + (b % 2) * 8;
-    } else if (t < 2.8) { yx = 740; yp = mix(P.guard, P.charge, ease(seg(t, 2.3, 2.55))); }
-    else { yx = lerp(740, 770, ease(seg(t, 2.8, 2.9))); yp = mix(P.charge, P.punch, ease(seg(t, 2.8, 2.88))); }
-    // Mahoraga: takes the combo, then gets launched by the delayed second impact
-    const fly = seg(t, 3.1, 3.6);
-    let mx = 880, mp = P.mIdle, mAir = 0, mSpin = 0;
-    if (t > .5 && t < 2.3) { const bt = ((t - .5) % .3) / .3; mp = mix(P.mIdle, P.mHurt, (1 - bt) * .25); mx = 880 + Math.floor((t - .5) / .3) * 3; }
-    if (t >= 2.8) mp = mix(P.mIdle, P.mHurt, seg(t, 2.8, 2.9) * .5);
-    if (t >= 3.1) { mp = P.mHurt; mx = lerp(900, 1300, easeOut(fly)); mAir = Math.sin(fly * Math.PI) * 90; mSpin = -fly * .6; }
-    for (let b = 0; b < 6; b++) impact(t, .5 + b * .3 + .1, 7);
-    impact(t, 2.8, 10); flashAt(t, 2.8, '#cfe6ff', .5, .2);
-    impact(t, 3.1, 30); flashAt(t, 3.1, COL.blue, .9, .4);
-    impact(t, 3.6, 18);
-    withCam(cm, () => {
-      city(cm, { cracks: 480, crater: t >= 3.6 });
-      if (t < 3.8) stick({ who: 'maho', x: mx, f: -1, pose: mp, air: mAir, spin: mSpin, wheel: 0, wound: seg(t, 3.1, 3.2) });
-      else { c.save(); c.globalAlpha = .5; stick({ who: 'maho', x: 1300, f: -1, pose: P.mRise, wheel: 0, wound: 1 }); c.restore(); }
+      city(cm, { cracks: 480, crater: t >= 4.1, signGone: true });
+      if (t < 4.3) stick({ who: 'maho', x: mx, f: -1, pose: mp, air: mAir, spin: mSpin, wheel: wr, wound: shud * .8 });
+      else { c.save(); c.globalAlpha = .5; stick({ who: 'maho', x: 1300, f: -1, pose: P.mRise, wheel: Math.PI / 4, wound: 1 }); c.restore(); }
       stick({ who: 'yuji', x: yx, f: 1, pose: yp });
-      for (let b = 0; b < 6; b++) burstAt(t, .5 + b * .3 + .1, 845, GY - 175 + (b % 3) * 30, b % 2 ? '#fff4e0' : COL.yuji, 12, b + 1, 380, .35);
-      if (t > 2.3 && t < 2.9) { // cursed energy coiling around the fist
-        const r = rng(Math.floor(t * 30)); c.save(); c.strokeStyle = COL.blue; c.shadowColor = COL.blue; c.shadowBlur = 14; c.lineWidth = 3;
-        for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(yx - 30, GY - 130, 18 + r() * 30, r() * 6, r() * 6 + 2); c.stroke(); } c.restore();
-      }
-      burstAt(t, 2.8, 850, GY - 170, '#dff0ff', 14, 21, 420, .4);
-      burstAt(t, 3.1, 860, GY - 170, COL.blue, 30, 22, 900, .6);
-      burstAt(t, 3.6, 1310, 440, '#cfc8e8', 20, 23, 600, .6);
-      dust(t, 3.6, 1300, GY - 60, 8, 1.4, 2);
-      if (t > 3.8) { c.save(); c.fillStyle = `rgba(150,140,170,${.45 * (1 - seg(t, 4.5, 5.5))})`; for (let i = 0; i < 8; i++) { const r = rng(40 + i); c.beginPath(); c.arc(1250 + r() * 140, GY - 40 - r() * 160, 50 + r() * 40, 0, 7); c.fill(); } c.restore(); }
+      if (t > 3 && t < 3.6) { const S = skeleton(yp, 1.1, 1); blackSpark(yx + S.hB[0], GY - 150 + S.hB[1] + 60, 30 + seg(t, 3, 3.5) * 40, Math.floor(t * 14), 3); }
+      burstAt(t, 4.1, 1310, 440, '#cfc8e8', 20, 23, 600, .6);
+      dust(t, 4.1, 1300, GY - 60, 8, 1.4, 2);
     });
-    speedLines(t, t < .5 ? .5 : 0, -1, 3);
-    big('DIVERGENT FIST', '逕庭拳', seg(t, 2.35, 2.5) * (1 - seg(t, 3, 3.1)), COL.blue, 160, 64);
-    sfx('ドン!', 760, 250, t, 3.1, { size: 120, col: '#dff0ff', rot: -.15 });
-    dialogue(t, [[3.9, 5.5, 'yuji', 'Got him. ...Right?']]);
+    const hp = [[740, GY - 175], [830, GY - 150], [950, GY - 180]];
+    hits.forEach((h, i) => { const [sx, sy] = toScreen(cm, ...hp[i]); flashFrame(t, h, sx, sy, 40 + i * 9, { len: 420 + i * 120, dur: .4 + i * .1 }); });
+    hits.forEach((h, i) => sfx('黒閃', 640, 170, t, h + .05, { size: 110 + i * 20, col: '#ff3b3b', rot: -.1 + i * .08, life: .7 }));
+    if (count) { c.save(); c.font = `24px ${F.display}`; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#000'; c.fillStyle = '#ff3b3b'; c.strokeText(`BLACK FLASH ×${count}`, 60, 90); c.fillText(`BLACK FLASH ×${count}`, 60, 90); c.restore(); }
+    dialogue(t, [[4.4, 6, 'yuji', 'Three in a row. It can\'t keep up!']]);
   }},
-  { name: 'The wheel turns', dur: 4, draw(t) {
-    const cm = cam(1180, 380, 1.3);
+  { name: 'Erased', dur: 5, draw(t) {
+    const hitT = 2.05;
+    const cm = cam(lerp(1000, 1080, ease(seg(t, 1.8, 2.2))), 350, 1);
     nightSky();
-    const turn = seg(t, 1, 1.25), over = Math.sin(seg(t, 1.25, 1.5) * Math.PI) * .06;
-    const rot = easeOut(turn) * Math.PI / 4 + over;
-    impact(t, 1, 8); flashAt(t, 1, COL.maho, .35, .3);
-    withCam(cm, () => {
-      city(cm, { crater: true });
-      stick({ who: 'maho', x: 1290, f: -1, pose: mix(P.mRise, P.mIdle, ease(seg(t, 0, .9))), wheel: rot, wound: 1 - seg(t, 1.3, 1.9) });
-      if (t > 1 && t < 1.6) { c.save(); c.strokeStyle = hexA(COL.maho, 1 - seg(t, 1, 1.6)); c.lineWidth = 4; c.shadowColor = COL.maho; c.shadowBlur = 20; c.beginPath(); c.arc(1290 - 8, 110, 40 + seg(t, 1, 1.6) * 90, 0, 7); c.stroke(); c.restore(); }
-      c.save(); c.fillStyle = `rgba(150,140,170,${.35 * (1 - seg(t, 0, 1.5))})`; for (let i = 0; i < 6; i++) { const r = rng(40 + i); c.beginPath(); c.arc(1230 + r() * 140, GY - 40 - r() * 160, 50 + r() * 40, 0, 7); c.fill(); } c.restore();
-    });
-    sfx('ガチャン', 900, 200, t, 1, { size: 72, col: COL.maho, rot: .1, life: 1 });
-    if (t > 1.4 && t < 3.8) { c.save(); c.globalAlpha = seg(t, 1.4, 1.7) * (1 - seg(t, 3.5, 3.8)); c.font = `500 16px ${F.mono}`; c.fillStyle = 'rgba(6,7,14,.75)'; c.fillRect(60, 60, 300, 58); c.fillStyle = COL.maho; c.fillText('WHEEL  ▸  1 / 8', 78, 84); c.fillStyle = COL.paper; c.fillText('ADAPTED  ▸  BLUNT IMPACT', 78, 106); c.restore(); }
-    dialogue(t, [[2, 4, 'yuji', 'The wheel turned... and the damage is just gone?']]);
-  }},
-  { name: 'Sword of Extermination', dur: 5, draw(t) {
-    const cm = cam(lerp(700, 560, ease(seg(t, .9, 1.7))), 350, 1);
-    nightSky();
-    // Mahoraga blurs across the street and slashes
-    const dash = ease(seg(t, .2, .45));
-    const mx = lerp(1250, 720, dash);
-    let mp = P.mIdle;
-    if (t >= .45 && t < .8) mp = mix(P.mIdle, P.mUp, ease(seg(t, .45, .7)));
-    else if (t >= .8 && t < 1.5) mp = mix(P.mUp, P.mDown, ease(seg(t, .8, .92)));
-    else if (t >= 1.5) mp = mix(P.mDown, P.mIdle, ease(seg(t, 1.5, 2.1)));
-    // Itadori gets hit, flies through the ramen sign, then gets back up
-    const hitT = .9, kb = seg(t, hitT, 1.55);
-    let yx = 560, yp = P.guard, yAir = 0, ySpin = 0;
-    if (t >= hitT && t < 1.55) { yx = lerp(560, 190, easeOut(kb)); yp = P.hurt; yAir = Math.sin(kb * Math.PI) * 130; ySpin = -kb * 2.4; }
-    else if (t >= 1.55) { yx = lerp(190, 150, easeOut(seg(t, 1.55, 1.9))); yp = t < 2.4 ? P.crouch : mix(P.crouch, P.guard, ease(seg(t, 2.4, 3.1))); }
-    impact(t, hitT, 24); flashAt(t, hitT, '#ffffff', .8, .25);
-    impact(t, 1.4, 14);
-    withCam(cm, () => {
-      city(cm, { cracks: 480, crater: true, signGone: t >= 1.4 });
-      if (t > .2 && t < .5) for (let i = 1; i <= 4; i++) { c.save(); c.globalAlpha = .18 * (1 - i / 5); stick({ who: 'maho', x: mx + i * 70, f: -1, pose: P.mIdle, wheel: Math.PI / 4 }); c.restore(); }
-      stick({ who: 'maho', x: mx, f: -1, pose: mp, wheel: Math.PI / 4 });
-      if (t >= .8 && t < 1.25) { // slash arc
-        const a = seg(t, .8, 1.25); c.save(); c.globalAlpha = 1 - a; c.strokeStyle = '#ffffff'; c.shadowColor = '#fff'; c.shadowBlur = 24; c.lineCap = 'round';
-        c.lineWidth = 14; c.beginPath(); c.arc(mx - 40, GY - 260, 190, -2.3, -2.3 - 1.9 * Math.min(1, a * 4), true); c.stroke(); c.restore();
-      }
-      stick({ who: 'yuji', x: yx, f: 1, pose: yp, air: yAir, spin: ySpin });
-      burstAt(t, hitT, 560, GY - 160, '#ff3b3b', 22, 31, 620, .5);
-      burstAt(t, 1.4, 220, 425, '#ff9fd0', 26, 32, 520, .8);
-      burstAt(t, 1.4, 220, 425, '#9fe8ff', 12, 33, 380, .8);
-      dust(t, 1.55, 180, GY, 14, .9, 1.4);
-    });
-    speedLines(t, t > .2 && t < .45 ? .5 : 0, -1, 11);
-    sfx('ザンッ', 640, 220, t, hitT, { size: 110, col: '#ffffff', rot: -.2 });
-    dialogue(t, [[2.6, 5, 'yuji', 'That sword... one clean hit and I\'m finished.']]);
-  }},
-  { name: 'Black Flash', dur: 4.5, draw(t) {
-    const hitT = 2.25;
-    if (t >= 3.2) { endCard(t - 3.2); return; }
-    const cm = cam(lerp(480, 560, ease(seg(t, 2, 2.3))), 350, lerp(1.2, 1.05, ease(seg(t, 0, 2))));
-    nightSky();
-    const dash = ease(seg(t, 2, hitT));
-    const yx = lerp(300, 640, dash);
-    const yp = t < 2 ? mix(P.guard, P.charge, ease(seg(t, 0, .5))) : t < 2.15 ? runPose(t * 30) : P.punch;
-    impact(t, hitT, 40);
+    const yx = t < 1.8 ? 860 : lerp(860, 1090, ease(seg(t, 1.8, hitT)));
+    const yp = t < 1.8 ? mix(P.guard, P.charge, ease(seg(t, 0, .5))) : t < 1.95 ? runPose(t * 30) : mix(P.punch, P.guard, ease(seg(t, 3.2, 3.8)) * .7);
+    const mx = lerp(1300, 1190, ease(seg(t, 0, 1.2)));
+    const mp = t < hitT ? mix(P.mRise, P.mIdle, ease(seg(t, 0, 1.2))) : P.mHurt;
+    const k = seg(t, 2.45, 4.3);
+    impact(t, hitT, 48);
+    // the wheel drops off the vanished head and rolls
+    const S = skeleton(P.mHurt, 1.75, -1), headY = GY - Math.max(S.fF[1], S.fB[1]) + S.head[1] - 58 * 1.75;
+    const drop = seg(t, 2.5, 3.2), roll = seg(t, 3.3, 4.3);
+    const wx = 1190 + S.head[0] + lerp(0, 50, drop) + easeOut(roll) * 70;
+    const bounce = t > 3.2 && t < 3.5 ? Math.sin(seg(t, 3.2, 3.5) * Math.PI) * 30 : 0;
+    const wy = lerp(headY, GY - WR * 1.62, easeIn(drop)) - bounce;
+    const wrot = Math.PI / 4 + drop * .8 + easeOut(roll) * 1.6;
+    impact(t, 3.2, 10);
     withCam(cm, () => {
       city(cm, { cracks: 480, crater: true, signGone: true });
-      stick({ who: 'maho', x: 780, f: -1, pose: t < hitT ? P.mIdle : P.mHurt, wheel: Math.PI / 4 });
-      stick({ who: 'yuji', x: yx, f: 1, pose: yp });
-      if (t < 2) { // black sparks crackle around the fist while he charges
-        const S = skeleton(yp, 1.1, 1);
-        blackSpark(yx + S.hF[0], GY - 185 + S.hF[1] + 90, 40 + seg(t, .4, 2) * 50, Math.floor(t * 14), 3);
+      if (t < 2.5) stick({ who: 'maho', x: mx, f: -1, pose: mp, wheel: Math.PI / 4, wound: t < hitT ? .6 : 1 });
+      else {
+        c.save(); c.globalAlpha = 1 - seg(k, 0, .25); stick({ who: 'maho', x: 1190, f: -1, pose: P.mHurt, wheel: Math.PI / 4, blade: false }); c.restore();
+        ashBody(1190, -1, P.mHurt, k, 77);
+        if (t > 2.5) wheel(wx, wy, WR, wrot, 1);
       }
+      stick({ who: 'yuji', x: yx, f: 1, pose: yp });
+      if (t < 1.8) { const Y = skeleton(yp, 1.1, 1); blackSpark(yx + Y.hF[0], GY - 185 + Y.hF[1] + 90, 50 + seg(t, .2, 1.8) * 90, Math.floor(t * 14), 5); }
+      burstAt(t, 3.2, wx, GY - 6, '#e8c464', 10, 12, 300, .4);
     });
-    speedLines(t, t > 2 && t < hitT ? .6 : 0, -1, 17);
-    if (t >= hitT) { // impact frame: colours invert to black and red
-      const a = t - hitT;
-      c.save(); c.fillStyle = `rgba(20,0,0,${.88 * (1 - seg(a, .6, .95))})`; c.fillRect(0, 0, W, H); c.restore();
-      if (a < .8) { c.save(); c.globalAlpha = 1 - seg(a, .5, .8); blackSpark(W / 2 + 60, 390, 520, 90 + Math.floor(a * 16), 12); c.restore(); }
-      flashAt(t, hitT, '#ff2a2a', .6, .15);
-    }
-    big('BLACK FLASH', '黒閃', seg(t, hitT + .05, hitT + .15) * (1 - seg(t, 3, 3.2)), '#ff3b3b', 200, 96);
-    dialogue(t, [[.1, 2, 'yuji', 'Then I just have to hit you before you adapt.']]);
+    const [sx, sy] = toScreen(cm, 1140, GY - 180);
+    flashFrame(t, hitT, sx, sy, 60, { len: 700, dur: .6, n: 16 });
+    big('BLACK FLASH', '黒閃', seg(t, hitT + .05, hitT + .15) * (1 - seg(t, 2.6, 2.8)), '#ff3b3b', 190, 96);
+    big('消滅', 'ERASED', seg(t, 3.3, 3.6) * (1 - seg(t, 4.6, 5)), COL.paper, 200, 80);
+    sfx('ガラン', 0 + toScreen(cm, wx, 0)[0], 480, t, 3.2, { size: 48, col: COL.maho, rot: .12, life: .8 });
+    dialogue(t, [[.1, 1.8, 'yuji', 'Before that wheel turns again. Everything I\'ve got!']]);
   }},
+  { name: 'The wheel is still turning', dur: 3.5, draw(t) {
+    const cm = cam(lerp(1290, 1310, t / 3.5), lerp(470, 500, t / 3.5), lerp(1.7, 1.9, t / 3.5));
+    nightSky();
+    const wx = 1190 + skeleton(P.mHurt, 1.75, -1).head[0] + 120, wy = GY - WR * 1.62;
+    const turn = seg(t, 1.6, 1.85), twitch = t > 1 && t < 1.6 ? Math.sin(t * 70) * .03 : 0;
+    const rot = Math.PI / 4 + 2.4 + easeOut(turn) * Math.PI / 4 + twitch;
+    const redK = seg(t, 1.6, 1.9);
+    impact(t, 1.6, 10); flashAt(t, 1.6, COL.red, .35, .3);
+    withCam(cm, () => {
+      city(cm, { cracks: 480, crater: true, signGone: true });
+      wheel(wx, wy, WR, rot, 1 - redK);
+      if (redK > 0) wheel(wx, wy, WR, rot, redK, COL.red);
+      if (t > 1.6) redSpark(wx, wy, 60 + Math.sin(t * 20) * 10, Math.floor(t * 12), 3);
+    });
+    fallingAsh(t, 1 - seg(t, 2.5, 3.5) * .5);
+    sfx('ガチャン', 830, 250, t, 1.6, { size: 84, col: '#ff3b3b', rot: -.1, life: 1.2 });
+    chip(t, 1.9, 3.5, [['WHEEL  ▸  2 / 8', '#ff3b3b'], ['ADAPTING  ▸  BLACK FLASH', COL.paper]]);
+    dialogue(t, [[2.2, 3.5, 'yuji', 'No way. The wheel\'s still turning...']]);
+  }},
+  { name: 'Mahoraga returns', dur: 6, draw(t) {
+    const cm = cam(1020, 350, 1);
+    nightSky();
+    const baseX = 1190 + skeleton(P.mHurt, 1.75, -1).head[0] + 120;
+    const lift = ease(seg(t, 0, 1));
+    const Sm = skeleton(P.mIdle, 1.75, -1), top = GY - Math.max(Sm.fF[1], Sm.fB[1]);
+    const wx = lerp(baseX, 1180 + Sm.head[0], lift), wy = lerp(GY - WR * 1.62, top + Sm.head[1] - 58 * 1.75, lift);
+    const k = 1 - ease(seg(t, .6, 3.1)); // ash flows back in
+    const body = seg(t, 2.7, 3.2);
+    const pulse = t > 3.2 ? Math.exp(-(t - 3.2) * 3) : 0;
+    impact(t, 3.2, 34); flashAt(t, 3.2, COL.red, .8, .45);
+    if (t > .6 && t < 3.2) fx.shake += 3;
+    withCam(cm, () => {
+      city(cm, { cracks: 480, crater: true, signGone: true });
+      if (t > .3 && t < 3.6) { // lightning column from the street into the curtain
+        const a = seg(t, .3, .7) * (1 - seg(t, 3.2, 3.6));
+        c.save(); c.globalAlpha = a; for (let i = 0; i < 3; i++) { c.shadowColor = COL.red; c.shadowBlur = 20; bolt(1180 + (i - 1) * 30, GY, 1180 + (i - 1) * 50, -200, i === 1 ? '#ff3b3b' : '#050005', i === 1 ? 5 : 9, 60, Math.floor(t * 15) + i); } c.restore();
+      }
+      if (k > 0) ashBody(1180, -1, P.mIdle, k, 91, { reform: true });
+      if (body > 0) { c.save(); c.globalAlpha = body; stick({ who: 'maho', x: 1180, f: -1, pose: P.mIdle, wheel: Math.PI / 2 + t * .2 * pulse, flash: true, seed: Math.floor(t * 12) }); c.restore(); }
+      if (body < 1) wheel(wx, wy, WR, Math.PI / 2 + t * 2 * (1 - lift) , 1, COL.red);
+      if (t > 3.2) { c.save(); c.strokeStyle = hexA('#ff3b3b', pulse); c.lineWidth = 6; c.shadowColor = COL.red; c.shadowBlur = 24; c.beginPath(); c.arc(1180, GY - 200, 60 + (t - 3.2) * 500, 0, 7); c.stroke(); c.restore(); }
+      stick({ who: 'yuji', x: lerp(820, 760, ease(seg(t, 3.2, 3.8))), f: 1, pose: t < 3.2 ? P.guard : mix(P.hurt, P.guard, ease(seg(t, 3.4, 4.2))) });
+    });
+    sfx('ゴォォ', 640, 200, t, 3.2, { size: 100, col: '#ff3b3b', rot: -.08, life: 1.1 });
+    big('BLACK FLASH MAHORAGA', '黒閃魔虚羅', seg(t, 3.4, 3.7) * (1 - seg(t, 5.6, 6)), '#ff3b3b', 150, 64);
+    dialogue(t, [[4.1, 6, 'yuji', 'It came back... made out of my Black Flash.']]);
+  }},
+  { name: 'Red Black Flash', dur: 5.5, draw(t) {
+    const hitT = .8;
+    const cm = cam(lerp(900, 640, ease(seg(t, .8, 1.6))), 350, 1);
+    nightSky();
+    const dash = ease(seg(t, .25, .6));
+    const mx = t < 2 ? lerp(1180, 900, dash) : lerp(900, 820, seg(t, 2, 5.5));
+    let mp = P.mIdle;
+    if (t >= .5 && t < hitT) mp = mix(P.mIdle, P.mUp, ease(seg(t, .5, .7)));
+    else if (t >= hitT && t < 1.6) mp = mix(P.mUp, P.mDown, ease(seg(t, hitT - .05, hitT + .05)));
+    else if (t >= 1.6) mp = mix(P.mDown, P.mIdle, ease(seg(t, 1.6, 2.2)));
+    const kb = seg(t, hitT, 1.5);
+    let yx = 760, yp = P.guard, yAir = 0, ySpin = 0;
+    if (t >= hitT && t < 1.5) { yx = lerp(760, 250, easeOut(kb)); yp = P.hurt; yAir = Math.sin(kb * Math.PI) * 120; ySpin = -kb * 2.2; }
+    else if (t >= 1.5) { yx = lerp(250, 210, easeOut(seg(t, 1.5, 1.9))); yp = t < 3.2 ? P.crouch : mix(P.crouch, P.guard, ease(seg(t, 3.2, 3.8))); }
+    impact(t, hitT, 44); impact(t, 1.5, 16);
+    withCam(cm, () => {
+      city(cm, { cracks: t >= 1.5 ? 230 : 480, crater: true, signGone: true });
+      if (t > .25 && t < .6) for (let i = 1; i <= 4; i++) { c.save(); c.globalAlpha = .22 * (1 - i / 5); stick({ who: 'maho', x: mx + i * 60, f: -1, pose: P.mIdle, wheel: Math.PI / 2, flash: true, seed: i }); c.restore(); }
+      stick({ who: 'maho', x: mx, f: -1, pose: mp, wheel: Math.PI / 2, flash: true, seed: Math.floor(t * 12) });
+      stick({ who: 'yuji', x: yx, f: 1, pose: yp, air: yAir, spin: ySpin });
+      burstAt(t, hitT, 770, GY - 170, '#ff3b3b', 26, 51, 700, .5);
+      dust(t, 1.5, 230, GY, 21, .9, 1.4);
+    });
+    const [sx, sy] = toScreen(cm, 770, GY - 170);
+    flashFrame(t, hitT, sx, sy, 70, { red: true, len: 640, dur: .55, n: 14 });
+    speedLines(t, t > .25 && t < .6 ? .5 : 0, -1, 23);
+    big('BLACK FLASH', 'RED · MAHORAGA STYLE', seg(t, hitT + .05, hitT + .15) * (1 - seg(t, 1.8, 2.1)), '#1c0609', 190, 96);
+    if (t > hitT && t < 2.1) { c.save(); c.globalAlpha = seg(t, hitT + .05, hitT + .15) * (1 - seg(t, 1.8, 2.1)); c.textAlign = 'center'; c.font = `96px ${F.display}`; c.lineWidth = 3; c.strokeStyle = '#ff3b3b'; c.shadowColor = COL.red; c.shadowBlur = 16; c.strokeText('BLACK FLASH', W / 2, 190); c.restore(); }
+    dialogue(t, [[2.2, 5.5, 'yuji', 'It didn\'t just adapt to Black Flash. It learned it.']]);
+  }},
+  { name: 'End card', dur: 4, draw(t) { endCard(t); } },
 ];
 function endCard(t) {
   c.fillStyle = '#05060b'; c.fillRect(0, 0, W, H);
   big('TO BE CONTINUED', null, seg(t, .1, .5), COL.paper, 320, 72);
   c.save(); c.globalAlpha = seg(t, .4, .8); c.textAlign = 'center';
-  c.font = `26px ${F.display}`; c.fillStyle = COL.yuji; c.fillText('NEXT  ·  CHAPTER 2  ·  BLACK FLASH', W / 2, 390);
-  c.font = `500 14px ${F.mono}`; c.fillStyle = '#8f93ab'; c.fillText('MAHORAGA vs ITADORI  ·  PART 1  ·  A FAN ANIMATION, NOT AFFILIATED WITH THE SERIES', W / 2, 430); c.restore();
-  // the wheel turns once more
-  const rot = Math.PI / 4 + easeOut(seg(t, .7, .9)) * Math.PI / 4;
-  wheel(W / 2, 540, 26, rot, seg(t, .3, .6));
-  sfx('ガチャ', W / 2 + 110, 540, t, .7, { size: 40, col: COL.maho, rot: .1, life: .6 });
+  c.font = `26px ${F.display}`; c.fillStyle = '#ff3b3b'; c.fillText('NEXT  ·  CHAPTER 3  ·  RED WHEEL', W / 2, 390);
+  c.font = `500 14px ${F.mono}`; c.fillStyle = '#8f93ab'; c.fillText('MAHORAGA vs ITADORI  ·  PART 2  ·  A FAN ANIMATION, NOT AFFILIATED WITH THE SERIES', W / 2, 430); c.restore();
+  const rot = Math.PI / 2 + easeOut(seg(t, 1.2, 1.4)) * Math.PI / 4;
+  wheel(W / 2, 540, 26, rot, seg(t, .3, .6), COL.red);
+  if (t > 1.2) redSpark(W / 2, 540, 50, Math.floor(t * 12), 3);
+  sfx('ガチャン', W / 2 + 130, 540, t, 1.2, { size: 40, col: '#ff3b3b', rot: .1, life: .8 });
 }
 function nightSky() { sky(1); }
 function drawVeilFront(v) {
@@ -668,7 +720,7 @@ window.renderAt = t => { playing = false; time = clamp(t, 0, total - .001); rend
 window.animationLength = total;
 
 // Canvas text needs its Japanese glyph subsets loaded before the first frame.
-const glyphs = '八握剣異戒神将魔虚羅逕庭拳黒閃第一話渋谷居酒屋カラオケ薬ラーメンドンガチャンザッ!';
+const glyphs = '八握剣異戒神将魔虚羅黒閃第二話消滅赤い渋谷居酒屋カラオケ薬ラーメンドガチャンゴォ!×';
 const loads = document.fonts ? [
   document.fonts.load(`40px "Reggae One"`, glyphs + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·.'),
   document.fonts.load(`700 25px "Zen Kaku Gothic New"`, 'Abc'), document.fonts.load(`400 25px "Zen Kaku Gothic New"`, 'Abc'),
