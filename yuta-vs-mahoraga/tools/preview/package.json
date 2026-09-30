@@ -1,0 +1,13 @@
+{
+  "name": "yuta-vs-mahoraga-preview",
+  "private": true,
+  "type": "module",
+  "description": "Renders preview images of the kit's procedural assets (see README).",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.56.1",
+    "three": "0.160.0"
+  }
+}

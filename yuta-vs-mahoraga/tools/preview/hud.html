@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>HUD preview</title>
+<style>
+  html, body { margin: 0; background: #000; }
+  #frame { position: relative; width: 1600px; height: 900px; overflow: hidden; background: #120d18 center / cover no-repeat; }
+  #gui { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .g { position: absolute; box-sizing: border-box; }
+  .t { position: absolute; inset: 0; display: flex; line-height: 1.05; }
+  #tag { position: absolute; right: 14px; top: 12px; color: #e8e2f5; font: 600 14px "Liberation Sans", sans-serif; background: rgba(0,0,0,.5); padding: 6px 10px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div id="frame"><div id="gui"></div><div id="tag">HUD preview: layout built by src/client/HUD.luau (fonts approximated)</div></div>
+<script>
+// Draws a Roblox ScreenGui tree exported by hud_export.luau, emulating UDim2 layout,
+// UIListLayout / UIGridLayout, UIScale, UICorner, UIStroke and UIGradient.
+const list = (v) => (Array.isArray(v) ? v : []);
+const rgba = (c, a) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
+const FAMILY = `"Liberation Sans", "WenQuanYi Zen Hei", "IPAPGothic", sans-serif`;
+const WEIGHT = { GothamBlack: 700, GothamBold: 700, Gotham: 400 };
+const ctx = document.createElement("canvas").getContext("2d");
+
+function fitSize(text, weight, w, h) {
+  ctx.font = `${weight} 100px ${FAMILY}`;
+  const lines = String(text).split("\n");
+  const widest = Math.max(1, ...lines.map((l) => ctx.measureText(l).width));
+  return Math.max(6, Math.min((h * 0.92) / lines.length, (100 * w * 0.96) / widest));
+}
+
+function place(child, rect) {
+  const w = rect.w * child.size[0] + child.size[1];
+  const h = rect.h * child.size[2] + child.size[3];
+  return {
+    x: rect.x + rect.w * child.pos[0] + child.pos[1] - child.anchor[0] * w,
+    y: rect.y + rect.h * child.pos[2] + child.pos[3] - child.anchor[1] * h,
+    w, h,
+  };
+}
+
+function layout(node, rect) {
+  const kids = list(node.children).filter((c) => c.pos && c.visible !== false);
+  const listL = list(node.children).find((c) => c.class === "UIListLayout");
+  const grid = list(node.children).find((c) => c.class === "UIGridLayout");
+  if (grid) {
+    const cw = rect.w * grid.cell[0] + grid.cell[1], ch = rect.h * grid.cell[2] + grid.cell[3];
+    const px = grid.cellPad[1], py = grid.cellPad[3];
+    const cols = Math.max(1, Math.floor((rect.w + px) / (cw + px)));
+    kids.sort((a, b) => a.order - b.order);
+    return kids.map((k, i) => {
+      const row = Math.floor(i / cols), col = i % cols;
+      const inRow = Math.min(cols, kids.length - row * cols);
+      const rowW = inRow * cw + (inRow - 1) * px;
+      const start = grid.hAlign === "Center" ? rect.x + (rect.w - rowW) / 2 : rect.x;
+      return [k, { x: start + col * (cw + px), y: rect.y + row * (ch + py), w: cw, h: ch }];
+    });
+  }
+  if (listL) {
+    kids.sort((a, b) => a.order - b.order);
+    const rects = kids.map((k) => place(k, rect));
+    if (listL.dir === "Horizontal") {
+      const total = rects.reduce((s, r) => s + r.w, 0) + listL.padding * Math.max(0, rects.length - 1);
+      let x = listL.hAlign === "Center" ? rect.x + (rect.w - total) / 2 : listL.hAlign === "Right" ? rect.x + rect.w - total : rect.x;
+      return kids.map((k, i) => { const r = { ...rects[i], x, y: rect.y }; x += r.w + listL.padding; return [k, r]; });
+    }
+    let y = rect.y;
+    return kids.map((k, i) => { const r = { ...rects[i], x: rect.x, y }; y += r.h + listL.padding; return [k, r]; });
+  }
+  return kids.map((k) => [k, place(k, rect)]);
+}
+
+function draw(node, rect, parentEl, parentRect) {
+  const el = document.createElement("div");
+  el.className = "g";
+  Object.assign(el.style, {
+    left: `${rect.x - parentRect.x}px`, top: `${rect.y - parentRect.y}px`,
+    width: `${rect.w}px`, height: `${rect.h}px`, zIndex: node.z,
+  });
+  if (node.rotation) el.style.transform = `rotate(${node.rotation}deg)`;
+  if (node.clip) el.style.overflow = "hidden";
+  const kids = list(node.children);
+  const corner = kids.find((c) => c.class === "UICorner");
+  if (corner) el.style.borderRadius = `${corner.radius}px`;
+  const gradient = kids.find((c) => c.class === "UIGradient");
+  const alpha = 1 - node.bgT;
+  if (alpha > 0) {
+    el.style.background = gradient
+      ? `linear-gradient(90deg, ${list(gradient.keys).map((k) => `${rgba(k[1], alpha)} ${k[0] * 100}%`).join(", ")})`
+      : rgba(node.bg, alpha);
+  }
+  const stroke = kids.find((c) => c.class === "UIStroke");
+  if (stroke && stroke.mode === "Border" && stroke.t < 1) {
+    el.style.boxShadow = `0 0 0 ${stroke.thickness}px ${rgba(stroke.color, 1 - stroke.t)}`;
+  }
+  if (node.text !== undefined && node.text !== "" && node.textT < 1) {
+    const t = document.createElement("div");
+    t.className = "t";
+    const weight = WEIGHT[node.font] ?? 700;
+    const size = node.scaled ? fitSize(node.text, weight, rect.w, rect.h) : node.textSize;
+    const textStroke = stroke && stroke.mode === "Contextual" ? stroke : null;
+    const s = textStroke ? textStroke.thickness : 0;
+    Object.assign(t.style, {
+      color: rgba(node.textColor, 1 - node.textT),
+      font: `${weight} ${size}px ${FAMILY}`,
+      justifyContent: { Left: "flex-start", Right: "flex-end" }[node.xAlign] ?? "center",
+      alignItems: { Top: "flex-start", Bottom: "flex-end" }[node.yAlign] ?? "center",
+      textAlign: { Left: "left", Right: "right" }[node.xAlign] ?? "center",
+      whiteSpace: node.wrapped ? "normal" : "pre",
+      textShadow: s ? [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]].map(([dx, dy]) => `${dx * s}px ${dy * s}px 0 rgba(0,0,0,${1 - node.textT})`).join(",") : "none",
+    });
+    t.textContent = node.text;
+    el.appendChild(t);
+  }
+  parentEl.appendChild(el);
+  for (const [child, r] of layout(node, rect)) draw(child, r, el, rect);
+}
+
+window.renderHud = (screen, bg) => {
+  const frame = document.getElementById("frame");
+  if (bg) frame.style.backgroundImage = `url(${bg})`;
+  const root = document.getElementById("gui");
+  root.innerHTML = "";
+  const scaleNode = list(screen.children).find((c) => c.class === "UIScale");
+  const scale = scaleNode ? scaleNode.scale : 1;
+  const view = { x: 0, y: 0, w: 1600 / scale, h: 900 / scale };
+  root.style.width = `${view.w}px`;
+  root.style.height = `${view.h}px`;
+  root.style.transform = `scale(${scale})`;
+  for (const [child, r] of layout(screen, view)) draw(child, r, root, view);
+  return true;
+};
+window.ready = true;
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Preview renderer</title>
+<style>
+  html, body { margin: 0; background: #000; }
+  #frame { position: relative; width: 1600px; height: 900px; overflow: hidden; }
+  canvas { display: block; }
+  #caption {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 28px 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,.78));
+    color: #f3eefc; font: 700 30px/1.2 "Liberation Sans", "DejaVu Sans", "IPAPGothic", sans-serif;
+    text-shadow: 0 2px 6px #000;
+  }
+  #caption small { display: block; margin-top: 6px; font-size: 17px; font-weight: 400; color: #c8bfdc; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="frame"><div id="caption"></div></div>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const W = 1600, H = 900;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.getElementById("frame").prepend(renderer.domElement);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+// Shared unit geometries. Roblox cylinders run along X; wedges slope from top-back to bottom-front.
+const box = new THREE.BoxGeometry(1, 1, 1);
+const sphere = new THREE.SphereGeometry(0.5, 40, 20);
+const cylinder = new THREE.CylinderGeometry(0.5, 0.5, 1, 40).rotateZ(-Math.PI / 2);
+const wedge = (() => {
+  const v = [
+    [-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],   [-.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],   // bottom
+    [-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],      [-.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5],      // back
+    [-.5,-.5,-.5],[-.5,.5,.5],[.5,.5,.5],     [-.5,-.5,-.5],[.5,.5,.5],[.5,-.5,-.5],    // slope
+    [-.5,-.5,-.5],[-.5,-.5,.5],[-.5,.5,.5],                                            // left
+    [.5,-.5,-.5],[.5,.5,.5],[.5,-.5,.5],                                               // right
+  ].flat();
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
+  g.computeVertexNormals();
+  return g;
+})();
+
+function noiseTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 256;
+  const x = c.getContext("2d"); const img = x.createImageData(256, 256);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const n = 200 + Math.random() * 55; img.data[i] = img.data[i+1] = img.data[i+2] = n; img.data[i+3] = 255;
+  }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const stone = noiseTexture();
+
+const materials = new Map();
+function material(p) {
+  const key = p.material + "|" + p.color.join(",") + "|" + p.transparency.toFixed(3) + "|" + p.reflectance;
+  if (materials.has(key)) return materials.get(key);
+  const color = new THREE.Color().setRGB(p.color[0], p.color[1], p.color[2], THREE.SRGBColorSpace);
+  const opacity = 1 - p.transparency;
+  const transparent = p.transparency > 0.001;
+  let m;
+  switch (p.material) {
+    case "Neon":
+      m = new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(1.35), transparent, opacity, toneMapped: false, depthWrite: !transparent || opacity > 0.6 });
+      break;
+    case "ForceField":
+      m = new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(1.2), transparent: true, opacity: 0.22 * opacity + 0.05, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+      break;
+    case "Glass":
+      m = new THREE.MeshPhysicalMaterial({ color, roughness: 0.08, metalness: 0.1, transparent: true, opacity: Math.min(0.85, opacity), envMap, envMapIntensity: 1.2 });
+      break;
+    case "Metal":
+      m = new THREE.MeshStandardMaterial({ color, roughness: 0.32, metalness: 0.85, transparent, opacity, envMap, envMapIntensity: 0.9 });
+      break;
+    case "Slate": case "Granite": case "Cobblestone": case "Concrete":
+      m = new THREE.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0, map: stone, transparent, opacity, envMap, envMapIntensity: 0.2 });
+      break;
+    case "Fabric":
+      m = new THREE.MeshStandardMaterial({ color, roughness: 1, metalness: 0, transparent, opacity, envMap, envMapIntensity: 0.25 });
+      break;
+    case "Wood":
+      m = new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0, transparent, opacity, envMap, envMapIntensity: 0.3 });
+      break;
+    default:
+      m = new THREE.MeshStandardMaterial({ color, roughness: p.material === "SmoothPlastic" ? 0.42 : 0.6, metalness: Math.min(0.6, p.reflectance * 2), transparent, opacity, envMap, envMapIntensity: 0.45 });
+  }
+  if (transparent && p.material !== "Neon") m.depthWrite = opacity > 0.7;
+  materials.set(key, m);
+  return m;
+}
+
+function gradient(top, bottom) {
+  const c = document.createElement("canvas"); c.width = 4; c.height = 512;
+  const x = c.getContext("2d"); const g = x.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, top); g.addColorStop(1, bottom); x.fillStyle = g; x.fillRect(0, 0, 4, 512);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+function label(l) {
+  const c = document.createElement("canvas");
+  const h = 160, w = Math.max(160, Math.round(h * l.width / l.height));
+  c.width = w; c.height = h;
+  const x = c.getContext("2d");
+  let size = h * 0.8;
+  const font = (s) => `900 ${s}px "Liberation Sans", "WenQuanYi Zen Hei", "IPAPGothic", sans-serif`;
+  x.font = font(size);
+  while (x.measureText(l.text).width > w * 0.94 && size > 10) { size -= 4; x.font = font(size); }
+  x.textAlign = "center"; x.textBaseline = "middle";
+  x.lineJoin = "round"; x.lineWidth = size * 0.16; x.strokeStyle = "#000";
+  x.strokeText(l.text, w / 2, h / 2);
+  x.fillStyle = `rgb(${l.color.map(v => Math.round(v * 255)).join(",")})`;
+  x.fillText(l.text, w / 2, h / 2);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, toneMapped: false }));
+  s.scale.set(l.width, l.height, 1);
+  s.position.set(...l.pos);
+  s.renderOrder = 10;
+  return s;
+}
+
+// Lune encodes empty Luau tables as {} rather than [].
+const list = (v) => (Array.isArray(v) ? v : []);
+
+window.renderScene = async (data) => {
+  const scene = new THREE.Scene();
+  scene.background = gradient(data.bg?.[0] ?? "#221833", data.bg?.[1] ?? "#050408");
+  if (data.fog) scene.fog = new THREE.Fog(data.fog[0], data.fog[1], data.fog[2]);
+  const amb = data.ambient ?? 1;
+  scene.add(new THREE.HemisphereLight(0xfff1f4, 0x3a3046, 1.2 * amb));
+  const sun = new THREE.DirectionalLight(0xffd9c2, 2.4 * amb);
+  sun.position.set(-60, 110, -40);
+  scene.add(sun);
+  const rim = new THREE.DirectionalLight(0xb9a6ff, 0.9 * amb);
+  rim.position.set(80, 40, 90);
+  scene.add(rim);
+  for (const l of list(data.lights).slice(0, 14)) {
+    const pl = new THREE.PointLight(new THREE.Color().setRGB(...l.color, THREE.SRGBColorSpace), l.brightness * 18, l.range * 1.6, 1.4);
+    pl.position.set(...l.pos);
+    scene.add(pl);
+  }
+  const m4 = new THREE.Matrix4(), s4 = new THREE.Matrix4();
+  for (const p of list(data.parts)) {
+    let geo = box, sx = p.size[0], sy = p.size[1], sz = p.size[2];
+    if (p.shape === "Ball") { geo = sphere; const d = Math.min(sx, sy, sz); sx = sy = sz = d; }
+    else if (p.shape === "Ellipsoid") geo = sphere;
+    else if (p.shape === "Cylinder") { geo = cylinder; const d = Math.min(sy, sz); sy = sz = d; }
+    else if (p.shape === "Wedge") geo = wedge;
+    const mesh = new THREE.Mesh(geo, material(p));
+    const c = p.cf;
+    m4.set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1);
+    s4.makeScale(sx, sy, sz);
+    mesh.matrixAutoUpdate = false;
+    mesh.matrix.copy(m4).multiply(s4);
+    if (p.transparency > 0.001) mesh.renderOrder = 2;
+    scene.add(mesh);
+  }
+  for (const l of list(data.labels)) scene.add(label(l));
+
+  const cam = new THREE.PerspectiveCamera(data.camera.fov, W / H, 0.1, 4000);
+  cam.position.set(...data.camera.pos);
+  cam.lookAt(new THREE.Vector3(...data.camera.target));
+
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, cam));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), data.bloom ?? 0.75, 0.5, 0.9));
+  composer.addPass(new OutputPass());
+  composer.render();
+
+  document.getElementById("caption").style.display = data.caption === false ? "none" : "block";
+  document.getElementById("caption").innerHTML =
+    `${data.title}<small>Yuta Okkotsu vs Mahoraga - preview render of the in-game parts (built by the kit's own Luau code)</small>`;
+  scene.traverse(o => { if (o.isMesh && o.geometry !== box && o.geometry !== sphere && o.geometry !== cylinder && o.geometry !== wedge) o.geometry.dispose(); });
+  return true;
+};
+window.ready = true;
+</script>
+</body>
+</html>
