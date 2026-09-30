@@ -1,0 +1,798 @@
+<title>Saitama vs Cosmic Garou Trailer</title>
+<meta name="description" content="Vertical 9:16 trailer for the Saitama vs Cosmic Garou Blender fight animation, made for phone screen recording.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: one 9:16 phone-sized stage (a white void) on a dark screening-room page; transport and chapters sit under it. Single deliberate dark look. */
+  :root {
+    --room: #0e0d12;        /* page around the stage */
+    --panel: #1a1820;       /* controls */
+    --line: #2d2a36;
+    --paper: #f3f1ec;       /* text */
+    --muted: #a19cae;
+    --hero: #ffd21a;        /* Saitama yellow */
+    --glove: #d8261c;       /* Saitama red */
+    --cosmos: #6a3cff;      /* Garou violet */
+    --display: "Anton", "Impact", "Arial Narrow", sans-serif;
+    --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--room); color: var(--paper); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 520px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 16px; }
+  header { display: grid; gap: 4px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 9vw, 46px); line-height: 0.95; letter-spacing: 0.01em; margin: 0; text-wrap: balance; }
+  h1 .s { color: var(--hero); }
+  h1 .g { color: #9b7bff; }
+  h1 .vs { font-family: var(--body); font-weight: 800; font-size: 0.42em; color: var(--muted); vertical-align: middle; margin-inline: 0.2em; }
+
+  .stage { position: relative; width: min(100%, calc((100dvh - 150px) * 9 / 16)); min-width: min(100%, 280px); margin-inline: auto; aspect-ratio: 9 / 16; max-width: 100%; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); cursor: pointer; }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+  .big-play { position: absolute; inset: 0; display: grid; place-items: center; background: transparent; border: 0; cursor: pointer; }
+  .big-play span { width: 84px; height: 84px; border-radius: 50%; background: rgba(14,13,18,0.86); display: grid; place-items: center; box-shadow: 0 0 0 3px var(--hero); }
+  .big-play svg { width: 34px; height: 34px; margin-left: 6px; fill: var(--hero); }
+  .big-play:focus-visible span { outline: 3px solid var(--paper); outline-offset: 4px; }
+
+  .transport { display: grid; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button.ctl { font: 600 14px var(--body); color: var(--paper); background: #26232e; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; cursor: pointer; min-height: 40px; }
+  button.ctl:hover { background: #312d3b; }
+  button.ctl:focus-visible { outline: 2px solid var(--hero); outline-offset: 2px; }
+  button.ctl[aria-pressed="true"] { background: var(--hero); color: #16140c; border-color: var(--hero); }
+  button.primary { background: var(--hero); color: #16140c; border-color: var(--hero); min-width: 84px; }
+  button.primary:hover { background: #ffe066; }
+  .time { margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { position: relative; height: 26px; cursor: pointer; touch-action: none; }
+  .bar .track { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--line); }
+  .bar .fill { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--hero); width: 0; }
+  .bar .tick { position: absolute; top: 7px; width: 2px; height: 12px; background: var(--muted); opacity: 0.6; }
+
+  .chapters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chapters button { font: 500 12px var(--mono); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+  .chapters button.on { color: #16140c; background: var(--paper); border-color: var(--paper); }
+  .chapters button:focus-visible { outline: 2px solid var(--hero); outline-offset: 2px; }
+
+  .howto { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+  .howto h2 { font: 800 13px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper); margin: 0; }
+  .howto ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+  .howto b { color: var(--paper); font-weight: 600; }
+  footer { font-size: 12px; color: var(--muted); }
+
+  /* Clean view: only the stage, filling the phone screen, for screen recording */
+  body.clean { overflow: hidden; }
+  body.clean .wrap > :not(.stage) { display: none; }
+  body.clean .wrap { padding: 0; max-width: none; }
+  body.clean .stage { position: fixed; inset: 0; margin: auto; width: min(100vw, calc(100dvh * 9 / 16)); height: auto; min-width: 0; border-radius: 0; box-shadow: none; }
+  body.clean::before { content: ""; position: fixed; inset: 0; background: #000; }
+  .exit-clean { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; z-index: 5; font: 600 13px var(--body); color: var(--paper); background: rgba(14,13,18,0.85); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Trailer · 9:16 · 0:44</div>
+    <h1><span class="s">Saitama</span><span class="vs">vs</span><span class="g">Cosmic Garou</span></h1>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="cv" width="1080" height="1920" aria-label="Animated trailer: Saitama vs Cosmic Garou"></canvas>
+    <button class="big-play" id="bigPlay" aria-label="Play trailer"><span><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"/></svg></span></button>
+  </div>
+
+  <div class="transport">
+    <div class="row">
+      <button class="ctl primary" id="play">Play</button>
+      <button class="ctl" id="restart">Restart</button>
+      <button class="ctl" id="sound" aria-pressed="false">Sound off</button>
+      <button class="ctl" id="clean">Clean view</button>
+      <span class="time" id="time">0:00 / 0:44</span>
+    </div>
+    <div class="bar" id="bar" role="slider" aria-label="Trailer position" aria-valuemin="0" aria-valuemax="44" aria-valuenow="0" tabindex="0">
+      <div class="track"></div><div class="fill" id="fill"></div>
+    </div>
+    <div class="chapters" id="chapters"></div>
+  </div>
+
+  <section class="howto">
+    <h2>Record it on your phone</h2>
+    <ol>
+      <li>Turn <b>Sound</b> on if you want the hits and booms in your video.</li>
+      <li>Tap <b>Clean view</b>. The trailer fills the screen with no buttons.</li>
+      <li>Start your phone's screen recorder, then tap the picture to play.</li>
+      <li>Tap again to pause. Pausing shows a Close button to leave clean view.</li>
+    </ol>
+    <p>The trailer is drawn live at 1080×1920, so the recording comes out as a ready-to-post vertical video.</p>
+  </section>
+
+  <footer>Fan work. One-Punch Man and its characters belong to ONE and Yusuke Murata. The full 5-minute fight is in <code>saitama_vs_cosmic_garou.blend</code>.</footer>
+</div>
+<button class="exit-clean" id="exitClean" hidden>Close clean view</button>
+
+<script>
+(() => {
+  const W = 1080, H = 1920, GY = 1560, DUR = 44;
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const INK = '#111014';
+  const C = { suit: '#ffd21a', suitB: '#e3b300', red: '#d8261c', redB: '#a91b14', skin: '#ffd9b8', skinB: '#f0bf99',
+              cape: '#ffffff', capeB: '#e3e6ee', belt: '#141414', hair: '#f2f4ff', halo: '#2fc4ff', violet: '#7a3cff',
+              air: '#8ea4d6', smoke: '#dcdbe0', hot: '#ffb21a' };
+
+  const rad = d => d * Math.PI / 180;
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  const seg = (t, a, b) => clamp((t - a) / (b - a));
+  const eo = k => 1 - Math.pow(1 - k, 3);
+  const ei = k => k * k * k;
+  const eio = k => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+  const lerp = (a, b, k) => a + (b - a) * k;
+  function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = Math.imul(s ^ (s >>> 15), 2246822507) ^ Math.imul(s ^ (s >>> 13), 3266489909), (s ^= s >>> 16) >>> 0) / 4294967296); }
+
+  // ---------- Garou's cosmic skin ----------
+  function makeCosmos() {
+    const c = document.createElement('canvas'); c.width = c.height = 360;
+    const g = c.getContext('2d'); const r = rng(7);
+    g.fillStyle = '#0a0622'; g.fillRect(0, 0, 360, 360);
+    const cols = ['rgba(90,40,220,', 'rgba(30,80,200,', 'rgba(140,60,255,', 'rgba(20,130,210,'];
+    for (let i = 0; i < 9; i++) {
+      const x = r() * 360, y = r() * 360, rr = 60 + r() * 110;
+      for (const [dx, dy] of [[0,0],[360,0],[-360,0],[0,360],[0,-360]]) {
+        const gr = g.createRadialGradient(x+dx, y+dy, 0, x+dx, y+dy, rr);
+        const col = cols[i % 4];
+        gr.addColorStop(0, col + '0.75)'); gr.addColorStop(1, col + '0)');
+        g.fillStyle = gr; g.fillRect(0, 0, 360, 360);
+      }
+    }
+    for (let i = 0; i < 140; i++) {
+      const x = r() * 360, y = r() * 360, s = r() < 0.9 ? 0.6 + r() * 1.4 : 2.4;
+      g.fillStyle = r() < 0.8 ? '#fff' : '#9fe8ff';
+      g.beginPath(); g.arc(x, y, s, 0, 7); g.fill();
+      if (s > 2) { g.fillRect(x - 6, y - 0.6, 12, 1.2); g.fillRect(x - 0.6, y - 6, 1.2, 12); }
+    }
+    return c;
+  }
+  const cosmosCanvas = makeCosmos();
+  const cosmos = ctx.createPattern(cosmosCanvas, 'repeat');
+
+  // ---------- poses (degrees; 0 = limb straight down, + swings forward) ----------
+  const P = {
+    idle:    { aB: -6, eB: 8, aF: 6, eF: 8, lB: -5, kB: 3, lF: 6, kF: 3 },
+    nose:    { aB: -6, eB: 8, aF: 38, eF: 128, lB: -5, kB: 3, lF: 6, kF: 3, head: 6 },
+    scratch: { aB: -6, eB: 8, aF: 165, eF: 115, lB: -5, kB: 3, lF: 6, kF: 3, head: 10 },
+    lookup:  { aB: -6, eB: 8, aF: 6, eF: 8, lB: -5, kB: 3, lF: 6, kF: 3, head: -28 },
+    float:   { aB: -28, eB: 18, aF: 30, eF: 18, lB: -10, kB: 30, lF: 16, kF: 42, air: 1 },
+    charge:  { aB: -85, eB: 20, aF: 85, eF: 20, lean: -8, head: -16, lB: -12, kB: 12, lF: 14, kF: 12 },
+    fire:    { aF: 96, eF: 0, aB: -30, eB: 40, lean: 6, lB: -10, kB: 30, lF: 16, kF: 42, air: 1 },
+    gcharge: { aF: 176, eF: 10, aB: 170, eB: 12, lean: -6, head: -22, lB: -10, kB: 30, lF: 16, kF: 42, air: 1 },
+    gfire:   { aF: 55, eF: 0, aB: 48, eB: 0, lean: 22, head: 18, lB: -18, kB: 30, lF: 5, kF: 40, air: 1 },
+    punch:   { lean: 10, aF: 92, eF: 0, aB: -35, eB: 95, lB: -28, kB: 10, lF: 30, kF: 25 },
+    punch2:  { lean: 13, aF: -30, eF: 95, aB: 94, eB: 0, lB: -30, kB: 10, lF: 32, kF: 25 },
+    kick:    { lean: -18, lF: 105, kF: 0, lB: -8, kB: 12, aF: 40, eF: 90, aB: -40, eB: 40 },
+    elbow:   { lean: 12, aF: 80, eF: 140, aB: -30, eB: 90, lB: -24, kB: 10, lF: 26, kF: 25 },
+    slapW:   { aF: 150, eF: 30, aB: -8, eB: 8, lean: -4, lB: -5, kB: 3, lF: 6, kF: 3 },
+    slap:    { aF: 70, eF: 10, aB: -8, eB: 8, lean: 4, head: -6, lB: -5, kB: 3, lF: 8, kF: 3 },
+    hit:     { lean: -28, head: -26, aF: 130, eF: 30, aB: -120, eB: 30, lF: 25, kF: 30, lB: -15, kB: 20 },
+    hit2:    { lean: 26, head: 22, aF: -40, eF: 40, aB: 60, eB: 50, lF: 10, kF: 40, lB: -20, kB: 30 },
+    serious: { lean: 8, aB: -25, eB: 105, aF: 45, eF: 75, lF: 22, kF: 28, lB: -18, kB: 20 },
+    hammer:  { aF: 178, eF: 25, aB: 174, eB: 25, lean: -12, lF: 40, kF: 80, lB: 15, kB: 90, air: 1 },
+    hammerHit: { aF: 70, eF: 5, aB: 64, eB: 5, lean: 36, lF: -10, kF: 40, lB: -25, kB: 50, air: 1 },
+    flykick: { lean: -20, lF: 96, kF: 0, lB: 20, kB: 90, aF: -30, eF: 30, aB: -40, eB: 30, air: 1 },
+    uppercut:{ aF: 162, eF: 40, lean: -10, aB: -20, eB: 100, lF: 22, kF: 35, lB: -30, kB: 15 },
+    tumble:  { lean: 40, head: 20, aF: 60, eF: 100, aB: 50, eB: 100, lF: 110, kF: 130, lB: 100, kB: 130, air: 1 },
+    ko:      { aF: 100, eF: 20, aB: -80, eB: 20, lF: 10, kF: 5, lB: -8, kB: 20, head: 20, air: 1 },
+    walkA:   { lF: 25, kF: 8, lB: -20, kB: 30, aF: -18, eF: 10, aB: 18, eB: 15 },
+    walkB:   { lF: -20, kF: 30, lB: 25, kB: 8, aF: 18, eF: 15, aB: -18, eB: 10 },
+    land:    { lean: 30, head: -24, lF: 88, kF: 125, lB: -12, kB: 112, aF: 55, eF: 15, aB: 10, eB: 30 },
+  };
+  function mix(a, b, k) { const o = {}; for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) o[key] = lerp(a[key] || 0, b[key] || 0, k); o.air = k < 0.5 ? a.air : b.air; return o; }
+
+  // ---------- figure ----------
+  // Unit skeleton: height 1, feet at y=0, y grows downward, x forward.
+  function joints(p) {
+    const J = {};
+    const hip = [0, -0.5 + (p.crouch || 0)];
+    const L = rad(p.lean || 0);
+    const leg = (a, k) => { const A = rad(a), B = A - rad(k); const kn = [hip[0] + Math.sin(A) * 0.25, hip[1] + Math.cos(A) * 0.25]; return [kn, [kn[0] + Math.sin(B) * 0.25, kn[1] + Math.cos(B) * 0.25]]; };
+    [J.kneeB, J.footB] = leg(p.lB || 0, p.kB || 0);
+    [J.kneeF, J.footF] = leg(p.lF || 0, p.kF || 0);
+    J.hip = hip;
+    J.sh = [hip[0] + Math.sin(L) * 0.3, hip[1] - Math.cos(L) * 0.3];
+    const HL = L + rad(p.head || 0);
+    J.head = [J.sh[0] + Math.sin(HL) * 0.125, J.sh[1] - Math.cos(HL) * 0.125];
+    J.HL = HL;
+    const arm = (a, e) => { const A = rad(a) + L * 0.6, B = A + rad(e); const el = [J.sh[0] + Math.sin(A) * 0.165, J.sh[1] + Math.cos(A) * 0.165]; return [el, [el[0] + Math.sin(B) * 0.155, el[1] + Math.cos(B) * 0.155]]; };
+    [J.elB, J.handB] = arm(p.aB || 0, p.eB || 0);
+    [J.elF, J.handF] = arm(p.aF || 0, p.eF || 0);
+    if (!p.air) {
+      const low = Math.max(J.footB[1], J.footF[1], J.kneeB[1] - 0.04, J.kneeF[1] - 0.04);
+      for (const k in J) if (Array.isArray(J[k])) J[k] = [J[k][0], J[k][1] - low];
+    }
+    return J;
+  }
+
+  const LW = 0.017;
+  function line(a, b, w, col) { ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  function dot(p, r, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 7); ctx.fill(); }
+  const along = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
+
+  // kind: 'S' or 'G'. x,y = ground point in px, s = height px, dir = 1 faces right, -1 left.
+  function fighter(kind, x, y, s, p, dir = 1, o = {}) {
+    const J = joints(p);
+    ctx.save();
+    ctx.globalAlpha = o.alpha ?? 1;
+    ctx.translate(x, y);
+    if (o.rot) { ctx.translate(0, -0.5 * s); ctx.rotate(o.rot); ctx.translate(0, 0.5 * s); }
+    ctx.scale(dir * s, s);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const G = kind === 'G';
+    let body = C.suit, bodyB = C.suitB, end = C.red, endB = C.redB;
+    if (G) {
+      cosmos.setTransform(new DOMMatrix().scale(1 / (dir * s), 1 / s).translate((o.t || 0) * 18, (o.t || 0) * 9));
+      body = bodyB = end = endB = cosmos;
+    }
+    const t = o.t || 0;
+
+    // halo behind everything
+    if (G && (o.halo ?? 1) > 0) {
+      const hp = o.halo ?? 1, hc = [J.head[0] - 0.05, J.head[1] - 0.01];
+      ctx.save(); ctx.globalAlpha *= clamp(hp);
+      ctx.strokeStyle = C.halo; ctx.lineWidth = 0.012;
+      ctx.shadowColor = C.halo; ctx.shadowBlur = 30;
+      ctx.beginPath(); ctx.ellipse(hc[0], hc[1], 0.15 * hp, 0.15 * hp, 0, 0, 7); ctx.stroke();
+      ctx.shadowBlur = 0;
+      for (let i = 0; i < 8; i++) { const a = t * 1.4 + i * Math.PI / 4; dot([hc[0] + Math.cos(a) * 0.15 * hp, hc[1] + Math.sin(a) * 0.15 * hp], i % 2 ? 0.014 : 0.009, C.halo); }
+      ctx.restore();
+    }
+    // cape
+    if (!G && !o.noCape) {
+      const f = o.flow ?? 0.25, w = Math.sin(t * 7) * 0.03 * (0.5 + f);
+      const top = [J.sh[0] - 0.03, J.sh[1] + 0.01];
+      const tip = [top[0] - 0.12 - f * 0.34, top[1] + 0.52 - f * 0.28 + w];
+      const tip2 = [tip[0] + 0.14 + f * 0.05, tip[1] + 0.03 - w];
+      const path = () => { ctx.beginPath(); ctx.moveTo(top[0] + 0.05, top[1]); ctx.quadraticCurveTo(top[0] - 0.12 - f * 0.1, top[1] + 0.2 + w, tip[0], tip[1]); ctx.quadraticCurveTo(lerp(tip[0], tip2[0], 0.5), tip[1] + 0.05 + w, tip2[0], tip2[1]); ctx.quadraticCurveTo(top[0] + 0.02, top[1] + 0.3, top[0] + 0.05, top[1]); ctx.closePath(); };
+      path(); ctx.lineWidth = LW; ctx.strokeStyle = INK; ctx.stroke(); ctx.fillStyle = C.cape; ctx.fill();
+      ctx.save(); path(); ctx.clip(); ctx.fillStyle = C.capeB; ctx.beginPath(); ctx.moveTo(top[0], top[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(tip[0] + 0.05, tip[1]); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    const limb = (a, b, c, w1, w2, col, colEnd) => {
+      line(a, b, w1 + LW, INK); line(b, c, w2 + LW, INK);
+      line(a, b, w1, col); line(b, c, w2, col);
+      if (colEnd) line(along(b, c, 0.55), c, w2 + 0.006, colEnd);
+    };
+    // back side (slightly darker)
+    limb(J.hip, J.kneeB, J.footB, 0.1, 0.082, bodyB, endB);
+    dot(J.footB, 0.045 + LW / 2, INK); dot(J.footB, 0.045, endB);
+    limb(J.sh, J.elB, J.handB, 0.07, 0.06, bodyB, G ? null : endB);
+    dot(J.handB, 0.04 + LW / 2, INK); dot(J.handB, 0.04, endB);
+    // torso
+    line(J.hip, J.sh, 0.2 + LW, INK);
+    line(J.hip, J.sh, 0.2, body);
+    ctx.lineCap = 'butt';
+    if (G) { line(along(J.hip, J.sh, 0.1), along(J.hip, J.sh, 0.16), 0.205, '#8a55ff'); }
+    else { line(along(J.hip, J.sh, 0.04), along(J.hip, J.sh, 0.16), 0.205, C.belt); dot(along(J.hip, J.sh, 0.1).map((v, i) => v + (i ? 0 : 0.09)), 0.02, '#e8b41a'); }
+    ctx.lineCap = 'round';
+    // head
+    const hd = J.head, hr = 0.075;
+    if (G) {
+      ctx.fillStyle = C.hair; ctx.strokeStyle = INK; ctx.lineWidth = LW * 0.8;
+      ctx.beginPath(); ctx.moveTo(hd[0] + 0.05, hd[1] - 0.06);
+      const spikes = [[-0.02, -0.2], [-0.05, -0.1], [-0.12, -0.19], [-0.1, -0.07], [-0.2, -0.12], [-0.11, -0.02], [-0.19, 0.0], [-0.08, 0.03]];
+      for (const [sx, sy] of spikes) ctx.lineTo(hd[0] + sx * Math.cos(J.HL) - sy * Math.sin(J.HL) * 0.3, hd[1] + sy);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    dot(hd, hr + LW / 2, INK); dot(hd, hr, G ? cosmos : C.skin);
+    if (G) {
+      ctx.save(); ctx.shadowColor = '#bff4ff'; ctx.shadowBlur = 14;
+      ctx.fillStyle = '#eaffff';
+      ctx.beginPath(); ctx.ellipse(hd[0] + 0.045, hd[1] - 0.005, 0.026, 0.008, -0.2, 0, 7); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = C.hair; ctx.beginPath(); ctx.moveTo(hd[0] - 0.02, hd[1] - 0.07); ctx.lineTo(hd[0] + 0.07, hd[1] - 0.055); ctx.lineTo(hd[0] + 0.02, hd[1] - 0.035); ctx.closePath(); ctx.fill();
+    } else {
+      dot([hd[0] - 0.045, hd[1] + 0.005], 0.02, C.skinB);
+      ctx.fillStyle = INK;
+      ctx.beginPath(); ctx.ellipse(hd[0] + 0.046, hd[1] - 0.005, 0.009, 0.006, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(hd[0] + 0.018, hd[1] - 0.005, 0.009, 0.006, 0, 0, 7); ctx.fill();
+      line([hd[0] + 0.03, hd[1] + 0.038], [hd[0] + 0.055, hd[1] + 0.036], 0.006, INK);
+      if (o.serious) { line([hd[0] + 0.006, hd[1] - 0.034], [hd[0] + 0.03, hd[1] - 0.022], 0.009, INK); line([hd[0] + 0.036, hd[1] - 0.022], [hd[0] + 0.062, hd[1] - 0.032], 0.009, INK); }
+    }
+    // front side
+    limb(J.hip, J.kneeF, J.footF, 0.1, 0.082, body, end);
+    dot(J.footF, 0.045 + LW / 2, INK); dot(J.footF, 0.045, end);
+    limb(J.sh, J.elF, J.handF, 0.07, 0.06, body, G ? null : end);
+    dot(J.handF, 0.04 + LW / 2, INK); dot(J.handF, 0.04, end);
+    ctx.restore();
+    // joint positions in px (ignores rotation), handy for aiming effects
+    const px = q => [x + dir * s * q[0], y + s * q[1]];
+    return { head: px(J.head), handF: px(J.handF), handB: px(J.handB), chest: px(along(J.hip, J.sh, 0.7)), hip: px(J.hip) };
+  }
+
+  // ---------- effects (pixel space) ----------
+  function ring(x, y, r, a, col, w = 10, sq = 1) {
+    if (a <= 0 || r <= 0) return;
+    ctx.save(); ctx.globalAlpha = clamp(a); ctx.strokeStyle = col; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * sq, 0, 0, 7); ctx.stroke(); ctx.restore();
+  }
+  function burst(x, y, r, a, col, seed = 1, n = 14) {
+    if (a <= 0) return;
+    const R = rng(seed);
+    ctx.save(); ctx.globalAlpha = clamp(a); ctx.translate(x, y);
+    ctx.fillStyle = col; ctx.strokeStyle = INK; ctx.lineWidth = 5;
+    ctx.beginPath();
+    for (let i = 0; i < n * 2; i++) {
+      const ang = i / (n * 2) * Math.PI * 2 + R() * 0.2;
+      const rr = i % 2 ? r * (0.32 + R() * 0.12) : r * (0.7 + R() * 0.45);
+      ctx.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fffbe6'; ctx.beginPath(); ctx.arc(0, 0, r * 0.26, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  function speedLines(cx, cy, inner, n, a, seed, col = INK) {
+    if (a <= 0) return;
+    const R = rng(seed);
+    ctx.save(); ctx.globalAlpha = clamp(a); ctx.fillStyle = col;
+    for (let i = 0; i < n; i++) {
+      const ang = R() * Math.PI * 2, w = 2 + R() * 7, r0 = inner + R() * 260, r1 = 1500;
+      const ca = Math.cos(ang), sa = Math.sin(ang), px = -sa * w, py = ca * w;
+      ctx.beginPath(); ctx.moveTo(cx + ca * r0, cy + sa * r0); ctx.lineTo(cx + ca * r1 + px, cy + sa * r1 + py); ctx.lineTo(cx + ca * r1 - px, cy + sa * r1 - py); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function orb(x, y, r, col = C.violet, a = 1) {
+    ctx.save(); ctx.globalAlpha = clamp(a);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.3, col); g.addColorStop(1, 'rgba(122,60,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.2, 0, 7); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, r * 0.9, 0, 7); ctx.stroke();
+    ctx.restore();
+  }
+  function puff(x, y, r, a) {
+    if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha = clamp(a); ctx.fillStyle = C.smoke; ctx.strokeStyle = '#b9b7c0'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+  function shadow(x, w, a = 0.16) { ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#4b4860'; ctx.beginPath(); ctx.ellipse(x, GY + 6, w, w * 0.12, 0, 0, 7); ctx.fill(); ctx.restore(); }
+  function horizon() { ctx.save(); ctx.strokeStyle = '#e7e6ec'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, GY - 360); ctx.lineTo(W, GY - 360); ctx.stroke(); ctx.restore(); }
+  function rocks(x, y, t0, t, n, seed, pow = 1) {
+    const dt = t - t0; if (dt < 0 || dt > 1.6) return;
+    const R = rng(seed);
+    ctx.save(); ctx.fillStyle = '#9d9aa6'; ctx.strokeStyle = INK; ctx.lineWidth = 3;
+    for (let i = 0; i < n; i++) {
+      const vx = (R() - 0.5) * 1600 * pow, vy = -(500 + R() * 1100) * pow, sz = 10 + R() * 26 * pow;
+      const px = x + vx * dt, py = Math.min(y, y + vy * dt + 1900 * dt * dt);
+      ctx.globalAlpha = clamp(1.6 - dt);
+      ctx.save(); ctx.translate(px, py); ctx.rotate(dt * 9 * (R() - 0.5));
+      ctx.beginPath(); ctx.moveTo(-sz, 0); ctx.lineTo(-sz * 0.3, -sz * 0.8); ctx.lineTo(sz, -sz * 0.4); ctx.lineTo(sz * 0.6, sz * 0.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  function crater(x, r, a = 1) {
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.fillStyle = '#d4d2da'; ctx.strokeStyle = INK; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.ellipse(x, GY + 10, r, r * 0.16, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#6f6c7a'; ctx.beginPath(); ctx.ellipse(x, GY + 14, r * 0.8, r * 0.11, 0, 0, 7); ctx.fill();
+    ctx.lineWidth = 4;
+    for (const [dx, len] of [[-1, 0.5], [1, 0.6], [-0.6, 0.35], [0.7, 0.3]]) { ctx.beginPath(); ctx.moveTo(x + dx * r, GY + 10); ctx.lineTo(x + dx * r * (1 + len), GY + 10 + dx * 18); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  // ---------- captions ----------
+  function caption(t, text, t0, t1, o = {}) {
+    if (t < t0 || t > t1) return;
+    const k = eo(seg(t, t0, t0 + 0.22)), out = seg(t, t1 - 0.25, t1);
+    const size = o.size || 118, y = o.y ?? 300;
+    ctx.save();
+    ctx.globalAlpha = clamp(k * 1.4) * (1 - out);
+    ctx.translate(W / 2 + (o.jitter ? Math.sin(t * 90) * 5 : 0), y);
+    const sc = (o.slam ? 1.8 : 1.25) - (o.slam ? 0.8 : 0.25) * k;
+    ctx.scale(sc, sc);
+    ctx.font = `${size}px Anton, Impact, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lines = text.split('\n');
+    const widest = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const fit = Math.min(1, (W - 110) / (widest * sc));
+    ctx.scale(fit, fit);
+    lines.forEach((ln, i) => {
+      const yy = (i - (lines.length - 1) / 2) * size * 1.02;
+      if (o.shadow !== false) { ctx.fillStyle = o.shadowCol || C.red; ctx.fillText(ln, 7, yy + 7); }
+      ctx.fillStyle = o.fill || INK; ctx.fillText(ln, 0, yy);
+    });
+    ctx.restore();
+  }
+  function tag(t, text, t0, t1, y = 1760) {
+    if (t < t0 || t > t1) return;
+    ctx.save(); ctx.globalAlpha = seg(t, t0, t0 + 0.2) * (1 - seg(t, t1 - 0.2, t1));
+    ctx.font = '500 34px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
+    const w = ctx.measureText(text).width + 48;
+    ctx.fillStyle = INK; ctx.fillRect(W / 2 - w / 2, y - 34, w, 58);
+    ctx.fillStyle = C.suit; ctx.fillText(text, W / 2, y + 7);
+    ctx.restore();
+  }
+
+  // ---------- timeline ----------
+  const CHAPTERS = [
+    { t: 0, name: 'Open' }, { t: 3.2, name: 'Cosmos' }, { t: 11, name: 'Barrage' }, { t: 16, name: 'Gamma Ray' },
+    { t: 24, name: 'Flurry' }, { t: 27, name: 'Serious' }, { t: 29.5, name: 'Speedblitz' }, { t: 39, name: 'Title' },
+  ];
+  const SHAKE = [], FLASH = [], CUES = [];
+  const shake = (t, a, d = 0.4) => SHAKE.push([t, a, d]);
+  const flash = (t, d = 0.08) => FLASH.push([t, d]);
+  const cue = (t, type, p = 1) => CUES.push({ t, type, p });
+
+  // Scene 3 (barrage) timing
+  const ORBS = []; { let tt = 11.5, i = 0; while (tt < 15.3) { ORBS.push({ t: tt, i }); tt += 0.62 - i * 0.03; i++; } }
+  ORBS.forEach(o => { cue(o.t, 'zap', 0.5); cue(o.t + 0.45, 'slap'); cue(o.t + 0.8, 'boom', 0.55); shake(o.t + 0.8, 10, 0.3); });
+  // Scene 6 (flurry)
+  const FLURRY = []; for (let tt = 24.2; tt < 26.8; tt += 0.13) FLURRY.push(tt);
+  FLURRY.forEach((tt, i) => { cue(tt, 'thud', 0.6); if (i % 3 === 0) shake(tt, 8, 0.15); });
+  // Scene 8 (blitz)
+  const BLITZ = []; { let tt = 30.1, i = 0; while (tt < 33.9) { BLITZ.push({ t: tt, i }); tt += Math.max(0.11, 0.26 - i * 0.008); i++; } }
+  BLITZ.forEach(b => { cue(b.t, 'hit', 0.8); shake(b.t, 14, 0.12); });
+  cue(0.1, 'drone'); cue(3.2, 'whoosh'); cue(4.5, 'boom', 0.9); shake(4.5, 18, 0.5);
+  cue(7.5, 'whoosh'); cue(11, 'whoosh'); cue(16, 'whoosh'); cue(16.2, 'charge');
+  cue(18, 'boom', 1.6); flash(18, 0.1); shake(18, 40, 2.2); cue(18.3, 'rumble');
+  cue(24, 'whoosh'); cue(27, 'whoosh'); cue(28.2, 'sting'); flash(28.2, 0.09);
+  cue(29.6, 'whoosh', 1.4); flash(30.05, 0.06); cue(34, 'hit', 1.3); shake(34, 26, 0.3);
+  cue(34.6, 'whoosh'); cue(35.2, 'boom', 2); flash(35.2, 0.14); shake(35.2, 55, 1.8); cue(35.3, 'rumble');
+  cue(39, 'boom', 1.1); shake(39, 16, 0.4); cue(40.2, 'hit', 1); cue(41.2, 'boom', 0.8);
+
+  function shakeAt(t) {
+    let x = 0, y = 0;
+    for (const [t0, a, d] of SHAKE) { const k = (t - t0) / d; if (k >= 0 && k < 1) { const amp = a * (1 - k) * (1 - k); x += Math.sin(t * 97 + t0) * amp; y += Math.cos(t * 83 + t0 * 3) * amp; } }
+    return [x, y];
+  }
+
+  // ---------- scenes ----------
+  function sOpen(t) {
+    const k = eio(seg(t, 0.3, 1.3));
+    ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(W / 2 - 380 * k, 960); ctx.lineTo(W / 2 + 380 * k, 960); ctx.stroke(); ctx.restore();
+    caption(t, 'IN AN ENDLESS\nWHITE VOID', 1.1, 3.2, { size: 104, y: 820, shadow: false });
+    tag(t, 'A 3D FAN ANIMATION · MADE IN BLENDER', 1.5, 3.2, 1120);
+  }
+  function sCosmos(t) {
+    const lt = t - 3.2, z = 1 + lt * 0.035;
+    ctx.save(); ctx.translate(W / 2, GY); ctx.scale(z, z); ctx.translate(-W / 2, -GY);
+    horizon();
+    const bob = Math.sin(t * 2.2) * 14, hp = eo(seg(t, 4.45, 4.9));
+    shadow(540, 180, 0.12);
+    const p = t < 5.6 ? P.float : mix(P.float, P.charge, eo(seg(t, 5.6, 6.1)));
+    const g = fighter('G', 540, GY - 170 + bob, 860, p, -1, { t, halo: hp });
+    if (t > 4.45) { const k = seg(t, 4.45, 5.3); ring(g.head[0], g.head[1], 40 + 700 * eo(k), 1 - k, C.halo, 12); ring(540, GY, 60 + 900 * eo(k), (1 - k) * 0.8, C.violet, 8, 0.14); }
+    for (let i = 0; i < 12; i++) { const a = t * 1.2 + i * 0.52, rr = 230 + (i % 3) * 60; dot2(540 + Math.cos(a) * rr, GY - 560 + bob + Math.sin(a) * rr * 0.35, 5 + (i % 3) * 3, C.halo, hp); }
+    if (t > 6.0) { const k = seg(t, 6.0, 7.2); ring(540, GY, 80 + 700 * k, (1 - k) * 0.7, C.violet, 8, 0.14); speedLines(540, GY - 560, 480, 30, (1 - k) * 0.35, 3); }
+    ctx.restore();
+    caption(t, 'HE BECAME\nTHE COSMOS', 5.0, 7.5, { size: 124, y: 330, shadowCol: C.violet });
+  }
+  function dot2(x, y, r, col, a) { if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.restore(); }
+  function sSaitama(t) {
+    const lt = t - 7.5, z = 1.05 + lt * 0.02;
+    ctx.save(); ctx.translate(W / 2, GY); ctx.scale(z, z); ctx.translate(-W / 2, -GY);
+    horizon(); shadow(540, 170);
+    let p = P.idle;
+    if (t > 8.2) p = mix(P.idle, P.nose, eo(seg(t, 8.2, 8.6)));
+    if (t > 10.3) p = mix(P.nose, P.idle, eo(seg(t, 10.3, 10.7)));
+    fighter('S', 540, GY, 880, p, 1, { t, flow: 0.18 });
+    ctx.restore();
+    caption(t, 'HE WAS NOT\nIMPRESSED', 8.7, 11, { size: 124, y: 330 });
+  }
+  function sBarrage(t) {
+    horizon();
+    const gx = 700, gy = 720;
+    let gp = P.float;
+    for (const o of ORBS) if (t >= o.t - 0.12 && t < o.t + 0.25) gp = P.fire;
+    fighter('G', gx, gy + Math.sin(t * 2) * 10, 430, gp, -1, { t });
+    const sx = 360;
+    let sp = P.walkA;
+    const wk = (t * 1.6) % 1; sp = wk < 0.5 ? mix(P.walkA, P.walkB, eio(wk * 2)) : mix(P.walkB, P.walkA, eio(wk * 2 - 1));
+    for (const o of ORBS) { const k = t - (o.t + 0.45); if (k > -0.14 && k < 0.22) sp = k < 0 ? P.slapW : P.slap; }
+    shadow(sx + (t - 11) * 20, 110);
+    const s = fighter('S', sx + (t - 11) * 20, GY, 620, sp, 1, { t, flow: 0.3 });
+    for (const o of ORBS) {
+      const R = rng(o.i + 11);
+      const start = [gx - 90, gy - 250], hitP = [s.head[0] + 90, s.head[1] + 40];
+      const k1 = seg(t, o.t, o.t + 0.45);
+      if (t >= o.t && t < o.t + 0.45) orb(lerp(start[0], hitP[0], ei(k1)), lerp(start[1], hitP[1], ei(k1)), 34, o.i % 3 ? C.violet : C.halo);
+      const land = [R() < 0.5 ? -80 - R() * 100 : W + 80, 900 + R() * 700];
+      const k2 = seg(t, o.t + 0.45, o.t + 0.8);
+      if (t >= o.t + 0.45 && t < o.t + 0.8) orb(lerp(hitP[0], land[0], k2), lerp(hitP[1], land[1], k2), 34, o.i % 3 ? C.violet : C.halo);
+      if (t >= o.t + 0.45 && t < o.t + 0.62) { const k = seg(t, o.t + 0.45, o.t + 0.62); burst(hitP[0], hitP[1], 90 + 80 * k, 1 - k, '#fff3b0', o.i); ring(hitP[0], hitP[1], 40 + 180 * k, 1 - k, C.air, 8); }
+      if (t >= o.t + 0.8 && t < o.t + 1.3) { const k = seg(t, o.t + 0.8, o.t + 1.3); const ex = clamp(land[0], 40, W - 40); burst(ex, land[1], 150 + 180 * k, 1 - k, o.i % 3 ? '#b595ff' : '#8fe3ff', o.i + 50); puff(ex, land[1] - 40, 90 + 120 * k, (1 - k) * 0.8); }
+    }
+    caption(t, 'COSMIC\nBARRAGE', 11.3, 15.9, { size: 110, y: 280, shadowCol: C.violet });
+  }
+  function sGamma(t) {
+    horizon();
+    const Sx = 540, sky = [540, 520];
+    const k = seg(t, 16, 18);
+    fighter('G', sky[0], sky[1], 300, t < 17.9 ? P.gcharge : P.gfire, -1, { t });
+    const r = 30 + 220 * eo(k) * (1 + Math.sin(t * 22) * 0.05);
+    if (t < 18.05) { orb(sky[0], sky[1] - 360 + (t > 17.9 ? 250 * seg(t, 17.9, 18.05) : 0), r, C.halo); for (let i = 0; i < 4; i++) { const kk = ((t * 1.6) + i / 4) % 1; ring(sky[0], sky[1] - 360, r + kk * 260, (1 - kk) * 0.7, i % 2 ? C.violet : C.halo, 6); } }
+    let sp = P.lookup;
+    if (t < 18) { shadow(Sx, 140); fighter('S', Sx, GY, 560, sp, 1, { t, flow: 0.2 + k * 0.5 }); for (let i = 0; i < 8; i++) { const a = t * 3 + i * 0.8; puff(Sx + Math.cos(a) * (260 + i * 20), GY - 20 - (i % 3) * 30, 40 + k * 40, k * 0.6); } }
+    if (t >= 18 && t < 19.9) {
+      const bw = 170 * eo(seg(t, 18, 18.12)) * (1 - seg(t, 19.6, 19.9)) * (1 + Math.sin(t * 60) * 0.08);
+      const g = ctx.createLinearGradient(Sx - bw, 0, Sx + bw, 0);
+      g.addColorStop(0, 'rgba(47,196,255,0)'); g.addColorStop(0.2, '#2fc4ff'); g.addColorStop(0.5, '#e9fbff'); g.addColorStop(0.8, '#2fc4ff'); g.addColorStop(1, 'rgba(47,196,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(Sx - bw, sky[1] - 100, bw * 2, GY - sky[1] + 100);
+      ctx.strokeStyle = INK; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(Sx - bw * 0.55, sky[1] - 100); ctx.lineTo(Sx - bw * 0.55, GY); ctx.moveTo(Sx + bw * 0.55, sky[1] - 100); ctx.lineTo(Sx + bw * 0.55, GY); ctx.stroke();
+      for (let i = 0; i < 3; i++) { const kk = ((t - 18) * 1.8 + i / 3) % 1; ring(Sx, GY, 200 + kk * 900, 1 - kk, i % 2 ? C.halo : C.violet, 10, 0.16); }
+      speedLines(Sx, GY - 300, 500, 40, 0.3, Math.floor(t * 20));
+    }
+    if (t >= 18) { for (let i = 0; i < 14; i++) { const R = rng(i + 3); const kk = seg(t, 18, 20.5); puff(Sx + (R() - 0.5) * 700 * (0.4 + kk), GY - 80 - R() * 420 * (0.3 + kk), 120 + R() * 110 + kk * 60, 0.95); } }
+    rocks(Sx, GY, 18, t, 22, 5, 1.3);
+    if (t > 18) crater(Sx, 380, clamp((t - 18) * 5));
+    caption(t, 'GAMMA RAY\nBURST', 16.2, 20.4, { size: 128, y: 250, shadowCol: C.halo, slam: true });
+  }
+  function sReveal(t) {
+    horizon(); crater(540, 380);
+    const k = seg(t, 20.5, 22.4);
+    let p = P.lookup;
+    if (t > 21.4) p = mix(P.lookup, P.scratch, eo(seg(t, 21.4, 21.8)));
+    shadow(540, 150);
+    fighter('S', 540, GY, 700, p, 1, { t, flow: 0.15 });
+    for (let i = 0; i < 14; i++) { const R = rng(i + 3); puff(540 + (R() - 0.5) * 1100 * (1 + k), GY - 80 - R() * 500 - k * 300, 180 + R() * 110, 0.95 * (1 - eo(k))); }
+    caption(t, '...HUH?', 22.2, 24, { size: 150, y: 420 });
+  }
+  function sFlurry(t) {
+    horizon();
+    const sx = 400, gx = 640;
+    let gp = P.punch, idx = 0;
+    for (let i = 0; i < FLURRY.length; i++) if (t >= FLURRY[i]) idx = i;
+    const moves = [P.punch, P.punch2, P.elbow, P.kick, P.punch, P.punch2];
+    const lt = t - FLURRY[idx];
+    gp = mix(moves[(idx + 5) % 6], moves[idx % 6], eo(clamp(lt / 0.06)));
+    shadow(sx, 130); shadow(gx, 130);
+    fighter('S', sx, GY, 660, P.idle, 1, { t, flow: 0.35 });
+    fighter('G', gx, GY, 680, gp, -1, { t });
+    for (const tt of FLURRY) { const k = seg(t, tt, tt + 0.3); if (t >= tt && k < 1) { ring(sx - 90 - k * 200, GY - 470, 30 + 200 * k, (1 - k) * 0.9, C.air, 7, 1.6); } }
+    const k = seg(t, FLURRY[idx], FLURRY[idx] + 0.08); burst(sx + 70, GY - 520 + (idx % 3) * 70, 70, 1 - k, '#c8b3ff', idx);
+    speedLines(W / 2, GY - 450, 520, 26, 0.25, Math.floor(t * 12));
+    caption(t, 'HE HIT HIM WITH\nEVERYTHING', 24.2, 26.9, { size: 104, y: 300, shadowCol: C.violet });
+  }
+  function sSerious(t) {
+    const lt = t - 27, z = 1 + lt * 0.04;
+    ctx.save(); ctx.translate(W / 2, 900); ctx.scale(z, z); ctx.translate(-W / 2, -900);
+    const cx = 540, cy = 900, R = 470, ser = t >= 28.2;
+    ctx.lineWidth = 16; ctx.strokeStyle = INK;
+    ctx.fillStyle = C.skin; ctx.beginPath(); ctx.ellipse(cx, cy, R, R * 1.1, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.skinB; ctx.beginPath(); ctx.ellipse(cx - R * 0.98, cy + 40, 70, 120, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx + R * 0.98, cy + 40, 70, 120, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff3e6'; ctx.beginPath(); ctx.ellipse(cx - 60, cy - 260, 160, 60, -0.3, 0, 7); ctx.fill();
+    ctx.fillStyle = INK;
+    if (!ser) {
+      for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(cx + sx * 160, cy + 20, 34, 22, 0, 0, 7); ctx.fill(); }
+      ctx.fillRect(cx - 70, cy + 250, 140, 14);
+    } else {
+      const k = eo(seg(t, 28.2, 28.35));
+      for (const sx of [-1, 1]) {
+        ctx.save(); ctx.translate(cx + sx * 165, cy + 10);
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, 0, 95, 42 * k + 8, 0, 0, 7); ctx.fill(); ctx.lineWidth = 12; ctx.stroke();
+        ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(-sx * 12, 2, 26, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-sx * 20, -8, 8, 0, 7); ctx.fill();
+        ctx.restore();
+        ctx.save(); ctx.translate(cx + sx * 165, cy - 90); ctx.rotate(sx * 0.32 * k);
+        ctx.fillStyle = INK; ctx.fillRect(-110, -18, 220, 36); ctx.restore();
+      }
+      ctx.fillRect(cx - 80, cy + 250, 160, 16);
+      speedLines(cx, cy, 560, 60, 0.5 * (1 - seg(t, 28.2, 29.4)), 9);
+      ctx.save(); ctx.strokeStyle = C.red; ctx.lineWidth = 10; ctx.globalAlpha = 0.8;
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(cx + 300 + i * 30, cy - 420); ctx.lineTo(cx + 250 + i * 30, cy - 330); ctx.stroke(); }
+      ctx.restore();
+    }
+    ctx.restore();
+    tag(t, 'SERIOUS MODE', 28.3, 29.5, 1730);
+  }
+  function sBlitz(t) {
+    const G0 = [540, GY];
+    horizon();
+    // Garou position: pushed around by hits, then launched and slammed
+    let gx = G0[0], gy = G0[1], gpose = t < 30.1 ? P.punch : P.hit, grot = 0, sPos = null, sPose = P.serious, sDir = 1;
+    let last = -1;
+    for (let i = 0; i < BLITZ.length; i++) if (t >= BLITZ[i].t) last = i;
+    if (t < 30.1) { sPos = [300, GY]; sPose = P.serious; }
+    if (last >= 0 && t < 34) {
+      const b = BLITZ[last], R = rng(last + 40);
+      const ang = R() * Math.PI * 2;
+      const side = Math.cos(ang) >= 0 ? 1 : -1;
+      const lt = t - b.t;
+      gx += -side * 30 * (1 - clamp(lt / 0.12)) + Math.sin(last) * 20;
+      gpose = last % 2 ? P.hit : P.hit2;
+      const hy = R() * 160;
+      sPos = [gx + side * 300, GY - hy];
+      sDir = -side;
+      sPose = [P.punch, P.kick, P.elbow, P.punch2, P.uppercut, P.flykick][last % 6];
+    }
+    if (t >= 34) {
+      const up = eo(seg(t, 34, 34.9));
+      gy = GY - 640 * up; grot = up * 2.4; gpose = P.tumble;
+      if (t < 34.6) { sPos = [gx + 280, GY]; sPose = P.uppercut; sDir = -1; }
+      else if (t < 35.2) { sPos = [gx + 40, gy - 430]; sPose = t < 35.1 ? P.hammer : P.hammerHit; sDir = -1; }
+      if (t >= 35.2) { gy = GY + 40; grot = -Math.PI / 2; gpose = P.ko; }
+      if (t >= 35.2) { const k = seg(t, 35.2, 35.5); sPos = [gx - 380, GY]; sPose = k < 1 ? P.land : mix(P.land, P.idle, seg(t, 35.8, 36.3)); sDir = -1; }
+    }
+    if (t >= 35.2) crater(gx, 440);
+    // ghosts: last 5 positions
+    for (let j = Math.max(0, last - 5); j < last; j++) {
+      const b = BLITZ[j], R = rng(j + 40), ang = R() * Math.PI * 2, side = Math.cos(ang) >= 0 ? 1 : -1;
+      const age = t - BLITZ[j + 1].t; if (age < 0 || age > 0.35 || t >= 34) continue;
+      fighter('S', G0[0] + side * 300, GY - R() * 160, 600, [P.punch, P.kick, P.elbow, P.punch2, P.uppercut, P.flykick][j % 6], -side, { t, alpha: 0.4 * (1 - age / 0.35), flow: 0.9 });
+    }
+    shadow(gx, 130);
+    fighter('G', gx, gy, 600, gpose, sDir === 1 ? -1 : 1, { t, rot: grot, halo: t > 35.2 ? 0.3 : 1 });
+    if (sPos) fighter('S', sPos[0], sPos[1], 600, sPose, sDir, { t, serious: true, flow: t >= 30.1 ? 0.95 : 0.3 });
+    if (last >= 0 && t < 34.1) {
+      const b = BLITZ[last], k = seg(t, b.t, b.t + 0.12), R = rng(last + 40); R();
+      const hy = R() * 160;
+      burst(gx + (sDir === -1 ? 110 : -110) * 0.8, GY - 380 - hy * 0.8, 120 + 90 * k, 1 - k, last % 2 ? '#ffe27a' : '#ffffff', last + 90);
+      ring(gx, GY - 400, 60 + 380 * k, (1 - k) * 0.8, C.air, 9, 1);
+    }
+    if (t >= 30.1 && t < 35.2) speedLines(gx, GY - 400, 420, 44, 0.55, Math.floor(t * 30));
+    if (t >= 34 && t < 34.2) { const k = seg(t, 34, 34.2); burst(gx, GY - 300, 200 * (1 + k), 1 - k, '#ffffff', 5); }
+    if (t >= 35.2) {
+      const k = seg(t, 35.2, 36.4);
+      for (let i = 0; i < 3; i++) ring(gx, GY, 200 + (900 + i * 400) * eo(clamp(k * 1.4 - i * 0.15)), 1 - k, [C.air, C.hot, C.violet][i], 14, 0.16);
+      burst(gx, GY - 120, 300 + 200 * k, 1 - seg(t, 35.2, 35.6), '#fff3b0', 77, 20);
+      for (let i = 0; i < 16; i++) { const R = rng(i + 70); const kk = seg(t, 35.25, 38); puff(gx + (R() - 0.5) * 1300 * (0.4 + kk), GY - 60 - R() * 360 * (0.4 + kk), 100 + R() * 100, (1 - kk) * 0.9); }
+    }
+    rocks(gx, GY, 35.2, t, 30, 11, 1.5);
+    caption(t, 'SPEED\nBLITZ', 30.0, 34.0, { size: 190, y: 330, slam: true, jitter: true, shadowCol: C.red });
+    caption(t, 'ONE BLINK.', 36.2, 38.9, { size: 140, y: 380, slam: true });
+  }
+  function sTitle(t) {
+    const lt = t - 39;
+    ctx.save();
+    const k1 = eo(seg(t, 39, 39.35)), k2 = eo(seg(t, 40.2, 40.5)), k3 = eo(seg(t, 41.2, 41.5));
+    speedLines(W / 2, 900, 520, 70, 0.14 * (1 - seg(t, 39, 40.5)), 21);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save(); ctx.globalAlpha = k1; ctx.translate(W / 2, 640); ctx.scale(1.6 - 0.6 * k1, 1.6 - 0.6 * k1);
+    ctx.font = '230px Anton, Impact, sans-serif';
+    { const f = Math.min(1, (W - 90) / (ctx.measureText('SAITAMA').width * (1.6 - 0.6 * k1))); ctx.scale(f, f); }
+    ctx.fillStyle = INK; ctx.fillText('SAITAMA', 9, 9); ctx.fillStyle = C.suit; ctx.fillText('SAITAMA', 0, 0);
+    ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.strokeText('SAITAMA', 0, 0); ctx.restore();
+    ctx.save(); ctx.globalAlpha = k2; ctx.font = '800 90px Archivo, Arial, sans-serif'; ctx.fillStyle = C.red; ctx.fillText('VS', W / 2, 840); ctx.restore();
+    ctx.save(); ctx.globalAlpha = k3; ctx.translate(W / 2, 1060); ctx.scale(1.6 - 0.6 * k3, 1.6 - 0.6 * k3);
+    ctx.font = '176px Anton, Impact, sans-serif';
+    { const f = Math.min(1, (W - 90) / (ctx.measureText('COSMIC GAROU').width * (1.6 - 0.6 * k3))); ctx.scale(f, f); }
+    cosmos.setTransform(new DOMMatrix().translate(lt * 40, 0));
+    ctx.fillStyle = cosmos; ctx.fillText('COSMIC GAROU', 0, 0);
+    ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.strokeText('COSMIC GAROU', 0, 0); ctx.restore();
+    ctx.save(); ctx.globalAlpha = seg(t, 42, 42.5);
+    ctx.font = '500 38px "IBM Plex Mono", monospace'; ctx.fillStyle = INK;
+    ctx.fillText('A 5-MINUTE 3D FIGHT · MADE IN BLENDER', W / 2, 1300);
+    ctx.fillStyle = '#6d6a78'; ctx.font = '500 30px "IBM Plex Mono", monospace';
+    ctx.fillText('OPEN THE .BLEND · PRESS SPACE', W / 2, 1360);
+    ctx.font = '400 26px Archivo, Arial, sans-serif';
+    ctx.fillText('Fan work · One-Punch Man © ONE / Yusuke Murata', W / 2, 1800);
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function draw(t) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    const [sx, sy] = shakeAt(t);
+    ctx.translate(sx, sy);
+    if (t < 3.2) sOpen(t);
+    else if (t < 7.5) sCosmos(t);
+    else if (t < 11) sSaitama(t);
+    else if (t < 16) sBarrage(t);
+    else if (t < 20.5) sGamma(t);
+    else if (t < 24) sReveal(t);
+    else if (t < 27) sFlurry(t);
+    else if (t < 29.5) sSerious(t);
+    else if (t < 39) sBlitz(t);
+    else sTitle(t);
+    // anime impact frame: invert the picture for a few frames
+    for (const [t0, d] of FLASH) if (t >= t0 && t < t0 + d) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'difference'; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    // fade in / out
+    const fade = Math.max(1 - seg(t, 0, 0.4), seg(t, DUR - 0.6, DUR));
+    if (fade > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = fade; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+  }
+
+  // ---------- sound (synthesized, starts only after a tap) ----------
+  let ac = null, master = null, noise = null, soundOn = false;
+  function audio() {
+    if (ac) return ac;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    ac = new AC(); master = ac.createGain(); master.gain.value = 0.8;
+    const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(ac.destination);
+    noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+    const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return ac;
+  }
+  function env(g, t0, a, peak, dec) { g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0 + a); g.gain.exponentialRampToValueAtTime(0.0001, t0 + a + dec); }
+  function noiseSrc(type, freq, q = 1) { const s = ac.createBufferSource(); s.buffer = noise; const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; s.connect(f); return [s, f]; }
+  function play(type, p = 1) {
+    if (!soundOn || !audio()) return;
+    const t0 = ac.currentTime + 0.01;
+    if (type === 'boom') {
+      const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(110, t0); o.frequency.exponentialRampToValueAtTime(32, t0 + 0.5 * p); env(g, t0, 0.005, 0.9 * Math.min(1, p), 0.6 * p); o.connect(g).connect(master); o.start(t0); o.stop(t0 + 1.5 * p);
+      const [s, f] = noiseSrc('lowpass', 700); const g2 = ac.createGain(); env(g2, t0, 0.005, 0.5 * Math.min(1.2, p), 0.5 * p); f.connect(g2).connect(master); s.start(t0); s.stop(t0 + 1.5 * p);
+    } else if (type === 'hit' || type === 'thud' || type === 'slap') {
+      const fr = type === 'slap' ? 2600 : type === 'hit' ? 1400 : 500;
+      const [s, f] = noiseSrc('bandpass', fr, 0.9); const g = ac.createGain(); env(g, t0, 0.002, 0.7 * p, type === 'thud' ? 0.09 : 0.14); f.connect(g).connect(master); s.start(t0); s.stop(t0 + 0.3);
+      const o = ac.createOscillator(), g2 = ac.createGain(); o.frequency.setValueAtTime(type === 'thud' ? 90 : 160, t0); o.frequency.exponentialRampToValueAtTime(45, t0 + 0.12); env(g2, t0, 0.002, 0.6 * p, 0.12); o.connect(g2).connect(master); o.start(t0); o.stop(t0 + 0.3);
+    } else if (type === 'whoosh') {
+      const [s, f] = noiseSrc('bandpass', 400, 1.5); f.frequency.setValueAtTime(300, t0); f.frequency.exponentialRampToValueAtTime(3200, t0 + 0.35); const g = ac.createGain(); env(g, t0, 0.15, 0.35 * p, 0.25); f.connect(g).connect(master); s.start(t0); s.stop(t0 + 0.6);
+    } else if (type === 'zap') {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(900, t0); o.frequency.exponentialRampToValueAtTime(220, t0 + 0.25); env(g, t0, 0.005, 0.12 * p, 0.25); o.connect(g).connect(master); o.start(t0); o.stop(t0 + 0.4);
+    } else if (type === 'charge') {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(60, t0); o.frequency.exponentialRampToValueAtTime(420, t0 + 1.8); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.18, t0 + 1.7); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.85); const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1200; o.connect(f).connect(g).connect(master); o.start(t0); o.stop(t0 + 1.9);
+    } else if (type === 'rumble') {
+      const [s, f] = noiseSrc('lowpass', 160); const g = ac.createGain(); g.gain.setValueAtTime(0.5, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.8); f.connect(g).connect(master); s.start(t0); s.stop(t0 + 2);
+    } else if (type === 'sting') {
+      for (const fr of [55, 82.4, 110]) { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'square'; o.frequency.value = fr; env(g, t0, 0.01, 0.08, 1.0); const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; o.connect(f).connect(g).connect(master); o.start(t0); o.stop(t0 + 1.2); }
+    } else if (type === 'drone') {
+      const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 55; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.12, t0 + 1); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 3); o.connect(g).connect(master); o.start(t0); o.stop(t0 + 3.1);
+    }
+  }
+
+  // ---------- playback ----------
+  const $ = id => document.getElementById(id);
+  const playBtn = $('play'), bigPlay = $('bigPlay'), fill = $('fill'), timeEl = $('time'), bar = $('bar'), stage = $('stage');
+  let t = 41.8, playing = false, last = 0, prevT = t, started = false;
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const chapWrap = $('chapters');
+  CHAPTERS.forEach(c => {
+    const b = document.createElement('button'); b.textContent = `${fmt(c.t)} ${c.name}`; b.addEventListener('click', () => seek(c.t, true)); chapWrap.appendChild(b); c.el = b;
+    const tick = document.createElement('div'); tick.className = 'tick'; tick.style.left = `${c.t / DUR * 100}%`; bar.appendChild(tick);
+  });
+  function ui() {
+    fill.style.width = `${started ? t / DUR * 100 : 0}%`;
+    timeEl.textContent = `${fmt(started ? t : 0)} / ${fmt(DUR)}`;
+    bar.setAttribute('aria-valuenow', Math.round(t));
+    playBtn.textContent = playing ? 'Pause' : (started && t < DUR ? 'Play' : 'Play');
+    bigPlay.hidden = playing;
+    let cur = CHAPTERS[0]; for (const c of CHAPTERS) if (t >= c.t) cur = c;
+    CHAPTERS.forEach(c => c.el.classList.toggle('on', started && c === cur));
+    $('exitClean').hidden = !(document.body.classList.contains('clean') && !playing);
+  }
+  function frame(now) {
+    if (!playing) return;
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    t += dt;
+    for (const c of CUES) if (c.t > prevT && c.t <= t) play(c.type, c.p);
+    prevT = t;
+    if (t >= DUR) { t = DUR; playing = false; }
+    draw(t); ui();
+    if (playing) requestAnimationFrame(frame);
+  }
+  function start() {
+    if (!started || t >= DUR) { t = 0; prevT = 0; }
+    started = true; playing = true; last = performance.now();
+    if (soundOn && audio() && ac.state === 'suspended') ac.resume();
+    requestAnimationFrame(frame); ui();
+  }
+  function pause() { playing = false; ui(); }
+  function toggle() { playing ? pause() : start(); }
+  function seek(nt, andPlay) { started = true; t = clamp(nt, 0, DUR - 0.01); prevT = t; draw(t); ui(); if (andPlay && !playing) { playing = true; last = performance.now(); requestAnimationFrame(frame); ui(); } }
+
+  playBtn.addEventListener('click', toggle);
+  bigPlay.addEventListener('click', e => { e.stopPropagation(); start(); });
+  stage.addEventListener('click', toggle);
+  $('restart').addEventListener('click', () => { started = false; t = 0; start(); });
+  $('sound').addEventListener('click', e => {
+    soundOn = !soundOn; e.currentTarget.setAttribute('aria-pressed', soundOn); e.currentTarget.textContent = soundOn ? 'Sound on' : 'Sound off';
+    if (soundOn && audio() && ac.state === 'suspended') ac.resume();
+  });
+  $('clean').addEventListener('click', () => { document.body.classList.add('clean'); pause(); ui(); });
+  $('exitClean').addEventListener('click', () => { document.body.classList.remove('clean'); ui(); });
+  const scrub = e => { const r = bar.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * DUR, false); };
+  bar.addEventListener('pointerdown', e => { bar.setPointerCapture(e.pointerId); pause(); scrub(e); bar.onpointermove = scrub; });
+  bar.addEventListener('pointerup', () => { bar.onpointermove = null; });
+  bar.addEventListener('keydown', e => { if (e.key === 'ArrowRight') seek(t + 1); if (e.key === 'ArrowLeft') seek(t - 1); if (e.key === ' ') { e.preventDefault(); toggle(); } });
+
+  window.trailerSeek = nt => seek(nt, false);
+
+  // Poster frame (the title card) until the viewer presses play
+  draw(t); ui();
+  if (document.fonts && document.fonts.load) {
+    Promise.all(['230px Anton', '800 90px Archivo', '500 38px "IBM Plex Mono"'].map(f => document.fonts.load(f))).then(() => { if (!playing) draw(t); }).catch(() => {});
+  }
+})();
+</script>
