@@ -1,0 +1,794 @@
+<title>Mahoraga vs Itadori Part 3</title>
+<meta name="description" content="Stickman fan animation set in Tokyo. Part 3, Chapter 3: Red Wheel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Zen+Kaku+Gothic+New:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  /* Layout: one widescreen stage, a transport bar under it, chapter list below. Single deliberate look: Tokyo under a curtain at midnight. */
+  :root {
+    --ink: #070910;          /* page ground, sky inside the curtain */
+    --panel: #11141f;        /* control surfaces */
+    --line: #252a3c;         /* hairlines */
+    --paper: #f3ede4;        /* text, Itadori's line colour */
+    --muted: #8f93ab;        /* secondary text */
+    --yuji: #ff5a45;         /* Itadori's hood and cursed energy */
+    --maho: #e8c464;         /* Mahoraga's wheel */
+    --display: "Reggae One", "Hiragino Sans", "Arial Black", Impact, sans-serif;
+    --body: "Zen Kaku Gothic New", "Hiragino Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--ink); color: var(--paper); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 18px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 5vw, 44px); line-height: 1; margin: 0; text-wrap: balance; }
+  h1 .vs { color: var(--muted); font-size: .5em; vertical-align: middle; margin: 0 .3em; }
+  h1 .m { color: var(--maho); } h1 .y { color: var(--yuji); }
+  .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  button { font: 700 14px var(--body); color: var(--paper); background: var(--panel); border: 1px solid var(--line); padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible, .progress:focus-visible { outline: 2px solid var(--maho); outline-offset: 2px; }
+  .progress { flex: 1 1 220px; min-width: 0; height: 8px; background: var(--panel); border: 1px solid var(--line); position: relative; cursor: pointer; }
+  .progress i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--yuji), var(--maho)); width: 0; }
+  .time { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  ol.chapters { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+  ol.chapters button { width: 100%; text-align: left; font-weight: 400; display: flex; gap: 10px; align-items: baseline; }
+  ol.chapters button b { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--muted); }
+  ol.chapters button[aria-current="true"] { border-color: var(--maho); }
+  .note { color: var(--muted); font-size: 13px; max-width: 65ch; margin: 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1><span class="m">MAHORAGA</span><span class="vs">vs</span><span class="y">ITADORI</span></h1>
+    <span class="tag">Part 3 · Chapter 3 · Red Wheel</span>
+  </header>
+
+  <div class="stage"><canvas id="cv" width="1280" height="720" aria-label="Stickman animation: Itadori and the red Mahoraga trade Black Flashes, Itadori is cut down, and Sukuna takes over"></canvas></div>
+  <p class="sr" id="live" aria-live="polite"></p>
+
+  <div class="bar">
+    <button id="play" type="button">Pause</button>
+    <button id="restart" type="button">Restart</button>
+    <div class="progress" id="prog" role="slider" aria-label="Playback position" tabindex="0"><i id="progFill"></i></div>
+    <span class="time" id="time">0:00 / 0:00</span>
+  </div>
+
+  <ol class="chapters" id="chapters"></ol>
+
+  <p class="note">Chapter 3 is a straight exchange: Itadori and the red Mahoraga trade Black Flashes until their fists meet. Then the blade finds Itadori, and while he kneels, Sukuna surfaces. All dialogue is original. Space bar plays and pauses.</p>
+</div>
+
+<script>
+(() => {
+const cv = document.getElementById('cv');
+const out = cv.getContext('2d');
+const W = 1280, H = 720, GY = 600;
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H;
+const c = buf.getContext('2d');
+
+const COL = { yuji: '#ff5a45', yujiLine: '#f3ede4', maho: '#e8c464', mahoLine: '#dcdaf0', paper: '#f3ede4', ink: '#070910', blue: '#5aa8ff', red: '#ff2a2a' };
+const F = { display: '"Reggae One", "Hiragino Sans", "Arial Black", Impact, sans-serif', body: '"Zen Kaku Gothic New", "Segoe UI", sans-serif', mono: '"JetBrains Mono", Menlo, monospace' };
+
+// ---------- helpers ----------
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const easeIn = t => t * t * t;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+function rng(seed) { let s = (seed * 2654435761) >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+function ln(x1, y1, x2, y2) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); }
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Everything below is a pure function of time, so seeking and frame-by-frame export give identical frames.
+const fx = { shake: 0, flash: 0, flashColor: '#fff' };
+function impact(t, t0, amp) { if (t >= t0) fx.shake += amp * Math.exp(-(t - t0) * 7); }
+function flashAt(t, t0, color, a = 1, dur = .35) { if (t >= t0 && t < t0 + dur) { const v = a * (1 - (t - t0) / dur); if (v > fx.flash) { fx.flash = v; fx.flashColor = color; } } }
+
+// ---------- stickman rig ----------
+// Angles: 0 points straight down, +π/2 points toward the facing direction, π points up.
+const P = {
+  stand:  { lean: 0,    aF: [.15, .1],   aB: [-.15, -.1],  lF: [.12, .05],  lB: [-.12, -.05] },
+  guard:  { lean: .12,  aF: [.9, 2.6],   aB: [.6, 2.8],    lF: [.35, .15],  lB: [-.35, -.1] },
+  punch:  { lean: .35,  aF: [1.62, 1.58], aB: [.3, 2.5],   lF: [.75, .35],  lB: [-.6, -.35] },
+  punch2: { lean: .3,   aF: [.35, 2.6],  aB: [1.6, 1.56],  lF: [.6, .25],   lB: [-.55, -.35] },
+  kick:   { lean: -.3,  aF: [-.5, .4],   aB: [1.0, 2.5],   lF: [1.8, 1.7],  lB: [-.1, -.05] },
+  charge: { lean: .25,  aF: [-.9, .6],   aB: [1.2, 2.3],   lF: [.75, .3],   lB: [-.7, -.4] },
+  hurt:   { lean: -.5,  aF: [-2.0, -2.6], aB: [2.6, 2.2],  lF: [.6, .9],    lB: [.2, .6] },
+  crouch: { lean: .45,  aF: [.7, 1.9],   aB: [.2, .9],     lF: [1.35, -.05], lB: [.15, -1.25] },
+  fly:    { lean: .05,  aF: [2.5, 2.9],  aB: [2.2, 2.6],   lF: [1.1, -.4],  lB: [.5, -.8] },
+  // Mahoraga
+  mIdle:  { lean: .02,  aF: [.35, .2],   aB: [-.25, -.15], lF: [.18, .05],  lB: [-.18, -.05] },
+  mUp:    { lean: -.1,  aF: [2.7, 3.0],  aB: [.4, .9],     lF: [.4, .15],   lB: [-.35, -.2] },
+  mDown:  { lean: .4,   aF: [1.3, 1.0],  aB: [-.5, -.2],   lF: [.7, .3],    lB: [-.6, -.4] },
+  mRise:  { lean: .5,   aF: [.9, .3],    aB: [.3, 0],      lF: [1.3, -.1],  lB: [.1, -1.2] },
+  mHurt:  { lean: -.45, aF: [-1.2, -1.6], aB: [1.9, 2.3],  lF: [.5, .7],    lB: [.1, .4] },
+};
+function mix(a, b, k) {
+  const m = (x, y) => [lerp(x[0], y[0], k), lerp(x[1], y[1], k)];
+  return { lean: lerp(a.lean, b.lean, k), aF: m(a.aF, b.aF), aB: m(a.aB, b.aB), lF: m(a.lF, b.lF), lB: m(a.lB, b.lB) };
+}
+function runPose(ph) {
+  const sn = Math.sin(ph), cs = Math.cos(ph);
+  return { lean: .45, aF: [-sn * 1.1, -sn * 1.1 + 1.5], aB: [sn * 1.1, sn * 1.1 + 1.5],
+    lF: [.3 + sn * .9, .3 + sn * .9 - (.4 + .9 * Math.max(0, cs))], lB: [.3 - sn * .9, .3 - sn * .9 - (.4 + .9 * Math.max(0, -cs))] };
+}
+function skeleton(p, s, f) {
+  const pt = (o, a, L) => [o[0] + Math.sin(a) * L * s * f, o[1] + Math.cos(a) * L * s];
+  const hip = [0, 0];
+  const neck = [Math.sin(p.lean) * 62 * s * f, -Math.cos(p.lean) * 62 * s];
+  const head = [neck[0] + Math.sin(p.lean) * 22 * s * f, neck[1] - Math.cos(p.lean) * 22 * s];
+  const sh = [lerp(hip[0], neck[0], .92), lerp(hip[1], neck[1], .92)];
+  const eF = pt(sh, p.aF[0], 36), hF = pt(eF, p.aF[1], 34);
+  const eB = pt(sh, p.aB[0], 36), hB = pt(eB, p.aB[1], 34);
+  const kF = pt(hip, p.lF[0], 46), fF = pt(kF, p.lF[1], 46);
+  const kB = pt(hip, p.lB[0], 46), fB = pt(kB, p.lB[1], 46);
+  return { hip, neck, head, sh, eF, hF, eB, hB, kF, fF, kB, fB };
+}
+// o: { who: 'yuji'|'maho', x, gy, s, f, pose, air, spin, alpha, wheel, wound, blade }
+function stick(o) {
+  const isM = o.who === 'maho';
+  const s = o.s ?? (isM ? 1.75 : 1.1), f = o.f ?? 1;
+  const S = skeleton(o.pose, s, f);
+  const low = Math.max(S.fF[1], S.fB[1]);
+  const gy = o.gy ?? GY, air = o.air || 0;
+  c.save(); c.globalAlpha *= o.alpha ?? 1;
+  // contact shadow
+  if (air < 200 && gy <= GY) { c.fillStyle = `rgba(0,0,0,${.45 * (1 - air / 200)})`; c.beginPath(); c.ellipse(o.x, GY + 4, 46 * s, 8 * s, 0, 0, 7); c.fill(); }
+  c.translate(o.x, gy - low - air);
+  if (o.spin) { c.translate(0, -40 * s); c.rotate(o.spin * f); c.translate(0, 40 * s); }
+  const line = o.flash ? '#1c0609' : isM ? COL.mahoLine : COL.yujiLine;
+  const back = o.flash ? '#0d0204' : isM ? '#9f9cb8' : '#b9b2a8';
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.shadowColor = o.flash ? COL.red : o.sukuna > .5 ? '#c0102a' : hexA(isM ? COL.maho : COL.yuji, .75); c.shadowBlur = o.flash ? 26 : 16 + (o.sukuna || 0) * 12;
+  const w = (isM ? 9 : 7) * s;
+  const poly = (...pts) => {
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]);
+    if (o.flash) { const lw = c.lineWidth, ss = c.strokeStyle; c.strokeStyle = '#ff3b3b'; c.lineWidth = lw + 5; c.stroke(); c.strokeStyle = ss; c.lineWidth = lw; } // red rim
+    c.stroke();
+  };
+  // back limbs
+  c.strokeStyle = back; c.lineWidth = w * .9;
+  poly(S.hip, S.kB, S.fB); poly(S.sh, S.eB, S.hB);
+  // torso
+  c.strokeStyle = line; c.lineWidth = w * (isM ? 1.9 : 1.1);
+  poly(S.hip, S.neck);
+  if (isM && o.wound > 0) { // glowing cracks from Itadori's hits
+    c.save(); c.shadowColor = COL.blue; c.shadowBlur = 20; c.strokeStyle = hexA('#8fd0ff', o.wound); c.lineWidth = 3;
+    const mx = lerp(S.hip[0], S.neck[0], .45), my = lerp(S.hip[1], S.neck[1], .45);
+    poly([mx - 12, my - 22], [mx + 4, my - 4], [mx - 6, my + 10], [mx + 10, my + 26]); poly([mx + 4, my - 4], [mx + 18, my - 14]);
+    c.restore();
+  }
+  c.lineWidth = w;
+  poly(S.hip, S.kF, S.fF); poly(S.sh, S.eF, S.hF);
+  if (!isM && o.sukuna > 0) { // Sukuna's black bands on the forearms and chest
+    c.save(); c.globalAlpha *= o.sukuna; c.strokeStyle = '#140608'; c.lineWidth = 2.2 * s; c.shadowBlur = 0;
+    for (const [a, b] of [[S.eF, S.hF], [S.eB, S.hB], [S.hip, S.neck]]) for (const u of [.35, .6]) {
+      const x = lerp(a[0], b[0], u), y = lerp(a[1], b[1], u), dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy), nx = -dy / L * 5 * s, ny = dx / L * 5 * s;
+      ln(x - nx, y - ny, x + nx, y + ny);
+    }
+    c.restore();
+  }
+  if (!isM && o.injured > 0) { // the blade wound across Itadori's chest
+    c.save(); c.globalAlpha *= o.injured; c.strokeStyle = '#c4101c'; c.shadowColor = '#ff0000'; c.shadowBlur = 8; c.lineWidth = 3.5 * s;
+    const mx = lerp(S.hip[0], S.neck[0], .6), my = lerp(S.hip[1], S.neck[1], .6); ln(mx - 12 * s, my - 16 * s, mx + 12 * s, my + 14 * s); c.restore();
+  }
+  if (isM && o.cuts > 0) { // Dismantle cuts
+    c.save(); c.globalAlpha *= o.cuts; c.strokeStyle = '#ffffff'; c.shadowColor = '#fff'; c.shadowBlur = 10; c.lineWidth = 2.5; const r = rng(o.cutSeed || 5);
+    for (const [a, b] of BODY_SEGS(S)) for (let k = 0; k < 2; k++) { const u = .2 + r() * .6, x = lerp(a[0], b[0], u), y = lerp(a[1], b[1], u), ang = r() * 3.14, l = 12 + r() * 14; ln(x - Math.cos(ang) * l, y - Math.sin(ang) * l, x + Math.cos(ang) * l, y + Math.sin(ang) * l); }
+    c.restore();
+  }
+  // blade grows out of Mahoraga's right forearm
+  if (isM && o.blade !== false) {
+    const dx = S.hF[0] - S.eF[0], dy = S.hF[1] - S.eF[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+    const tip = [S.hF[0] + ux * 92 * s, S.hF[1] + uy * 92 * s];
+    c.fillStyle = o.flash ? '#ff3b3b' : '#f4f2ff'; c.shadowColor = o.flash ? '#000' : hexA('#ffffff', .9);
+    c.beginPath(); c.moveTo(S.eF[0] - uy * 4 * s, S.eF[1] + ux * 4 * s); c.lineTo(tip[0], tip[1]); c.lineTo(S.hF[0] + uy * 7 * s, S.hF[1] - ux * 7 * s); c.closePath(); c.fill();
+  }
+  const [hx, hy] = S.head, r = 15 * s;
+  if (!isM) { // hood bunched behind the head
+    c.fillStyle = COL.yuji; c.shadowColor = hexA(COL.yuji, .9);
+    c.beginPath(); c.arc(hx - f * 9 * s, hy + 10 * s, 11 * s, 0, 7); c.fill();
+    c.strokeStyle = COL.yuji; c.lineWidth = 6 * s; poly([S.neck[0] - 6 * s * f, S.neck[1] + 2], [S.neck[0] + 7 * s * f, S.neck[1] + 4]);
+  } else { // head wings
+    c.fillStyle = line;
+    for (const side of [-1, 1]) { c.beginPath(); c.moveTo(hx + side * 8 * s, hy - 4 * s); c.lineTo(hx + side * 30 * s, hy - 24 * s); c.lineTo(hx + side * 26 * s, hy - 2 * s); c.lineTo(hx + side * 12 * s, hy + 6 * s); c.closePath(); c.fill(); if (o.flash) { c.strokeStyle = '#ff3b3b'; c.lineWidth = 2.5; c.stroke(); } }
+  }
+  c.fillStyle = line; c.beginPath(); c.arc(hx, hy, r, 0, 7); c.fill();
+  if (o.flash) { c.strokeStyle = '#ff3b3b'; c.lineWidth = 3; c.stroke(); }
+  c.shadowBlur = 0;
+  if (!isM) { // hair spikes and one eye
+    c.fillStyle = '#f19aa0';
+    c.beginPath(); c.moveTo(hx - r, hy - 2 * s);
+    (o.sukuna > .5 ? [[-1.3, -1.0], [-.8, -1.2], [-1.1, -1.45], [-.3, -1.3], [-.5, -1.6], [.3, -1.2], [.9, -.6]] : [[-.8, -1.35], [-.45, -1.0], [-.1, -1.5], [.25, -1.05], [.6, -1.4], [.9, -.6]]).forEach(([a, b]) => c.lineTo(hx + a * r * f, hy + b * r));
+    c.lineTo(hx + r * f, hy - 2 * s); c.closePath(); c.fill();
+    c.fillStyle = '#1a1414'; c.fillRect(hx + f * 5 * s - (f < 0 ? 5 * s : 0), hy - 1 * s, 5 * s, 2.5 * s);
+    if (o.sukuna > 0) { // red eyes, the second pair of eyes, and the face markings
+      c.save(); c.globalAlpha *= o.sukuna; const ex = hx + f * 7.5 * s;
+      c.fillStyle = '#e0142a'; c.shadowColor = '#ff0020'; c.shadowBlur = 8;
+      c.fillRect(ex - 2.5 * s, hy - 1.5 * s, 5 * s, 3 * s); c.fillRect(ex - 2 * s, hy + 4 * s, 4 * s, 2 * s);
+      c.shadowBlur = 0; c.strokeStyle = '#140608'; c.lineWidth = 2 * s; c.lineCap = 'round';
+      ln(ex, hy + 7.5 * s, ex - f * 2 * s, hy + 12 * s); ln(hx - f * 2 * s, hy - 9 * s, hx + f * 6 * s, hy - 7 * s); ln(hx - f * 6 * s, hy + 2 * s, hx - f * 2 * s, hy + 9 * s);
+      c.restore();
+    }
+  } else { // no eyes, just the eye-wings' seam
+    c.strokeStyle = o.flash ? '#ff3b3b' : '#6d6a86'; c.lineWidth = o.flash ? 3 : 2; poly([hx - 9 * s, hy - 2 * s], [hx + 9 * s, hy - 2 * s]);
+  }
+  if (o.flash) { // red Black Flash veins crackling along every limb
+    c.save(); c.shadowColor = COL.red; c.shadowBlur = 12; c.lineCap = 'round';
+    [[S.hip, S.neck], [S.hip, S.kF], [S.kF, S.fF], [S.hip, S.kB], [S.kB, S.fB], [S.sh, S.eF], [S.eF, S.hF], [S.sh, S.eB], [S.eB, S.hB]]
+      .forEach(([a, b], i) => bolt(a[0], a[1], b[0], b[1], '#ff3b3b', 2.2, 9 * s, (o.seed || 0) * 31 + i));
+    c.restore();
+  }
+  if (isM) wheel(hx, hy - 58 * s, 24 * s, o.wheel ?? 0, 1, o.flash ? COL.red : COL.maho);
+  c.restore();
+  return S;
+}
+// Mahoraga's eight-handled wheel
+function wheel(x, y, r, rot, a, col = COL.maho) {
+  c.save(); c.globalAlpha *= a; c.translate(x, y); c.rotate(rot);
+  c.strokeStyle = col; c.fillStyle = col; c.shadowColor = hexA(col, .9); c.shadowBlur = 18; c.lineCap = 'round';
+  c.lineWidth = r * .16; c.beginPath(); c.arc(0, 0, r, 0, 7); c.stroke();
+  c.beginPath(); c.arc(0, 0, r * .22, 0, 7); c.fill();
+  c.lineWidth = r * .1;
+  for (let i = 0; i < 8; i++) {
+    const a8 = i * Math.PI / 4, cx = Math.cos(a8), sy = Math.sin(a8);
+    ln(cx * r * .22, sy * r * .22, cx * r * 1.45, sy * r * 1.45);
+    c.lineWidth = r * .14; ln(cx * r * 1.45 - sy * r * .18, sy * r * 1.45 + cx * r * .18, cx * r * 1.45 + sy * r * .18, sy * r * 1.45 - cx * r * .18); c.lineWidth = r * .1;
+    c.beginPath(); c.arc(cx * r * 1.62, sy * r * 1.62, r * .1, 0, 7); c.fill();
+  }
+  c.restore();
+}
+
+// ---------- Tokyo ----------
+const LAYERS = (() => {
+  const make = (seed, from, to, hMin, hMax, wMin, wMax) => { const r = rng(seed), b = []; let x = from; while (x < to) { const w = wMin + r() * (wMax - wMin); b.push({ x, w, h: hMin + r() * (hMax - hMin), lit: r(), seed: Math.floor(r() * 1e6) }); x += w + 3 + r() * 10; } return b; };
+  return { far: make(3, -900, 2600, 120, 260, 40, 90), mid: make(9, -900, 2800, 170, 360, 70, 150) };
+})();
+const NEAR = [ // near buildings with vertical neon signs
+  { x: -140, w: 170, h: 470, sign: '渋谷', col: '#ff4fa0' },
+  { x: 1330, w: 200, h: 520, sign: '居酒屋', col: '#ffb13b' },
+  { x: 1560, w: 160, h: 430, sign: 'カラオケ', col: '#45d0ff' },
+  { x: 1760, w: 190, h: 500, sign: '薬', col: '#7dff9a' },
+];
+function tokyoTower(x, base, h) {
+  c.save(); c.strokeStyle = '#ff5a2a'; c.shadowColor = '#ff5a2a'; c.shadowBlur = 10; c.lineWidth = 2.5;
+  const wAt = y => lerp(70, 4, Math.pow((base - y) / h, .6));
+  const top = base - h;
+  ln(x - 70, base, x - 4, top + 40); ln(x + 70, base, x + 4, top + 40);
+  for (let y = base; y > top + 50; y -= 18) { const w1 = wAt(y), w2 = wAt(y - 18); ln(x - w1, y, x + w2, y - 18); ln(x + w1, y, x - w2, y - 18); }
+  c.fillStyle = '#ff5a2a';
+  const d1 = base - h * .42, d2 = base - h * .72;
+  c.fillRect(x - wAt(d1) - 8, d1 - 10, (wAt(d1) + 8) * 2, 12);
+  c.fillRect(x - wAt(d2) - 5, d2 - 7, (wAt(d2) + 5) * 2, 8);
+  c.fillStyle = '#f5f0ea'; c.fillRect(x - wAt(d1 + 60), d1 + 55, wAt(d1 + 60) * 2, 5);
+  c.lineWidth = 2; ln(x, top + 40, x, top);
+  c.restore();
+}
+function skytree(x, base, h) {
+  c.save(); c.strokeStyle = '#9fd4ff'; c.shadowColor = '#9fd4ff'; c.shadowBlur = 8; c.lineWidth = 2;
+  ln(x - 20, base, x - 3, base - h); ln(x + 20, base, x + 3, base - h);
+  for (let y = base; y > base - h * .8; y -= 14) { const w = lerp(20, 4, (base - y) / h); ln(x - w, y, x + w, y - 14); }
+  c.fillStyle = '#9fd4ff'; c.fillRect(x - 14, base - h * .62, 28, 8); c.fillRect(x - 10, base - h * .8, 20, 6);
+  ln(x, base - h, x, base - h - 60);
+  c.restore();
+}
+function sky(veil) {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0a0e22'); g.addColorStop(.6, '#231a3e'); g.addColorStop(.85, '#4a2342'); g.addColorStop(1, '#2a1a2a');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(244,236,226,.9)'; c.beginPath(); c.arc(1010, 110, 36, 0, 7); c.fill();
+  if (veil > 0) { // the curtain: black fluid pouring down from the top of the sky
+    const front = lerp(-40, H + 40, veil);
+    c.fillStyle = 'rgba(3,3,8,.78)';
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(W, 0);
+    for (let x = W; x >= 0; x -= 40) c.lineTo(x, front + Math.sin(x * .02 + veil * 9) * 18 + Math.sin(x * .061) * 10);
+    c.closePath(); c.fill();
+    c.strokeStyle = hexA('#8d6bff', .5 * (1 - veil * .5)); c.lineWidth = 2; c.beginPath();
+    for (let x = 0; x <= W; x += 40) c.lineTo(x, front + Math.sin(x * .02 + veil * 9) * 18 + Math.sin(x * .061) * 10);
+    c.stroke();
+  }
+}
+// Draw the city in world space. Pass the camera so the far layers can parallax.
+function city(cam, st = {}) {
+  const layer = (p, fn) => { c.save(); c.translate((cam.x - 640) * (1 - p), 0); fn(); c.restore(); };
+  layer(.15, () => { skytree(-120, GY, 380); tokyoTower(760, GY, 330); });
+  layer(.3, () => { for (const b of LAYERS.far) { c.fillStyle = '#141532'; c.fillRect(b.x, GY - b.h, b.w, b.h); } });
+  layer(.55, () => {
+    for (const b of LAYERS.mid) {
+      c.fillStyle = '#0d0e20'; c.fillRect(b.x, GY - b.h, b.w, b.h);
+      const r = rng(b.seed); c.fillStyle = 'rgba(255,214,160,.45)';
+      for (let y = GY - b.h + 14; y < GY - 20; y += 20) for (let x = b.x + 8; x < b.x + b.w - 10; x += 15) if (r() < b.lit * .45) c.fillRect(x, y, 6, 8);
+      if (b.lit > .82) { c.fillStyle = hexA(b.lit > .9 ? '#ff4fa0' : '#45d0ff', .7); c.fillRect(b.x + 6, GY - b.h + 8, b.w - 12, 4); }
+    }
+  });
+  // near layer
+  for (const b of NEAR) {
+    c.fillStyle = '#07080f'; c.fillRect(b.x, GY - b.h, b.w, b.h);
+    c.save(); c.fillStyle = '#0b0c16'; c.strokeStyle = b.col; c.shadowColor = b.col; c.shadowBlur = 14; c.lineWidth = 3;
+    const n = [...b.sign].length, sw = 46, sx = b.x + b.w - sw - 14, sy = GY - b.h + 40;
+    c.fillRect(sx, sy, sw, n * 50 + 16); c.strokeRect(sx, sy, sw, n * 50 + 16);
+    c.fillStyle = b.col; c.font = `34px ${F.display}`; c.textAlign = 'center';
+    [...b.sign].forEach((ch, i) => c.fillText(ch, sx + sw / 2, sy + 46 + i * 50));
+    c.restore();
+    const r = rng(b.x + 99); c.fillStyle = 'rgba(255,220,170,.35)';
+    for (let y = GY - b.h + 30; y < GY - 30; y += 26) for (let x = b.x + 10; x < b.x + b.w - 80; x += 20) if (r() < .35) c.fillRect(x, y, 8, 10);
+  }
+  if (st.crater) { // dent in the izakaya building where Mahoraga hit
+    c.save(); c.translate(1335, 440); c.strokeStyle = 'rgba(200,190,220,.6)'; c.lineWidth = 2; const r = rng(4);
+    for (let i = 0; i < 10; i++) { const a = r() * 6.28, l = 30 + r() * 70; ln(0, 0, Math.cos(a) * l, Math.sin(a) * l); }
+    c.fillStyle = '#020205'; c.beginPath(); c.ellipse(0, 0, 26, 40, 0, 0, 7); c.fill(); c.restore();
+  }
+  // ramen billboard, which Itadori gets thrown through in scene 7
+  if (!st.signGone) {
+    c.save(); c.fillStyle = '#6b6f86'; c.fillRect(214, 470, 8, GY - 470);
+    c.fillStyle = '#12101c'; c.strokeStyle = '#ff4fa0'; c.shadowColor = '#ff4fa0'; c.shadowBlur = 16; c.lineWidth = 3;
+    c.fillRect(150, 380, 140, 90); c.strokeRect(150, 380, 140, 90);
+    c.fillStyle = '#ffd1e6'; c.font = `30px ${F.display}`; c.textAlign = 'center'; c.fillText('ラーメン', 220, 437);
+    c.restore();
+  } else { c.fillStyle = '#6b6f86'; c.fillRect(214, 520, 8, GY - 520); }
+  // street: Shibuya scramble crossing
+  c.fillStyle = '#0c0d16'; c.fillRect(-1200, GY, 4000, 400);
+  c.fillStyle = '#1b1d2b'; c.fillRect(-1200, GY, 4000, 8);
+  c.fillStyle = 'rgba(230,230,240,.16)';
+  for (let x = -400; x < 2200; x += 58) { c.beginPath(); c.moveTo(x, GY + 26); c.lineTo(x + 34, GY + 26); c.lineTo(x + 58, GY + 110); c.lineTo(x + 20, GY + 110); c.closePath(); c.fill(); }
+  // street lamps
+  for (let x = -300; x < 2200; x += 520) { c.fillStyle = '#2a2d3e'; c.fillRect(x, GY - 210, 5, 210); c.fillRect(x, GY - 210, 38, 5); c.fillStyle = 'rgba(255,230,180,.9)'; c.fillRect(x + 28, GY - 205, 12, 5);
+    const g = c.createRadialGradient(x + 34, GY - 200, 2, x + 34, GY - 200, 120); g.addColorStop(0, 'rgba(255,220,160,.18)'); g.addColorStop(1, 'rgba(255,220,160,0)'); c.fillStyle = g; c.fillRect(x - 90, GY - 320, 250, 330); }
+  if (st.cracks) { c.save(); c.strokeStyle = 'rgba(210,200,230,.55)'; c.lineWidth = 2; const r = rng(12); for (let i = 0; i < 9; i++) { const a = Math.PI + r() * Math.PI * -1, l = 40 + r() * 80; ln(st.cracks, GY + 3, st.cracks + Math.cos(a) * l * 1.6, GY + 3 + Math.abs(Math.sin(a)) * l * .3); } c.restore(); }
+}
+function withCam(cam, fn) {
+  c.save(); c.translate(W / 2, H / 2); c.scale(cam.z, cam.z); c.translate(-cam.x, -cam.y); fn(); c.restore();
+}
+
+// ---------- effects ----------
+function burstAt(t, t0, x, y, col, n = 16, seed = 1, sp = 520, life = .55) {
+  const a = t - t0; if (a < 0 || a > life) return;
+  const r = rng(seed * 97 + 7), k = a / life;
+  c.save(); c.strokeStyle = col; c.lineCap = 'round'; c.shadowColor = col; c.shadowBlur = 10;
+  for (let i = 0; i < n; i++) {
+    const ang = r() * 6.283, v = sp * (.4 + r()), d = v * a * (1 - k * .6), d2 = Math.max(0, d - 34 * (1 - k));
+    c.globalAlpha = 1 - k; c.lineWidth = 2 + r() * 3;
+    ln(x + Math.cos(ang) * d2, y + Math.sin(ang) * d2, x + Math.cos(ang) * d, y + Math.sin(ang) * d);
+  }
+  if (a < .25) { c.globalAlpha = 1 - a / .25; c.lineWidth = 4; c.beginPath(); c.arc(x, y, 20 + a * 520, 0, 7); c.stroke(); }
+  c.restore();
+}
+function dust(t, t0, x, y, seed, spread = 1, life = 1.6) {
+  const a = t - t0; if (a < 0 || a > life) return;
+  const r = rng(seed), k = a / life;
+  for (let i = 0; i < 14; i++) {
+    const dir = r() < .5 ? -1 : 1, vx = dir * (60 + r() * 220) * spread, rad = (26 + r() * 40) * (1 + k * 1.4) * spread;
+    c.fillStyle = `rgba(150,140,170,${.42 * (1 - k)})`;
+    c.beginPath(); c.arc(x + vx * easeOut(Math.min(1, a * 1.5)), y - r() * 40 * spread - a * 30, rad, 0, 7); c.fill();
+  }
+}
+function bolt(x1, y1, x2, y2, color, width = 4, jag = 30, seed = 1) {
+  const r = rng(seed); c.strokeStyle = color; c.lineWidth = width; c.beginPath(); c.moveTo(x1, y1);
+  for (let i = 1; i < 8; i++) { const t = i / 8; c.lineTo(lerp(x1, x2, t) + (r() - .5) * jag, lerp(y1, y2, t) + (r() - .5) * jag); }
+  c.lineTo(x2, y2); c.stroke();
+}
+function blackSpark(x, y, len, seed, n = 5) { // black lightning with a red rim
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) {
+    const a = r() * 6.283, l = len * (.5 + r() * .7), ex = x + Math.cos(a) * l, ey = y + Math.sin(a) * l;
+    c.save(); c.lineCap = 'round'; c.shadowColor = '#ff2a2a'; c.shadowBlur = 16;
+    bolt(x, y, ex, ey, '#ff2a2a', 9, 36, seed * 7 + i); c.shadowBlur = 0; bolt(x, y, ex, ey, '#050005', 4, 36, seed * 7 + i);
+    c.restore();
+  }
+}
+function speedLines(t, alpha, dir = 1, seed = 5) {
+  if (alpha <= 0) return;
+  const r = rng(seed); c.save(); c.globalAlpha = alpha; c.strokeStyle = 'rgba(240,235,255,.5)';
+  for (let i = 0; i < 40; i++) { const y = r() * H, len = 120 + r() * 300, sp = 1800 + r() * 1400; const x = ((r() * W * 2 - t * sp * dir) % (W + 600) + W + 600) % (W + 600) - 300; c.lineWidth = 1 + r() * 2; ln(x, y, x + len * dir, y); }
+  c.restore();
+}
+function sfx(text, x, y, t, t0, { size = 90, col = '#fff', rot = -.12, life = .9 } = {}) {
+  const a = t - t0; if (a < 0 || a > life) return;
+  const pop = a < .12 ? lerp(.4, 1.25, a / .12) : lerp(1.25, 1, Math.min(1, (a - .12) / .1));
+  c.save(); c.globalAlpha = 1 - seg(a, life - .25, life); c.translate(x, y); c.rotate(rot); c.scale(pop, pop);
+  c.font = `${size}px ${F.display}`; c.textAlign = 'center'; c.lineJoin = 'round';
+  c.lineWidth = 14; c.strokeStyle = '#000'; c.strokeText(text, 0, 0); c.fillStyle = col; c.fillText(text, 0, 0);
+  c.restore();
+}
+
+// ---------- text ----------
+let lastCaption = '';
+const live = document.getElementById('live');
+function say(who, text, alpha = 1) {
+  if (alpha <= 0) return;
+  const name = { yuji: 'ITADORI', sukuna: 'SUKUNA', nar: '' }[who];
+  const col = { yuji: COL.yuji, sukuna: '#e0142a', nar: '#a9a3c6' }[who];
+  c.save(); c.globalAlpha = alpha;
+  c.fillStyle = 'rgba(6,7,14,.8)'; c.fillRect(140, 610, 1000, 84);
+  c.fillStyle = col; c.fillRect(140, 610, 5, 84);
+  if (name) { c.font = `17px ${F.display}`; c.fillText(name, 166, 638); }
+  c.fillStyle = COL.paper; c.font = `${name ? 700 : 400} 25px ${F.body}`;
+  if (!name) c.font = `italic 400 25px ${F.body}`;
+  wrapText(text, 166, name ? 672 : 660, 950, 30);
+  c.restore();
+  const cap = (name ? name + ': ' : '') + text;
+  if (alpha > .5 && cap !== lastCaption) { lastCaption = cap; live.textContent = cap; }
+}
+function wrapText(txt, x, y, maxW, lh) {
+  const words = txt.split(' '); let lineS = '';
+  for (const w of words) { const test = lineS ? lineS + ' ' + w : w; if (c.measureText(test).width > maxW && lineS) { c.fillText(lineS, x, y); lineS = w; y += lh; } else lineS = test; }
+  c.fillText(lineS, x, y);
+}
+function big(text, sub, alpha, color, y = 300, size = 64) {
+  if (alpha <= 0) return;
+  c.save(); c.globalAlpha = alpha; c.textAlign = 'center'; c.lineJoin = 'round';
+  c.font = `${size}px ${F.display}`; c.lineWidth = 12; c.strokeStyle = '#000'; c.strokeText(text, W / 2, y);
+  c.fillStyle = color; c.fillText(text, W / 2, y);
+  if (sub) { c.font = `26px ${F.display}`; c.fillStyle = COL.paper; c.lineWidth = 8; c.strokeText(sub, W / 2, y + 46); c.fillText(sub, W / 2, y + 46); }
+  c.restore();
+}
+function dialogue(t, lines) { for (const [a, b, who, txt] of lines) if (t >= a && t < b) say(who, txt, Math.min(seg(t, a, a + .2), 1 - seg(t, b - .2, b))); }
+function stamp(text, t) { // typewriter location card
+  const n = Math.floor(seg(t, 0, 1.2) * text.length);
+  c.save(); c.font = `500 16px ${F.mono}`; c.fillStyle = 'rgba(6,7,14,.7)'; c.fillRect(36, 34, 330, 34);
+  c.fillStyle = COL.paper; c.fillText(text.slice(0, n) + (n < text.length || Math.floor(t * 3) % 2 ? '▌' : ''), 50, 57); c.restore();
+}
+
+// ---------- chapter 2 effects ----------
+const toScreen = (cm, x, y) => [(x - cm.x) * cm.z + W / 2, (y - cm.y) * cm.z + H / 2];
+function redSpark(x, y, len, seed, n = 5) { // Mahoraga's version: red lightning with a black rim
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) {
+    const a = r() * 6.283, l = len * (.5 + r() * .7), ex = x + Math.cos(a) * l, ey = y + Math.sin(a) * l;
+    c.save(); c.lineCap = 'round'; c.shadowColor = '#000'; c.shadowBlur = 18;
+    bolt(x, y, ex, ey, '#050005', 11, 36, seed * 7 + i); c.shadowColor = COL.red; c.shadowBlur = 14; bolt(x, y, ex, ey, '#ff3b3b', 4, 36, seed * 7 + i);
+    c.restore();
+  }
+}
+// The impact frame every Black Flash gets: the world goes dark red, lightning tears out of the hit point.
+function flashFrame(t, t0, sx, sy, seed, { red = false, len = 520, dur = .45, n = 12 } = {}) {
+  const a = t - t0; if (a < 0 || a > dur) return;
+  c.save();
+  c.fillStyle = red ? `rgba(46,0,6,${.9 * (1 - seg(a, dur * .6, dur))})` : `rgba(20,0,0,${.88 * (1 - seg(a, dur * .6, dur))})`; c.fillRect(0, 0, W, H);
+  c.globalAlpha = 1 - seg(a, dur * .55, dur);
+  (red ? redSpark : blackSpark)(sx, sy, len, seed + Math.floor(a * 16), n);
+  c.restore();
+}
+// Mahoraga's body as loose ash. k = 0 is a whole body, k = 1 is fully scattered.
+const BODY_SEGS = S => [[S.hip, S.neck], [S.hip, S.kF], [S.kF, S.fF], [S.hip, S.kB], [S.kB, S.fB], [S.sh, S.eF], [S.eF, S.hF], [S.sh, S.eB], [S.eB, S.hB], [S.neck, S.head]];
+function ashBody(x, f, pose, k, seed, { reform = false } = {}) {
+  if (k <= 0) return;
+  const s = 1.75, S = skeleton(pose, s, f), oy = GY - Math.max(S.fF[1], S.fB[1]), r = rng(seed);
+  c.save(); c.shadowBlur = 8;
+  for (const [a, b] of BODY_SEGS(S)) for (let i = 0; i < 16; i++) {
+    const u = r(), px = x + lerp(a[0], b[0], u) + (r() - .5) * 14, py = oy + lerp(a[1], b[1], u) + (r() - .5) * 14;
+    const dx = (r() - .5) * 460 - f * 140, dy = -(160 + r() * 540), delay = r() * .35;
+    const e = easeOut(clamp((k - delay) / (1 - delay)));
+    const swirl = reform ? Math.sin(e * 5 + u * 9) * 60 * e : 0;
+    const sz = 3 + r() * 5, pick = r();
+    c.globalAlpha = (reform ? 1 - e * .5 : 1 - e * .8);
+    c.fillStyle = reform ? (pick < .45 ? '#ff3b3b' : '#1c0609') : (e < .12 ? COL.mahoLine : pick < .3 ? '#ff3b3b' : '#6d6a86');
+    c.shadowColor = c.fillStyle === '#ff3b3b' ? COL.red : 'transparent';
+    c.fillRect(px + dx * e + swirl, py + dy * e, sz, sz);
+  }
+  c.restore();
+}
+function chip(t, a, b, lines) { // mono readout card, top left
+  if (t < a || t > b) return;
+  c.save(); c.globalAlpha = seg(t, a, a + .3) * (1 - seg(t, b - .3, b)); c.font = `500 16px ${F.mono}`;
+  c.fillStyle = 'rgba(6,7,14,.78)'; c.fillRect(60, 60, 330, 26 + lines.length * 22);
+  lines.forEach(([txt, col], i) => { c.fillStyle = col; c.fillText(txt, 78, 84 + i * 22); });
+  c.restore();
+}
+function fallingAsh(t, alpha, seed = 4) {
+  if (alpha <= 0) return;
+  const r = rng(seed); c.save();
+  for (let i = 0; i < 70; i++) {
+    const x = (r() * W + Math.sin(t * .8 + i) * 30), y = ((r() * H + t * (30 + r() * 50)) % H), sz = 2 + r() * 3;
+    c.globalAlpha = alpha * (.3 + r() * .5); c.fillStyle = r() < .2 ? '#ff5a4a' : '#8f8aa3'; c.fillRect(x, y, sz, sz);
+  }
+  c.restore();
+}
+
+// ---------- chapter 3 helpers ----------
+Object.assign(P, {
+  mPunch: { lean: .3,  aF: [.4, .6],    aB: [1.6, 1.55],  lF: [.6, .25],  lB: [-.5, -.3] },
+  kneel:  { lean: .3,  aF: [.15, .05],  aB: [.5, 1.3],    lF: [1.4, -.05], lB: [.1, -1.3] },
+  sStand: { lean: -.05, aF: [.25, .15], aB: [-.3, -.2],   lF: [.2, .05],  lB: [-.2, -.05] },
+});
+// Point the front arm straight at a world-space target.
+function aimPose(base, x, f, target, s = 1.1) {
+  const S = skeleton(base, s, f), oy = GY - Math.max(S.fF[1], S.fB[1]);
+  const a = Math.atan2((target[0] - (x + S.sh[0])) * f, target[1] - (oy + S.sh[1]));
+  return { ...base, aF: [a, a] };
+}
+// A point along Mahoraga's blade (u = 0 at the wrist, 1 at the tip), in world space.
+function bladeAt(mx, pose, u = 1) {
+  const s = 1.75, S = skeleton(pose, s, -1), oy = GY - Math.max(S.fF[1], S.fB[1]);
+  const dx = S.hF[0] - S.eF[0], dy = S.hF[1] - S.eF[1], L = Math.hypot(dx, dy);
+  return [mx + S.hF[0] + dx / L * 92 * s * u, oy + S.hF[1] + dy / L * 92 * s * u];
+}
+function vignette(a, col = '120,0,10') {
+  if (a <= 0) return;
+  const g = c.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 760);
+  g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(1, `rgba(${col},${a})`);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+}
+// Dismantle: fine straight cuts that appear for an instant around a target.
+function dismantle(t, t0, x, y, seed, n = 16, spread = 200) {
+  const r = rng(seed);
+  c.save(); c.strokeStyle = '#ffffff'; c.shadowColor = '#fff'; c.shadowBlur = 12; c.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const at = t0 + r() * .45, cx = x + (r() - .5) * spread, cy = y + (r() - .5) * spread * 1.4, ang = r() * 3.14, l = 90 + r() * 160;
+    const a = t - at; if (a < 0 || a > .14) continue;
+    c.globalAlpha = 1 - a / .14; c.lineWidth = 3;
+    ln(cx - Math.cos(ang) * l, cy - Math.sin(ang) * l, cx + Math.cos(ang) * l, cy + Math.sin(ang) * l);
+  }
+  c.restore();
+}
+function sukunaAura(x, y, a, t) {
+  if (a <= 0) return;
+  const g = c.createRadialGradient(x, y, 10, x, y, 240);
+  g.addColorStop(0, `rgba(210,16,40,${.35 * a})`); g.addColorStop(1, 'rgba(210,16,40,0)');
+  c.fillStyle = g; c.fillRect(x - 260, y - 260, 520, 520);
+  const r = rng(Math.floor(t * 10)); c.save(); c.globalAlpha = a * .7; c.strokeStyle = '#e0142a'; c.lineWidth = 2;
+  for (let i = 0; i < 8; i++) { const px = x + (r() - .5) * 120, py = y + 60 - r() * 40; ln(px, py, px + (r() - .5) * 20, py - 60 - r() * 100); }
+  c.restore();
+}
+
+// ---------- scenes ----------
+const cam = (x = 640, y = 360, z = 1) => ({ x, y, z });
+const WHEEL2 = Math.PI / 2; // two turns so far
+const scenes = [
+  { name: 'Title', dur: 3, draw(t) {
+    c.fillStyle = '#05060b'; c.fillRect(0, 0, W, H);
+    wheel(W / 2, 300, 130, WHEEL2 + t * .25, .2, COL.red);
+    const sw = easeOut(seg(t, .15, .55));
+    c.save(); c.shadowColor = '#e0142a'; c.shadowBlur = 20; c.fillStyle = '#7a0012';
+    c.beginPath(); c.moveTo(120, 380); c.lineTo(lerp(120, 1160, sw), lerp(380, 300, sw)); c.lineTo(lerp(120, 1160, sw), lerp(404, 324, sw)); c.lineTo(120, 410); c.closePath(); c.fill(); c.restore();
+    const a = seg(t, .35, .9) * (1 - seg(t, 2.7, 3));
+    c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.lineJoin = 'round'; c.lineWidth = 12; c.strokeStyle = '#000';
+    c.font = `96px ${F.display}`; c.strokeText('MAHORAGA', W / 2, 250); c.fillStyle = '#ff3b3b'; c.fillText('MAHORAGA', W / 2, 250);
+    c.font = `34px ${F.display}`; c.fillStyle = '#8f93ab'; c.fillText('vs', W / 2, 312);
+    c.font = `96px ${F.display}`; c.strokeText('ITADORI', W / 2, 420); c.fillStyle = COL.yuji; c.fillText('ITADORI', W / 2, 420); c.restore();
+    c.save(); c.globalAlpha = seg(t, 1, 1.5) * (1 - seg(t, 2.7, 3)); c.textAlign = 'center';
+    c.font = `28px ${F.display}`; c.fillStyle = COL.paper; c.fillText('第三話 · RED WHEEL', W / 2, 500);
+    c.font = `500 15px ${F.mono}`; c.fillStyle = '#8f93ab'; c.fillText('PART 3  ·  CHAPTER 3  ·  A STICKMAN FAN ANIMATION', W / 2, 540); c.restore();
+  }},
+  { name: 'Black Flash barrage', dur: 7, draw(t) {
+    const beats = Array.from({ length: 10 }, (_, i) => .4 + i * .46);
+    const clashT = 5.3;
+    const cm = cam(650, 350, t < clashT ? 1.12 : lerp(1.12, 1, ease(seg(t, clashT, 6))));
+    nightSky();
+    let yx = 560, mx = 740, yp = P.guard, mp = P.mIdle;
+    let bi = -1; beats.forEach((b, i) => { if (t >= b - .18) bi = i; });
+    if (t < clashT - .3 && bi >= 0) {
+      const b = beats[bi], d = t - b, yTurn = bi % 2 === 0;
+      const k = d < 0 ? ease(seg(d, -.18, 0)) : 1 - ease(seg(d, .12, .4));
+      const recoil = d > 0 ? 1 - seg(d, 0, .4) : 0;
+      if (yTurn) { yp = mix(P.guard, [P.punch, P.punch2, P.kick][(bi / 2) % 3], k); mp = mix(P.mIdle, P.mHurt, recoil * .5); yx += k * 20; mx += recoil * 25; }
+      else { mp = mix(P.mIdle, P.mPunch, k); yp = mix(P.guard, P.hurt, recoil * .5); yx -= recoil * 25; }
+    }
+    if (t >= clashT - .3 && t < clashT + .1) { const k = ease(seg(t, clashT - .3, clashT)); yp = mix(P.charge, P.punch, k); mp = mix(P.mIdle, P.mPunch, k); yx = lerp(560, 590, k); mx = lerp(740, 720, k); }
+    if (t >= clashT + .1) { const k = easeOut(seg(t, clashT + .1, clashT + .7)); yx = lerp(590, 420, k); mx = lerp(720, 900, k); yp = mix(P.hurt, P.guard, ease(seg(t, clashT + .6, clashT + 1.1))); mp = mix(P.mHurt, P.mIdle, ease(seg(t, clashT + .6, clashT + 1.1))); }
+    beats.forEach(b => impact(t, b, 16));
+    impact(t, clashT, 50);
+    withCam(cm, () => {
+      city(cm, { cracks: 480, crater: true, signGone: true });
+      stick({ who: 'maho', x: mx, f: -1, pose: mp, wheel: WHEEL2, flash: true, seed: Math.floor(t * 12) });
+      stick({ who: 'yuji', x: yx, f: 1, pose: yp, injured: 0 });
+      if (t > clashT - .3 && t < clashT) blackSpark(655, GY - 170, 40, Math.floor(t * 14), 3);
+      if (t >= clashT && t < clashT + .8) { const a = t - clashT; c.save(); c.globalAlpha = 1 - a / .8; c.lineWidth = 8; c.strokeStyle = '#ff3b3b'; c.shadowColor = COL.red; c.shadowBlur = 24; c.beginPath(); c.arc(655, GY - 170, 30 + a * 900, 0, 7); c.stroke(); c.strokeStyle = '#000'; c.lineWidth = 4; c.beginPath(); c.arc(655, GY - 170, 20 + a * 800, 0, 7); c.stroke(); c.restore(); }
+      dust(t, clashT, 655, GY, 31, 1.3, 1.6);
+    });
+    beats.forEach((b, i) => {
+      const yTurn = i % 2 === 0, [sx, sy] = toScreen(cm, yTurn ? 715 : 585, GY - (yTurn ? 170 : 150));
+      flashFrame(t, b, sx, sy, 100 + i * 5, { red: !yTurn, len: 340, dur: .28, n: 8 });
+      sfx('黒閃', yTurn ? 900 : 380, 170 + (i % 3) * 30, t, b + .03, { size: 70, col: yTurn ? '#ff3b3b' : '#ffd0d0', rot: yTurn ? -.12 : .12, life: .4 });
+    });
+    if (t >= clashT && t < clashT + .5) { const [sx, sy] = toScreen(cm, 655, GY - 170); flashFrame(t, clashT, sx, sy, 150, { len: 700, dur: .5, n: 10 }); c.save(); c.globalAlpha = 1 - seg(t, clashT + .25, clashT + .5); redSpark(sx, sy, 700, 151 + Math.floor((t - clashT) * 16), 8); c.restore(); }
+    sfx('ドンッ', 640, 200, t, clashT + .05, { size: 130, col: '#ffffff', rot: -.08, life: .9 });
+    const yc = beats.filter((b, i) => i % 2 === 0 && t >= b).length, mc = beats.filter((b, i) => i % 2 === 1 && t >= b).length;
+    c.save(); c.font = `24px ${F.display}`; c.lineWidth = 8; c.lineJoin = 'round'; c.strokeStyle = '#000';
+    c.fillStyle = COL.yuji; c.strokeText(`ITADORI ×${yc}`, 60, 90); c.fillText(`ITADORI ×${yc}`, 60, 90);
+    c.textAlign = 'right'; c.fillStyle = '#ff3b3b'; c.strokeText(`MAHORAGA ×${mc}`, W - 60, 90); c.fillText(`MAHORAGA ×${mc}`, W - 60, 90); c.restore();
+    dialogue(t, [[5.9, 7, 'yuji', 'It\'s matching me hit for hit!']]);
+  }},
+  { name: 'Cut down', dur: 5, draw(t) {
+    const hitT = .65;
+    const cm = cam(lerp(620, 470, ease(seg(t, .6, 1.4))), 350, lerp(1, 1.15, ease(seg(t, 1.2, 4.8))));
+    nightSky();
+    const mx = t < 1.5 ? lerp(900, 640, ease(seg(t, .1, .4))) : lerp(640, 560, ease(seg(t, 1.5, 3.2)));
+    let mp = P.mIdle;
+    if (t >= .35 && t < hitT) mp = mix(P.mIdle, P.mUp, ease(seg(t, .35, .55)));
+    else if (t >= hitT && t < 1.3) mp = mix(P.mUp, P.mDown, ease(seg(t, hitT - .05, hitT + .05)));
+    else if (t >= 1.3 && t < 3.6) mp = mix(P.mDown, P.mIdle, ease(seg(t, 1.3, 1.8)));
+    else if (t >= 3.6) mp = mix(P.mIdle, P.mUp, ease(seg(t, 3.6, 4.6)));
+    let yx = 420, yp = P.guard, yAir = 0;
+    if (t >= hitT && t < 1.1) { const k = seg(t, hitT, 1.1); yx = lerp(420, 300, easeOut(k)); yp = P.hurt; yAir = Math.sin(k * Math.PI) * 60; }
+    else if (t >= 1.1) { yx = 300; yp = mix(P.hurt, P.kneel, ease(seg(t, 1.1, 1.4))); }
+    impact(t, hitT, 30); flashAt(t, hitT, '#ffffff', .6, .2);
+    const beat = [1.6, 2.6, 3.6, 4.4].reduce((v, b) => v + (t >= b ? Math.exp(-(t - b) * 6) : 0), 0);
+    withCam(cm, () => {
+      city(cm, { cracks: 480, crater: true, signGone: true });
+      if (t > 1.1) { c.save(); c.fillStyle = '#8a0a14'; const r = rng(7); for (let i = 0; i < 7; i++) { const a = seg(t, 1.1 + i * .3, 1.4 + i * .3); c.beginPath(); c.ellipse(290 + r() * 50, GY + 3, (4 + r() * 8) * a, 2.5 * a, 0, 0, 7); c.fill(); } c.restore(); }
+      if (t > .1 && t < .4) for (let i = 1; i <= 4; i++) { c.save(); c.globalAlpha = .22 * (1 - i / 5); stick({ who: 'maho', x: mx + i * 60, f: -1, pose: P.mIdle, wheel: WHEEL2, flash: true, seed: i }); c.restore(); }
+      stick({ who: 'maho', x: mx, f: -1, pose: mp, wheel: WHEEL2, flash: true, seed: Math.floor(t * 12) });
+      stick({ who: 'yuji', x: yx, f: 1, pose: yp, air: yAir, injured: t >= hitT ? 1 : 0 });
+      burstAt(t, hitT, 425, GY - 170, '#c4101c', 22, 61, 520, .5);
+    });
+    speedLines(t, t > .1 && t < .4 ? .5 : 0, -1, 29);
+    vignette(t > hitT ? .45 + beat * .3 : 0);
+    sfx('ザシュ', 520, 230, t, hitT, { size: 100, col: '#ffffff', rot: -.18 });
+    dialogue(t, [[1.4, 3.4, 'yuji', 'My arm... it won\'t move.'], [3.5, 5, 'yuji', 'Not here. I can\'t go down here...']]);
+  }},
+  { name: 'Sukuna wakes', dur: 5.5, draw(t) {
+    const wakeT = 2.6, mx = 560;
+    const cm = cam(420, 330, lerp(1.2, 1.05, ease(seg(t, wakeT, wakeT + .6))));
+    nightSky();
+    const mp = t < .3 ? mix(P.mUp, mix(P.mUp, P.mDown, .7), ease(seg(t, 0, .3))) : mix(P.mUp, P.mDown, .7);
+    const catchPt = bladeAt(mx, mp, .55);
+    const sk = seg(t, 1.3, 2.3);
+    const yp = t < wakeT ? P.kneel : aimPose(mix(P.kneel, P.sStand, ease(seg(t, wakeT, wakeT + .15))), 300, 1, catchPt);
+    impact(t, wakeT, 34); flashAt(t, wakeT, '#e0142a', .7, .4);
+    const beat = [.5, 1.3, 2.0].reduce((v, b) => v + (t >= b ? Math.exp(-(t - b) * 6) : 0), 0);
+    withCam(cm, () => {
+      city(cm, { cracks: 480, crater: true, signGone: true });
+      if (t > 1.3) { sukunaAura(300, GY - 120, sk * (t < wakeT ? .6 : 1), t); }
+      stick({ who: 'maho', x: mx, f: -1, pose: mp, wheel: WHEEL2, flash: true, seed: t < .3 || t > wakeT ? Math.floor(t * 12) : 3 });
+      stick({ who: 'yuji', x: 300, f: 1, pose: yp, sukuna: sk, injured: 1 - seg(t, 3.4, 4.6) });
+      if (t >= wakeT) { c.save(); c.strokeStyle = '#e0142a'; c.shadowColor = '#e0142a'; c.shadowBlur = 20; c.lineWidth = 3; c.globalAlpha = .6 + Math.sin(t * 30) * .3; c.beginPath(); c.arc(catchPt[0], catchPt[1], 10, 0, 7); c.stroke(); c.restore(); }
+      if (t > 3.4 && t < 4.6) { c.save(); c.globalAlpha = Math.sin(seg(t, 3.4, 4.6) * Math.PI) * .8; c.strokeStyle = '#ffe9ef'; c.lineWidth = 2; const r = rng(Math.floor(t * 10)); for (let i = 0; i < 6; i++) { const px = 300 + (r() - .5) * 50; ln(px, GY - 130, px, GY - 160 - r() * 40); } c.restore(); }
+      burstAt(t, wakeT, catchPt[0], catchPt[1], '#e0142a', 20, 71, 520, .5);
+    });
+    if (t > .3 && t < wakeT) { c.save(); c.fillStyle = `rgba(0,0,0,${.45 * seg(t, .3, .5)})`; c.fillRect(0, 0, W, H); c.restore(); } // time stops
+    vignette(t < wakeT ? .35 + beat * .5 : .3 * (1 - seg(t, wakeT, wakeT + 1)), t < wakeT ? '120,0,10' : '200,10,30');
+    [.5, 1.3, 2.0].forEach((b, i) => sfx('ドクン', 640, 360, t, b, { size: 80 + i * 20, col: '#e0142a', rot: 0, life: .55 }));
+    sfx('ピタッ', 250, 300, t, wakeT + .1, { size: 64, col: '#ffffff', rot: -.12, life: .8 });
+    big('RYOMEN SUKUNA', '両面宿儺', seg(t, 3, 3.3) * (1 - seg(t, 5.1, 5.5)), '#e0142a', 150, 72);
+    dialogue(t, [[.6, 2.5, 'sukuna', 'Kneeling in front of a shikigami? How dull. Move aside, brat.'], [3.5, 5.5, 'sukuna', 'Stopping a blade with two fingers. Now let\'s see that wheel work.']]);
+  }},
+  { name: 'Dismantle and Cleave', dur: 7, draw(t) {
+    const bfT = 2.8, clT = 4.4;
+    const cm = cam(t < 2.4 ? 480 : lerp(480, 800, ease(seg(t, 2.4, 3.4))), 350, 1);
+    nightSky();
+    let mx = lerp(560, 720, easeOut(seg(t, 0, .45))), mp = mix(P.mHurt, P.mIdle, ease(seg(t, .5, 1)));
+    if (t >= 1.2 && t < bfT) mp = mix(P.mIdle, P.mHurt, (1 - seg(t, 1.6, 2.2)) * .6);
+    if (t >= bfT) { const k = seg(t, bfT, bfT + .5); mx = lerp(720, 1020, easeOut(k)); mp = P.mHurt; }
+    if (t >= bfT + .6) mp = mix(P.mHurt, P.mIdle, ease(seg(t, bfT + .6, clT - .2)));
+    if (t >= clT) mp = mix(P.mHurt, P.mRise, ease(seg(t, clT, clT + .6)));
+    const cuts = Math.max(seg(t, 1.25, 1.6), t >= clT ? 1 : 0);
+    const mTarget = [mx - 20, GY - 220];
+    let sx = 300, sp = P.sStand;
+    if (t < .4) sp = aimPose(P.sStand, 300, 1, [lerp(470, 560, t / .4), lerp(360, 250, t / .4)]);
+    else if (t >= .9 && t < 1.8) sp = aimPose(P.sStand, 300, 1, mTarget);
+    else if (t >= 2.4 && t < bfT) { sx = lerp(300, 610, ease(seg(t, 2.4, bfT))); sp = runPose(t * 26); }
+    else if (t >= bfT) { sx = 610; sp = t < bfT + .6 ? P.punch : t > clT - .5 && t < clT + .8 ? aimPose(P.sStand, 610, 1, mTarget) : mix(P.punch, P.sStand, ease(seg(t, bfT + .6, bfT + 1))); }
+    [1.2, 1.35, 1.5].forEach(b => impact(t, b, 10));
+    impact(t, bfT, 40); impact(t, clT, 36); flashAt(t, clT, '#ffffff', .7, .25);
+    withCam(cm, () => {
+      city(cm, { cracks: 480, crater: true, signGone: true });
+      if (t > 1.3) { c.save(); c.globalAlpha = .5; c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5; const r = rng(88); for (let i = 0; i < 6; i++) { const x = 620 + r() * 300, y = 180 + r() * 300, a = r() * 3; ln(x - Math.cos(a) * 120, y - Math.sin(a) * 120, x + Math.cos(a) * 120, y + Math.sin(a) * 120); } c.restore(); }
+      sukunaAura(sx, GY - 120, .7, t);
+      stick({ who: 'maho', x: mx, f: -1, pose: mp, wheel: WHEEL2, flash: true, seed: Math.floor(t * 12), cuts, cutSeed: 13 });
+      stick({ who: 'yuji', x: sx, f: 1, pose: sp, sukuna: 1 });
+      dismantle(t, 1.2, 720, GY - 220, 17, 18, 180);
+      if (t >= clT - .05 && t < clT + .5) { // Cleave: one heavy X
+        const a = seg(t, clT - .05, clT + .08), fade = 1 - seg(t, clT + .2, clT + .5);
+        c.save(); c.globalAlpha = fade; c.strokeStyle = '#fff'; c.shadowColor = '#e0142a'; c.shadowBlur = 30; c.lineWidth = 10; c.lineCap = 'round';
+        ln(1020 - 150, GY - 380, lerp(1020 - 150, 1020 + 150, a), lerp(GY - 380, GY - 40, a));
+        ln(1020 + 150, GY - 380, lerp(1020 + 150, 1020 - 150, a), lerp(GY - 380, GY - 40, a)); c.restore();
+      }
+      burstAt(t, bfT, 700, GY - 170, '#e0142a', 22, 81, 600, .5);
+      burstAt(t, clT, 1020, GY - 210, '#ffffff', 26, 82, 700, .5);
+    });
+    { const [px, py] = toScreen(cm, 700, GY - 170); flashFrame(t, bfT, px, py, 190, { len: 560, dur: .45, n: 12 }); }
+    big('DISMANTLE', '解', seg(t, 1.2, 1.35) * (1 - seg(t, 2, 2.3)), '#ffffff', 170, 80);
+    sfx('黒閃', 640, 190, t, bfT + .05, { size: 120, col: '#e0142a', rot: -.1, life: .8 });
+    big('CLEAVE', '捌', seg(t, clT, clT + .12) * (1 - seg(t, 5.1, 5.4)), '#e0142a', 170, 80);
+    dialogue(t, [[5.4, 7, 'sukuna', 'Tough hide. Good. It would be boring if you broke that easily.']]);
+  }},
+  { name: 'The third turn', dur: 3.5, draw(t) {
+    const cm = cam(930, 380, 1.3);
+    nightSky();
+    const rot = WHEEL2 + easeOut(seg(t, 1, 1.25)) * Math.PI / 4 + Math.sin(seg(t, 1.25, 1.5) * Math.PI) * .06;
+    impact(t, 1, 10); flashAt(t, 1, COL.red, .35, .3);
+    withCam(cm, () => {
+      city(cm, { cracks: 480, crater: true, signGone: true });
+      sukunaAura(610, GY - 120, .6, t);
+      stick({ who: 'yuji', x: 610, f: 1, pose: P.sStand, sukuna: 1 });
+      stick({ who: 'maho', x: 1020, f: -1, pose: mix(P.mRise, P.mIdle, ease(seg(t, 1.5, 2.5))), wheel: rot, flash: true, seed: Math.floor(t * 12), cuts: 1 - seg(t, 1.2, 1.9), cutSeed: 13 });
+      if (t > 1 && t < 1.6) { c.save(); c.strokeStyle = hexA('#ff3b3b', 1 - seg(t, 1, 1.6)); c.lineWidth = 4; c.shadowColor = COL.red; c.shadowBlur = 20; c.beginPath(); c.arc(1020, 150, 40 + seg(t, 1, 1.6) * 100, 0, 7); c.stroke(); c.restore(); }
+    });
+    sfx('ガチャン', 1000, 140, t, 1, { size: 72, col: '#ff3b3b', rot: .1, life: 1 });
+    chip(t, 1.3, 3.5, [['WHEEL  ▸  3 / 8', '#ff3b3b'], ['ADAPTING  ▸  DISMANTLE', COL.paper]]);
+    dialogue(t, [[2, 3.5, 'sukuna', 'Turn that wheel all you like. I\'ll cut faster.']]);
+  }},
+  { name: 'End card', dur: 3.5, draw(t) { endCard(t); } },
+];
+function endCard(t) {
+  c.fillStyle = '#05060b'; c.fillRect(0, 0, W, H);
+  big('TO BE CONTINUED', null, seg(t, .1, .5), COL.paper, 320, 72);
+  c.save(); c.globalAlpha = seg(t, .4, .8); c.textAlign = 'center';
+  c.font = `26px ${F.display}`; c.fillStyle = '#e0142a'; c.fillText('NEXT  ·  CHAPTER 4  ·  KING OF CURSES', W / 2, 390);
+  c.font = `500 14px ${F.mono}`; c.fillStyle = '#8f93ab'; c.fillText('MAHORAGA vs ITADORI  ·  PART 3  ·  A FAN ANIMATION, NOT AFFILIATED WITH THE SERIES', W / 2, 430); c.restore();
+  wheel(W / 2, 540, 26, WHEEL2 + Math.PI / 4, seg(t, .3, .6), COL.red);
+}
+function nightSky() { sky(1); }
+function drawVeilFront(v) {
+  if (v <= 0) return;
+  const front = lerp(-40, H + 40, v);
+  c.fillStyle = 'rgba(3,3,8,.7)';
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(W, 0);
+  for (let x = W; x >= 0; x -= 40) c.lineTo(x, front + Math.sin(x * .02 + v * 9) * 18 + Math.sin(x * .061) * 10);
+  c.closePath(); c.fill();
+  c.strokeStyle = hexA('#8d6bff', .7); c.lineWidth = 3; c.beginPath();
+  for (let x = 0; x <= W; x += 40) c.lineTo(x, front + Math.sin(x * .02 + v * 9) * 18 + Math.sin(x * .061) * 10);
+  c.stroke();
+}
+
+// ---------- playback ----------
+const total = scenes.reduce((s, x) => s + x.dur, 0);
+const starts = []; scenes.reduce((s, x, i) => (starts[i] = s, s + x.dur), 0);
+let time = 0, playing = true, last = null, curScene = -1;
+const playBtn = document.getElementById('play');
+const prog = document.getElementById('prog'), fill = document.getElementById('progFill'), timeEl = document.getElementById('time');
+const chapList = document.getElementById('chapters');
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+scenes.forEach((s, i) => {
+  const li = document.createElement('li'), b = document.createElement('button');
+  b.type = 'button'; b.innerHTML = `<b>${fmt(starts[i])}</b><span></span>`; b.lastChild.textContent = s.name;
+  b.addEventListener('click', () => seek(starts[i] + .001));
+  li.appendChild(b); chapList.appendChild(li);
+});
+
+function seek(t) { time = clamp(t, 0, total - .001); render(); }
+function sceneAt(t) { let i = scenes.length - 1; while (i > 0 && starts[i] > t) i--; return i; }
+
+function render() {
+  const i = sceneAt(time), s = scenes[i], lt = time - starts[i];
+  if (i !== curScene) { curScene = i; [...chapList.querySelectorAll('button')].forEach((b, j) => b.setAttribute('aria-current', j === i)); }
+  fx.shake = 0; fx.flash = 0;
+  c.save(); s.draw(lt); c.restore();
+  out.save(); out.fillStyle = '#000'; out.fillRect(0, 0, W, H);
+  const sh = reduceMotion ? 0 : Math.min(40, fx.shake), r = rng(Math.floor(time * 60) + 1);
+  out.translate((r() - .5) * sh, (r() - .5) * sh);
+  out.drawImage(buf, 0, 0);
+  out.restore();
+  if (fx.flash > 0) { out.fillStyle = hexA(fx.flashColor, reduceMotion ? fx.flash * .3 : fx.flash); out.fillRect(0, 0, W, H); }
+  fill.style.width = (time / total * 100) + '%';
+  timeEl.textContent = `${fmt(time)} / ${fmt(total)}`;
+}
+
+function frame(now) {
+  const dt = last == null ? 0 : Math.min(.05, (now - last) / 1000); last = now;
+  if (playing) { time += dt; if (time >= total) time = 0; }
+  render();
+  requestAnimationFrame(frame);
+}
+
+function toggle() { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play'; last = null; }
+playBtn.addEventListener('click', toggle);
+document.getElementById('restart').addEventListener('click', () => { seek(0); if (!playing) toggle(); });
+prog.addEventListener('click', e => { const r = prog.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * total); });
+prog.addEventListener('keydown', e => { if (e.key === 'ArrowRight') seek(time + 3); if (e.key === 'ArrowLeft') seek(time - 3); });
+document.addEventListener('keydown', e => { if (e.code === 'Space' && e.target.tagName !== 'BUTTON') { e.preventDefault(); toggle(); } });
+
+// Frame-exact hook for exporting to video: renders time t and returns nothing.
+window.renderAt = t => { playing = false; time = clamp(t, 0, total - .001); render(); };
+window.animationLength = total;
+
+// Canvas text needs its Japanese glyph subsets loaded before the first frame.
+const glyphs = '八握剣異戒神将魔虚羅黒閃第三話両面宿儺解捌渋谷居酒屋カラオケ薬ラーメンドクガチャンザシュピタッ!×';
+const loads = document.fonts ? [
+  document.fonts.load(`40px "Reggae One"`, glyphs + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ·.'),
+  document.fonts.load(`700 25px "Zen Kaku Gothic New"`, 'Abc'), document.fonts.load(`400 25px "Zen Kaku Gothic New"`, 'Abc'),
+  document.fonts.load(`500 16px "JetBrains Mono"`, 'A0'),
+] : [];
+Promise.race([Promise.allSettled(loads), new Promise(r => setTimeout(r, 2500))]).then(() => { window.animationReady = true; requestAnimationFrame(frame); });
+})();
+</script>
