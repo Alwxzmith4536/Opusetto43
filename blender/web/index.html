@@ -1,0 +1,497 @@
+<title>Saitama vs Cosmic Garou 3D</title>
+<meta name="description" content="The full 5-minute Blender fight, played back in real-time 3D in the browser from the exported scene.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: a screening room. One stage (16:9 or phone 9:16) holding the live 3D scene, transport and chapters below. Single deliberate dark look. */
+  :root {
+    --room: #0e0d12;
+    --panel: #1a1820;
+    --line: #2d2a36;
+    --paper: #f3f1ec;
+    --muted: #a19cae;
+    --hero: #ffd21a;
+    --cosmos: #9b7bff;
+    --display: "Anton", "Impact", "Arial Narrow", sans-serif;
+    --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { background: var(--room); color: var(--paper); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 6vw, 46px); line-height: 1; margin: 0; text-wrap: balance; }
+  h1 .s { color: var(--hero); }
+  h1 .g { color: var(--cosmos); }
+  h1 .vs { font-family: var(--body); font-weight: 800; font-size: 0.42em; color: var(--muted); vertical-align: middle; margin-inline: 0.25em; }
+
+  .stage { position: relative; margin-inline: auto; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); cursor: pointer; }
+  body.vertical .stage { aspect-ratio: 9 / 16; width: min(100%, calc((100dvh - 120px) * 9 / 16)); min-width: min(100%, 260px); }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: transparent; border: 0; cursor: pointer; color: #16140c; }
+  .overlay .btn { width: 84px; height: 84px; border-radius: 50%; background: rgba(14,13,18,0.86); display: grid; place-items: center; box-shadow: 0 0 0 3px var(--hero); }
+  .overlay svg { width: 34px; height: 34px; margin-left: 6px; fill: var(--hero); }
+  .overlay:focus-visible .btn { outline: 3px solid var(--room); outline-offset: 4px; }
+  .loading { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 10px; background: #fff; color: #16140c; font-family: var(--mono); font-size: 13px; text-align: center; padding-inline: 16px; }
+  .loading .meter { width: min(260px, 70%); height: 4px; background: #e6e4ec; border-radius: 2px; overflow: hidden; }
+  .loading .meter i { display: block; height: 100%; width: 0; background: #16140c; }
+
+  .transport { display: grid; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button.ctl { font: 600 14px var(--body); color: var(--paper); background: #26232e; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; cursor: pointer; min-height: 40px; }
+  button.ctl:hover { background: #312d3b; }
+  button.ctl:focus-visible { outline: 2px solid var(--hero); outline-offset: 2px; }
+  button.ctl[aria-pressed="true"] { background: var(--paper); color: #16140c; border-color: var(--paper); }
+  button.primary { background: var(--hero); color: #16140c; border-color: var(--hero); min-width: 84px; }
+  button.primary:hover { background: #ffe066; }
+  .time { margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar { position: relative; height: 26px; cursor: pointer; touch-action: none; }
+  .bar .track { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--line); }
+  .bar .fill { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--hero); width: 0; }
+  .bar .tick { position: absolute; top: 7px; width: 2px; height: 12px; background: var(--muted); opacity: 0.6; }
+  .chapters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chapters button { font: 500 12px var(--mono); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+  .chapters button.on { color: #16140c; background: var(--paper); border-color: var(--paper); }
+  .chapters button:focus-visible { outline: 2px solid var(--hero); outline-offset: 2px; }
+  .notes { display: grid; gap: 6px; font-size: 14px; color: var(--muted); max-width: 70ch; }
+  .notes h2 { font: 800 13px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper); margin: 0; }
+  .notes ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+  .notes b { color: var(--paper); font-weight: 600; }
+  footer { font-size: 12px; color: var(--muted); }
+
+  body.clean { overflow: hidden; }
+  body.clean .wrap > :not(.stage) { display: none; }
+  body.clean .wrap { padding: 0; max-width: none; }
+  body.clean .stage { position: fixed; inset: 0; margin: auto; width: min(100vw, calc(100dvh * 16 / 9)); height: auto; min-width: 0; border-radius: 0; box-shadow: none; }
+  body.clean.vertical .stage { width: min(100vw, calc(100dvh * 9 / 16)); }
+  body.clean::before { content: ""; position: fixed; inset: 0; background: #000; }
+  .exit-clean { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; z-index: 5; font: 600 13px var(--body); color: var(--paper); background: rgba(14,13,18,0.85); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1><span class="s">Saitama</span><span class="vs">vs</span><span class="g">Cosmic Garou</span></h1>
+    <div class="eyebrow">Real-time 3D · from the .blend · 5:00</div>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="3D animation: Saitama vs Cosmic Garou"></canvas>
+    <button class="overlay" id="bigPlay" aria-label="Play" hidden><span class="btn"><svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"/></svg></span></button>
+    <div class="loading" id="loading"><div id="loadText">Loading the Blender scene…</div><div class="meter"><i id="loadBar"></i></div></div>
+  </div>
+
+  <div class="transport">
+    <div class="row">
+      <button class="ctl primary" id="play" disabled>Play</button>
+      <button class="ctl" id="vertical" aria-pressed="false">Phone 9:16</button>
+      <button class="ctl" id="clean">Clean view</button>
+      <button class="ctl" id="quality" aria-pressed="true">Shadows on</button>
+      <span class="time" id="time">0:00 / 5:00</span>
+    </div>
+    <div class="bar" id="bar" role="slider" aria-label="Position" aria-valuemin="0" aria-valuemax="300" aria-valuenow="0" tabindex="0">
+      <div class="track"></div><div class="fill" id="fill"></div>
+    </div>
+    <div class="chapters" id="chapters"></div>
+  </div>
+
+  <section class="notes">
+    <h2>Record it as a phone video</h2>
+    <ol>
+      <li>Tap <b>Phone 9:16</b> for a vertical crop of the Blender camera, or leave it at 16:9.</li>
+      <li>Tap <b>Clean view</b> so only the picture fills the screen.</li>
+      <li>Start your phone's screen recorder, then tap the picture to play. Tap again to pause and show the Close button.</li>
+    </ol>
+    <p>This is the actual Blender scene: the same meshes, rig, keyframes, camera cuts and effects, played live with WebGL. The picture is real-time, so it uses toon lighting and outlines close to the Blender render rather than the exact EEVEE image. If playback stutters on an older phone, turn <b>Shadows</b> off.</p>
+  </section>
+  <footer>Fan work. One-Punch Man and its characters belong to ONE and Yusuke Murata.</footer>
+</div>
+<button class="exit-clean" id="exitClean" hidden>Close clean view</button>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  const CHAPTERS = [
+    [0, 'Standoff'], [16, 'Round 1'], [70, 'Orb barrage'], [110, 'Sky battle'], [150, 'Portals'],
+    [185, 'Gamma Ray Burst'], [215, 'Serious'], [235, 'Speedblitz'], [265, 'Aftermath'],
+  ];
+
+  // ---------- load ----------
+  async function fetchText(url, onProg) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(url + ' ' + res.status);
+    const total = +res.headers.get('content-length') || 0;
+    if (!res.body || !total) return res.text();
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let got = 0, txt = '';
+    for (;;) { const { done, value } = await reader.read(); if (done) break; got += value.length; txt += dec.decode(value, { stream: true }); onProg(got / total); }
+    return txt + dec.decode();
+  }
+  async function unpack(b64) {
+    const raw = Uint8Array.from(atob(b64.trim()), c => c.charCodeAt(0));
+    const stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(stream).arrayBuffer();
+  }
+  let data, bin;
+  try {
+    if (typeof DecompressionStream === 'undefined') throw new Error('old browser');
+    data = await (await fetch('scene.json')).json();
+    const txt = await fetchText('scene.bin.txt', p => { $('loadBar').style.width = (p * 100).toFixed(0) + '%'; });
+    $('loadText').textContent = 'Unpacking 273,000 keyframes…';
+    bin = await unpack(txt);
+  } catch (e) {
+    $('loadText').textContent = e.message === 'old browser'
+      ? 'This browser is too old to unpack the scene. Try a current Chrome, Safari or Firefox.'
+      : 'Could not load scene.json / scene.bin.txt next to this page. Serve the web/ folder over http(s).';
+    return;
+  }
+  const FA = new Float32Array(bin), UA = new Uint32Array(bin);
+
+  // ---------- Blender fcurve evaluation ----------
+  function mkCurve(c) {
+    return { n: c.n, x: FA.subarray(c.x, c.x + c.n), y: FA.subarray(c.y, c.y + c.n), t: FA.subarray(c.t, c.t + c.n),
+             h: c.h !== undefined ? FA.subarray(c.h, c.h + c.n * 4) : null, i: 0 };
+  }
+  function evalCurve(c, f) {
+    const x = c.x, n = c.n;
+    if (f <= x[0]) return c.y[0];
+    if (f >= x[n - 1]) return c.y[n - 1];
+    let i = c.i;
+    if (!(x[i] <= f && f < x[i + 1])) {
+      let lo = 0, hi = n - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (x[m] <= f) lo = m; else hi = m; }
+      i = lo; c.i = i;
+    }
+    const mode = c.t[i], y0 = c.y[i], y3 = c.y[i + 1];
+    if (mode === 0) return y0;
+    const x0 = x[i], x3 = x[i + 1];
+    if (mode === 1 || !c.h) return y0 + (y3 - y0) * (f - x0) / (x3 - x0);
+    let x1 = c.h[i * 4 + 2], y1 = c.h[i * 4 + 3], x2 = c.h[(i + 1) * 4], y2 = c.h[(i + 1) * 4 + 1];
+    // Blender's handle correction: keep the curve a function of time
+    const len = x3 - x0, d1 = x1 - x0, d2 = x3 - x2;
+    if (d1 + d2 > len && d1 + d2 > 0) { const k = len / (d1 + d2); x1 = x0 + d1 * k; y1 = y0 + (y1 - y0) * k; x2 = x3 - d2 * k; y2 = y3 - (y3 - y2) * k; }
+    let lo = 0, hi = 1, u = (f - x0) / len;
+    for (let it = 0; it < 18; it++) {
+      const v = 1 - u, bx = v * v * v * x0 + 3 * v * v * u * x1 + 3 * v * u * u * x2 + u * u * u * x3;
+      if (bx < f) lo = u; else hi = u;
+      u = (lo + hi) / 2;
+    }
+    const v = 1 - u;
+    return v * v * v * y0 + 3 * v * v * u * y1 + 3 * v * u * u * y2 + u * u * u * y3;
+  }
+
+  // ---------- three.js scene ----------
+  const cv = $('cv');
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const WHITE = new THREE.Color(1, 1, 1);
+  scene.background = WHITE.clone();
+  const camera = new THREE.PerspectiveCamera(30, 16 / 9, 0.05, 1500);
+  camera.matrixAutoUpdate = false;
+  const AMB = 0.5;
+  scene.add(new THREE.AmbientLight(0xffffff, AMB));
+  const sun = new THREE.DirectionalLight(0xffffff, 1);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 160 });
+  sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
+  scene.add(sun); scene.add(sun.target);
+  const Z2Y = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
+
+  // geometries
+  const geos = data.meshes.map(m => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(FA.slice(m.v, m.v + m.nv * 3), 3));
+    g.setIndex(new THREE.BufferAttribute(UA.slice(m.f, m.f + m.nt * 3), 1));
+    if (m.smooth) { g.computeVertexNormals(); return g; }
+    const ng = g.toNonIndexed(); ng.computeVertexNormals(); return ng;
+  });
+
+  // materials
+  const gradCache = {};
+  function gradient(shade) {
+    const lo = shade.map(s => Math.max(0, Math.min(1, (s - AMB) / (1 - AMB))));
+    const key = lo.map(v => v.toFixed(2)).join();
+    if (gradCache[key]) return gradCache[key];
+    const d = new Uint8Array([lo[0] * 255, lo[1] * 255, lo[2] * 255, 255, 255, 255, 255, 255]);
+    const tx = new THREE.DataTexture(d, 2, 1, THREE.RGBAFormat);
+    tx.minFilter = tx.magFilter = THREE.NearestFilter; tx.needsUpdate = true;
+    return (gradCache[key] = tx);
+  }
+  const glowUniform = { value: 1 };
+  const cosmicMat = new THREE.ShaderMaterial({
+    uniforms: { glow: glowUniform },
+    vertexShader: `varying vec3 vP; varying vec3 vN; varying vec3 vV;
+      void main(){ vP = position; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
+    fragmentShader: `uniform float glow; varying vec3 vP; varying vec3 vN; varying vec3 vV;
+      float h(vec3 p){ p = fract(p*0.3183099+0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+      float n3(vec3 x){ vec3 i=floor(x), f=fract(x); f=f*f*(3.0-2.0*f);
+        return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),
+                   mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z); }
+      float fbm(vec3 p){ float a=0.5, s=0.0; for(int k=0;k<5;k++){ s+=a*n3(p); p*=2.03; a*=0.5; } return s; }
+      vec3 ramp(float t){
+        vec3 c0=vec3(0.004,0.002,0.02), c1=vec3(0.06,0.02,0.28), c2=vec3(0.02,0.18,0.55), c3=vec3(0.35,0.18,0.95);
+        if(t<0.35) return c0; if(t<0.55) return mix(c0,c1,(t-0.35)/0.2); if(t<0.66) return mix(c1,c2,(t-0.55)/0.11);
+        if(t<0.78) return mix(c2,c3,(t-0.66)/0.12); return c3; }
+      void main(){
+        vec3 p = vP*3.0; vec3 col = ramp(fbm(p));
+        vec3 q = vP*30.0; vec3 ci = floor(q); float dmin = 9.0;
+        for(int x=-1;x<=1;x++) for(int y=-1;y<=1;y++) for(int z=-1;z<=1;z++){ vec3 c = ci+vec3(x,y,z);
+          vec3 r = c + vec3(h(c), h(c+17.3), h(c+41.1)); dmin = min(dmin, length(q-r)); }
+        if(dmin < 0.075) col = vec3(1.0);
+        float facing = abs(dot(normalize(vN), normalize(vV)));
+        float rim = pow(clamp(1.0 - facing, 0.0, 1.0) * 1.1, 2.5);
+        col = mix(col, vec3(0.45,0.85,1.0), clamp(rim,0.0,1.0));
+        gl_FragColor = vec4(col * (glow*1.6+0.6), 1.0);
+        #include <encodings_fragment>
+      }`,
+  });
+  const mats = data.materials.map(m => {
+    if (m.kind === 'toon') return new THREE.MeshToonMaterial({ color: new THREE.Color(...m.color), gradientMap: gradient(m.shade), side: THREE.DoubleSide });
+    if (m.kind === 'glow') return new THREE.MeshBasicMaterial({ color: new THREE.Color(...m.color.map(c => Math.min(1, c * m.strength))) });
+    if (m.kind === 'cosmic') return cosmicMat;
+    return null; // fx: one material per object (colour + alpha are animated per object)
+  });
+  const resUniform = { value: new THREE.Vector2(1920, 1080) };
+  const outlineMat = new THREE.ShaderMaterial({
+    uniforms: { res: resUniform },
+    side: THREE.BackSide,
+    vertexShader: `uniform vec2 res; void main(){ vec4 c = projectionMatrix*modelViewMatrix*vec4(position,1.0);
+      vec3 n = normalize(normalMatrix*normal); vec2 d = normalize((projectionMatrix*vec4(n,0.0)).xy + 1e-6);
+      c.xy += d * 3.0 * c.w / res; gl_Position = c; }`,
+    fragmentShader: `void main(){ gl_FragColor = vec4(0.02,0.02,0.03,1.0); }`,
+  });
+
+  // objects
+  const objs = data.objects.map((o, idx) => {
+    const O = { d: o, idx, ch: {}, pose: {}, world: new THREE.Matrix4(), stamp: -1, mesh: null };
+    for (const c of o.curves) {
+      const cc = mkCurve(c);
+      const m = c.p.match(/^pose\.bones\["(.+)"\]\.(rotation_euler|location)$/);
+      if (m) { (O.pose[m[1]] ||= {})[m[2]] ||= []; O.pose[m[1]][m[2]][c.i] = cc; }
+      else { (O.ch[c.p] ||= [])[c.i] = cc; }
+    }
+    O.pinv = new THREE.Matrix4().fromArray(o.pinv);
+    if (o.type === 'ARMATURE') {
+      O.bones = o.bones.map(b => ({ ...b, restM: new THREE.Matrix4().fromArray(b.rest), pose: new THREE.Matrix4() }));
+      O.byName = {};
+      O.bones.forEach(b => { O.byName[b.name] = b; });
+      O.bones.forEach(b => { b.rel = b.parent ? O.byName[b.parent].restM.clone().invert().multiply(b.restM) : b.restM.clone(); b.restInv = b.restM.clone().invert(); });
+    }
+    if (o.type === 'MESH') {
+      let geo = geos[o.mesh];
+      let mat = mats[o.mat];
+      const md = data.materials[o.mat];
+      if (o.skin) { geo = geo.clone(); O.restPos = geo.attributes.position.array.slice(); O.skinW = FA.subarray(o.skin.w, o.skin.w + O.restPos.length / 3 * o.skin.bones.length); }
+      if (md.kind === 'fx') {
+        mat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+        O.fxStrength = md.strength;
+      }
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      if (md.kind === 'toon' || md.kind === 'cosmic') { mesh.castShadow = true; mesh.receiveShadow = md.kind === 'toon'; }
+      if (o.name === 'Ground') { mesh.castShadow = false; mesh.receiveShadow = true; }
+      if (o.ink) { const ol = new THREE.Mesh(geo, outlineMat); ol.matrixAutoUpdate = false; ol.frustumCulled = false; mesh.add(ol); ol.matrix.identity(); }
+      scene.add(mesh);
+      O.mesh = mesh;
+    }
+    return O;
+  });
+  const camObj = objs[data.camera];
+  const sunObj = objs.find(o => o.d.type === 'LIGHT');
+  const worldCurves = data.world.map(mkCurve);
+  const glowCurves = data.glow.map(mkCurve);
+  const lensCurves = (camObj.d.lensCurves || []).map(mkCurve);
+
+  // ---------- Blender transform evaluation ----------
+  const _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _e = new THREE.Euler(0, 0, 0, 'ZYX');
+  const _m = new THREE.Matrix4(), _t = new THREE.Matrix4();
+  function ch(O, path, i, f, def) { const a = O.ch[path]; const c = a && a[i]; return c ? evalCurve(c, f) : def; }
+  function basis(O, f, out) {
+    const d = O.d;
+    _p.set(ch(O, 'location', 0, f, d.loc[0]), ch(O, 'location', 1, f, d.loc[1]), ch(O, 'location', 2, f, d.loc[2]));
+    _e.set(ch(O, 'rotation_euler', 0, f, d.rot[0]), ch(O, 'rotation_euler', 1, f, d.rot[1]), ch(O, 'rotation_euler', 2, f, d.rot[2]), 'ZYX');
+    _q.setFromEuler(_e);
+    _s.set(ch(O, 'scale', 0, f, d.scale[0]), ch(O, 'scale', 1, f, d.scale[1]), ch(O, 'scale', 2, f, d.scale[2]));
+    return out.compose(_p, _q, _s);
+  }
+  function posePass(O, f) {
+    const defs = O.d.poseDefaults;
+    for (const b of O.bones) {
+      const pc = O.pose[b.name] || {}, df = defs[b.name];
+      const r = pc.rotation_euler || [], l = pc.location || [];
+      _e.set(r[0] ? evalCurve(r[0], f) : df.rot[0], r[1] ? evalCurve(r[1], f) : df.rot[1], r[2] ? evalCurve(r[2], f) : df.rot[2], 'ZYX');
+      _q.setFromEuler(_e);
+      _p.set(l[0] ? evalCurve(l[0], f) : df.loc[0], l[1] ? evalCurve(l[1], f) : df.loc[1], l[2] ? evalCurve(l[2], f) : df.loc[2]);
+      _m.compose(_p, _q, _s.set(1, 1, 1));
+      if (b.parent) b.pose.multiplyMatrices(O.byName[b.parent].pose, b.rel).multiply(_m);
+      else b.pose.multiplyMatrices(b.rel, _m);
+    }
+  }
+  let STAMP = 0;
+  function world(O, f) {
+    if (O.stamp === STAMP) return O.world;
+    O.stamp = STAMP;
+    const d = O.d, W = O.world;
+    const B = basis(O, f, new THREE.Matrix4());
+    if (d.parent < 0) W.copy(B);
+    else {
+      const P = objs[d.parent];
+      const PW = world(P, f);
+      if (d.ptype === 'BONE' && P.bones) {
+        const b = P.byName[d.pbone];
+        W.multiplyMatrices(PW, b.pose).multiply(_t.makeTranslation(0, b.len, 0)).multiply(O.pinv).multiply(B);
+      } else W.multiplyMatrices(PW, O.pinv).multiply(B);
+    }
+    if (d.type === 'ARMATURE') posePass(O, f);
+    if (d.track !== undefined && d.track >= 0) {
+      const eye = new THREE.Vector3().setFromMatrixPosition(W);
+      const tgt = new THREE.Vector3().setFromMatrixPosition(world(objs[d.track], f));
+      const z = eye.clone().sub(tgt).normalize();
+      const x = new THREE.Vector3(0, 0, 1).cross(z);
+      if (x.lengthSq() < 1e-8) x.set(1, 0, 0);
+      x.normalize();
+      const y = z.clone().cross(x);
+      W.makeBasis(x, y, z).setPosition(eye);
+    }
+    return W;
+  }
+
+  const skinTmp = new THREE.Vector3();
+  function skin(O, f) {
+    const arm = objs[O.d.skin.arm];
+    world(arm, f);
+    const names = O.d.skin.bones, nb = names.length;
+    const Ms = names.map(n => { const b = arm.byName[n]; return b ? new THREE.Matrix4().multiplyMatrices(b.pose, b.restInv) : new THREE.Matrix4(); });
+    const pos = O.mesh.geometry.attributes.position, rest = O.restPos, w = O.skinW, out = pos.array;
+    const acc = new THREE.Vector3();
+    for (let v = 0; v < rest.length / 3; v++) {
+      acc.set(0, 0, 0); let tot = 0;
+      for (let k = 0; k < nb; k++) { const wk = w[v * nb + k]; if (wk <= 0) continue; skinTmp.set(rest[v * 3], rest[v * 3 + 1], rest[v * 3 + 2]).applyMatrix4(Ms[k]); acc.addScaledVector(skinTmp, wk); tot += wk; }
+      if (tot > 0) acc.multiplyScalar(1 / tot); else acc.set(rest[v * 3], rest[v * 3 + 1], rest[v * 3 + 2]);
+      out[v * 3] = acc.x; out[v * 3 + 1] = acc.y; out[v * 3 + 2] = acc.z;
+    }
+    pos.needsUpdate = true;
+    O.mesh.geometry.computeVertexNormals();
+  }
+
+  const sunDir = new THREE.Vector3();
+  let vertical = false, shadows = true;
+  function renderFrame(f) {
+    STAMP++;
+    for (const O of objs) {
+      if (!O.mesh) continue;
+      const d = O.d;
+      const hidden = ch(O, 'hide_render', 0, f, d.hide ? 1 : 0) > 0.5;
+      let vis = !hidden;
+      if (vis && O.fxStrength !== undefined) {
+        const a = ch(O, 'color', 3, f, d.color[3]);
+        if (a < 0.004) vis = false;
+        else {
+          const s = O.fxStrength;
+          O.mesh.material.color.setRGB(Math.min(1, ch(O, 'color', 0, f, d.color[0]) * s), Math.min(1, ch(O, 'color', 1, f, d.color[1]) * s), Math.min(1, ch(O, 'color', 2, f, d.color[2]) * s));
+          O.mesh.material.opacity = Math.min(1, a);
+        }
+      }
+      O.mesh.visible = vis;
+      if (!vis) continue;
+      const W = world(O, f);
+      if (d.skin) skin(O, f);
+      O.mesh.matrix.multiplyMatrices(Z2Y, W);
+      O.mesh.matrixWorldNeedsUpdate = true;
+    }
+    // camera
+    const CW = world(camObj, f);
+    camera.matrix.multiplyMatrices(Z2Y, CW);
+    camera.updateMatrixWorld(true);
+    const lens = lensCurves.length ? evalCurve(lensCurves[0], f) : camObj.d.lens;
+    const hfov = 2 * Math.atan((camObj.d.sensor / 2) / lens);
+    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(hfov / 2) / (16 / 9)));
+    camera.aspect = vertical ? 9 / 16 : 16 / 9;
+    camera.updateProjectionMatrix();
+    // anime impact frames: the world background colour is keyed
+    if (worldCurves.length >= 3) scene.background.setRGB(evalCurve(worldCurves[0], f), evalCurve(worldCurves[1], f), evalCurve(worldCurves[2], f));
+    if (glowCurves.length) glowUniform.value = evalCurve(glowCurves[0], f);
+    // sun follows the action so shadows stay sharp
+    if (sunObj) {
+      sunDir.set(0, 0, 1).transformDirection(world(sunObj, f)).applyMatrix4(new THREE.Matrix4().extractRotation(Z2Y));
+      const tgt = new THREE.Vector3().setFromMatrixPosition(world(objs[camObj.d.track], f)).applyMatrix4(Z2Y);
+      sun.target.position.copy(tgt); sun.position.copy(tgt).addScaledVector(sunDir, 60);
+      sun.target.updateMatrixWorld();
+    }
+    renderer.shadowMap.enabled = shadows;
+    renderer.render(scene, camera);
+  }
+
+  // ---------- sizing ----------
+  function resize() {
+    const r = $('stage').getBoundingClientRect();
+    renderer.setSize(r.width, r.height, false);
+    const pr = renderer.getPixelRatio();
+    resUniform.value.set(r.width * pr, r.height * pr);
+    draw();
+  }
+  new ResizeObserver(resize).observe($('stage'));
+
+  // ---------- playback ----------
+  const FPS = data.fps, START = data.start, END = data.end, DUR = (END - START + 1) / FPS;
+  let t = 0, playing = false, last = 0;
+  const frameAt = s => START + s * FPS;
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  function draw() { renderFrame(frameAt(t)); ui(); }
+  const chapEls = CHAPTERS.map(([s, name]) => {
+    const b = document.createElement('button'); b.textContent = `${fmt(s)} ${name}`;
+    b.addEventListener('click', () => { poster = false; t = s; draw(); if (!playing) start(); });
+    $('chapters').appendChild(b);
+    const tick = document.createElement('div'); tick.className = 'tick'; tick.style.left = `${s / DUR * 100}%`; $('bar').appendChild(tick);
+    return [s, b];
+  });
+  function ui() {
+    $('fill').style.width = `${t / DUR * 100}%`;
+    $('time').textContent = `${fmt(t)} / ${fmt(DUR)}`;
+    $('bar').setAttribute('aria-valuenow', Math.round(t));
+    $('play').textContent = playing ? 'Pause' : 'Play';
+    $('bigPlay').hidden = playing;
+    let cur = chapEls[0]; for (const c of chapEls) if (t >= c[0]) cur = c;
+    chapEls.forEach(c => c[1].classList.toggle('on', c === cur));
+    $('exitClean').hidden = !(document.body.classList.contains('clean') && !playing);
+  }
+  function tick(now) {
+    if (!playing) return;
+    t += Math.min(0.1, (now - last) / 1000); last = now;
+    if (t >= DUR) { t = DUR - 1 / FPS; playing = false; }
+    draw();
+    if (playing) requestAnimationFrame(tick);
+  }
+  let poster = true;
+  function start() { if (poster || t >= DUR - 0.05) { t = 0; poster = false; } playing = true; last = performance.now(); ui(); requestAnimationFrame(tick); }
+  function pause() { playing = false; ui(); }
+  const toggle = () => (playing ? pause() : start());
+  $('play').addEventListener('click', toggle);
+  $('bigPlay').addEventListener('click', e => { e.stopPropagation(); start(); });
+  $('stage').addEventListener('click', toggle);
+  $('vertical').addEventListener('click', e => { vertical = !vertical; document.body.classList.toggle('vertical', vertical); e.currentTarget.setAttribute('aria-pressed', vertical); requestAnimationFrame(resize); });
+  $('quality').addEventListener('click', e => { shadows = !shadows; e.currentTarget.setAttribute('aria-pressed', shadows); e.currentTarget.textContent = shadows ? 'Shadows on' : 'Shadows off'; scene.traverse(o => { if (o.material && o.material.needsUpdate !== undefined) o.material.needsUpdate = true; }); draw(); });
+  $('clean').addEventListener('click', () => { document.body.classList.add('clean'); pause(); requestAnimationFrame(resize); });
+  $('exitClean').addEventListener('click', () => { document.body.classList.remove('clean'); ui(); requestAnimationFrame(resize); });
+  const scrub = e => { poster = false; const r = $('bar').getBoundingClientRect(); t = Math.max(0, Math.min(DUR - 0.01, (e.clientX - r.left) / r.width * DUR)); draw(); };
+  $('bar').addEventListener('pointerdown', e => { $('bar').setPointerCapture(e.pointerId); pause(); scrub(e); $('bar').onpointermove = scrub; });
+  $('bar').addEventListener('pointerup', () => { $('bar').onpointermove = null; });
+  $('bar').addEventListener('keydown', e => { if (e.key === 'ArrowRight') { t = Math.min(DUR - 0.01, t + 5); draw(); } if (e.key === 'ArrowLeft') { t = Math.max(0, t - 5); draw(); } if (e.key === ' ') { e.preventDefault(); toggle(); } });
+  window.playerSeek = s => { t = s; draw(); };
+
+  // poster: a frame from the orb barrage until play is pressed
+  $('loading').hidden = true;
+  $('play').disabled = false;
+  t = 118;
+  resize();
+})();
+</script>

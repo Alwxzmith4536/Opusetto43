@@ -6,6 +6,9 @@ A fan-made, fully procedural 3D fight animation. It runs 5:00 (7200 frames at 24
 |---|---|
 | `saitama_vs_cosmic_garou.blend` | Ready-to-open Blender scene with everything already animated |
 | `saitama_vs_cosmic_garou.py` | The generator script that builds the whole scene from scratch |
+| `web/` | Browser player: the same scene in real-time 3D (three.js), with a phone 9:16 mode |
+| `export_web.py` | Re-exports the .blend into `web/scene.json` + `web/scene.bin.txt` |
+| `trailer.html` | 44-second 2D vertical trailer |
 
 ## Open it
 
@@ -16,6 +19,14 @@ A fan-made, fully procedural 3D fight animation. It runs 5:00 (7200 frames at 24
 Keep the render engine on **EEVEE**. The cel shading uses *Shader to RGB*, which only works in EEVEE.
 Rendering speed tips: lower *Render Properties → Sampling → Render* samples (32 by default), or turn off
 *Freestyle* (the black ink outlines), or render at 50% resolution.
+
+## Watch it in the browser (3D)
+
+`web/index.html` loads the exported scene and plays all 5 minutes in real-time WebGL. It uses the same meshes, rig, keyframes (Bezier handles included), camera cuts and effects as the .blend. Serve the `web/` folder over http(s), for example with `python3 -m http.server` inside `web/`. After changing the .blend, re-export with:
+
+```
+blender --background saitama_vs_cosmic_garou.blend --python export_web.py
+```
 
 ## Rebuild or tweak it
 
