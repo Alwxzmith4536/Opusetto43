@@ -1,0 +1,566 @@
+<title>Mahoraga Model Lab</title>
+<meta name="description" content="Procedural, rigged 3D model of Mahoraga for game use, with animation clips, an adaptation test and GLB export.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  /* Layout: viewport stage on the left, adaptation test panel on the right; stacks on phones. Single night look shared with index.html. */
+  :root {
+    --ink: #0b0a12;          /* page ground */
+    --panel: #161423;        /* control surfaces */
+    --line: #2b2840;         /* hairlines */
+    --paper: #efe9df;        /* text */
+    --muted: #9c96b3;        /* secondary text */
+    --wheel: #d0a84e;        /* the eight-handled wheel */
+    --hit: #e2795a;          /* damage */
+    --ok: #3fd0b8;           /* adapted */
+    --display: "Dela Gothic One", "Arial Black", Impact, sans-serif;
+    --body: "Zen Kaku Gothic New", "Hiragino Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--ink); color: var(--paper); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 16px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 5vw, 42px); line-height: 1; margin: 0; text-wrap: balance; }
+  h1 span { color: var(--wheel); }
+  h2 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 0; letter-spacing: .02em; }
+  .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+  .stage { position: relative; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; background: #07060c; border: 1px solid var(--line); overflow: hidden; }
+  @media (max-width: 600px) { .stage { aspect-ratio: 4 / 5; } }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hud { position: absolute; left: 12px; top: 10px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; pointer-events: none; text-transform: uppercase; }
+  .toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); font-family: var(--display); font-size: clamp(16px, 3vw, 26px); color: var(--wheel); text-shadow: 0 2px 12px #000; pointer-events: none; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+  .toast.on { opacity: 1; }
+  .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  button { font: 700 14px var(--body); color: var(--paper); background: var(--panel); border: 1px solid var(--line); padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible { outline: 2px solid var(--wheel); outline-offset: 2px; }
+  button[aria-pressed="true"] { border-color: var(--wheel); color: var(--wheel); }
+  button:disabled { opacity: .45; cursor: default; }
+  .sep { width: 1px; height: 24px; background: var(--line); }
+  .panel { background: var(--panel); border: 1px solid var(--line); padding: 16px; display: grid; gap: 14px; min-width: 0; }
+  .hp { display: grid; gap: 6px; }
+  .hp-row { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .meter { height: 10px; background: var(--ink); border: 1px solid var(--line); position: relative; }
+  .meter i { position: absolute; inset: 0 auto 0 0; background: var(--hit); transition: width .3s; }
+  .phen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .phen li { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); background: var(--ink); }
+  .phen .name { font-weight: 700; }
+  .phen .pips { display: flex; gap: 4px; }
+  .phen .pips b { width: 14px; height: 14px; border: 1px solid var(--wheel); transform: rotate(45deg) scale(.7); }
+  .phen .pips b.on { background: var(--wheel); }
+  .phen .st { font-family: var(--mono); font-size: 11px; color: var(--muted); grid-column: 1; font-variant-numeric: tabular-nums; }
+  .phen li.adapted .st { color: var(--ok); }
+  .phen button { grid-row: 1 / span 2; grid-column: 2; }
+  .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; font-family: var(--mono); font-size: 12px; margin: 0; }
+  .stats dt { color: var(--muted); }
+  .stats dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  ol.log { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 12px; color: var(--muted); display: grid; gap: 3px; max-height: 150px; overflow-y: auto; }
+  ol.log li:first-child { color: var(--paper); }
+  .note { color: var(--muted); font-size: 13px; max-width: 70ch; margin: 0; }
+  code { font-family: var(--mono); font-size: 12px; }
+  @media (prefers-reduced-motion: reduce) { .meter i, .toast { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Eight-Handled Sword <span>Mahoraga</span></h1>
+    <span class="tag">Game model lab · rigged · 5 clips · fan work</span>
+  </header>
+
+  <div class="main">
+    <div style="display:grid; gap:10px; min-width:0">
+      <div class="stage" id="stage">
+        <div class="hud" id="hud">Drag to orbit · scroll to zoom</div>
+        <div class="toast" id="toast"></div>
+      </div>
+      <div class="bar" role="group" aria-label="Animation clips">
+        <button type="button" id="a-Idle" aria-pressed="true">Idle</button>
+        <button type="button" id="a-Walk" aria-pressed="false">Walk</button>
+        <button type="button" id="a-Slash">Slash</button>
+        <button type="button" id="a-Hit">Hit react</button>
+        <span class="sep"></span>
+        <button type="button" id="wire" aria-pressed="false">Wireframe</button>
+        <button type="button" id="spin" aria-pressed="false">Turntable</button>
+        <button type="button" id="export">Export .glb</button>
+      </div>
+    </div>
+
+    <aside class="panel" aria-labelledby="adapt-h">
+      <h2 id="adapt-h">Adaptation test</h2>
+      <p class="note">Each strike turns the wheel one notch (45°) and cuts that phenomenon's damage by a quarter. After four turns Mahoraga has adapted: it takes no damage from it and heals 150.</p>
+      <div class="hp">
+        <div class="hp-row"><span>Vitality</span><span id="hpText">1000 / 1000</span></div>
+        <div class="meter"><i id="hpFill" style="width:100%"></i></div>
+      </div>
+      <ul class="phen" id="phen"></ul>
+      <div class="bar">
+        <button type="button" id="reset">Reset test</button>
+      </div>
+      <ol class="log" id="log" aria-live="polite"></ol>
+      <dl class="stats">
+        <dt>Triangles</dt><dd id="sTris">–</dd>
+        <dt>Meshes</dt><dd id="sMesh">–</dd>
+        <dt>Rig nodes</dt><dd id="sNodes">–</dd>
+        <dt>Clips</dt><dd id="sClips">–</dd>
+        <dt>Wheel turns</dt><dd id="sTurns">0</dd>
+        <dt>Height</dt><dd id="sH">–</dd>
+      </dl>
+    </aside>
+  </div>
+
+  <p class="note">The model is built from primitives in code, so there is nothing to download to view it. Node names (<code>Hips</code>, <code>R_ForeArm</code>, <code>WheelBase</code>, <code>WheelSpin</code>…) and the clips <code>Idle</code>, <code>Walk</code>, <code>Slash</code>, <code>Hit</code> and <code>WheelTurn</code> are kept in the export, so a game engine can play them directly. To turn the wheel in a game, subtract 45° from <code>WheelBase</code>'s Z rotation and play <code>WheelTurn</code>. The export button works when this file is opened locally; a prebuilt <code>mahoraga.glb</code> sits next to it in the repo.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/exporters/GLTFExporter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/environments/RoomEnvironment.js"></script>
+<script>
+(() => {
+const stage = document.getElementById('stage');
+if (!window.THREE) { stage.insertAdjacentHTML('beforeend', '<div class="nogl">Three.js could not load. Check the network and reload.</div>'); return; }
+const T = THREE;
+T.ColorManagement.legacyMode = false; // treat hex colors as sRGB so materials match their swatches
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------------- renderer / scene ----------------
+let renderer;
+try { renderer = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); }
+catch (e) { stage.insertAdjacentHTML('beforeend', '<div class="nogl">This browser has WebGL turned off, so the 3D view cannot start.</div>'); return; }
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = T.sRGBEncoding;
+renderer.toneMapping = T.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = T.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+
+const scene = new T.Scene();
+scene.background = new T.Color(0x07060c);
+scene.fog = new T.Fog(0x07060c, 14, 34);
+if (T.RoomEnvironment) { // soft reflections so the blade and wheel read as metal
+  const pm = new T.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new T.RoomEnvironment(), 0.04).texture;
+}
+
+const camera = new T.PerspectiveCamera(38, 4 / 3, 0.1, 100);
+camera.position.set(4.5, 3.4, 9.5);
+const controls = new T.OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 2.5, 0);
+controls.enableDamping = true;
+controls.minDistance = 3; controls.maxDistance = 22;
+controls.maxPolarAngle = Math.PI * 0.53;
+
+scene.add(new T.HemisphereLight(0xbfb8d8, 0x1a1420, 0.35));
+const key = new T.DirectionalLight(0xfff1dc, 2.1);
+key.position.set(5, 9, 6); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -5, right: 5, top: 7, bottom: -2, near: 1, far: 30 });
+key.shadow.bias = -0.0004;
+scene.add(key);
+const rim = new T.DirectionalLight(0x8f7bff, 1.4); rim.position.set(-6, 5, -7); scene.add(rim);
+const wheelLight = new T.PointLight(0xffcf70, 0, 5); scene.add(wheelLight);
+
+const ground = new T.Mesh(new T.CircleGeometry(12, 64), new T.MeshStandardMaterial({ color: 0x14121c, roughness: 0.95 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const grid = new T.PolarGridHelper(6, 8, 6, 64, 0x3a3456, 0x221f33);
+grid.position.y = 0.002; scene.add(grid);
+
+// ---------------- model ----------------
+function buildMahoraga() {
+  const M = {
+    skin:   new T.MeshStandardMaterial({ name: 'Skin', color: 0xdcd6cc, roughness: 0.55 }),
+    cloth:  new T.MeshStandardMaterial({ name: 'Hakama', color: 0x1e1b27, roughness: 0.9, side: T.DoubleSide }),
+    sash:   new T.MeshStandardMaterial({ name: 'Sash', color: 0x6e2020, roughness: 0.8, side: T.DoubleSide }),
+    gold:   new T.MeshStandardMaterial({ name: 'WheelGold', color: 0xc79b40, metalness: 0.85, roughness: 0.32, emissive: 0x000000 }),
+    blade:  new T.MeshStandardMaterial({ name: 'Blade', color: 0xd8dee4, metalness: 0.95, roughness: 0.18 }),
+    feather:new T.MeshStandardMaterial({ name: 'Feather', color: 0xf3f0ea, roughness: 0.7, side: T.DoubleSide }),
+    mouth:  new T.MeshStandardMaterial({ name: 'Mouth', color: 0x2a1216, roughness: 0.6 }),
+    lip:    new T.MeshStandardMaterial({ name: 'Lip', color: 0x9c8f8a, roughness: 0.5 }),
+  };
+  const node = (name, parent, x = 0, y = 0, z = 0) => { const g = new T.Group(); g.name = name; g.position.set(x, y, z); parent && parent.add(g); return g; };
+  const part = (geo, mat, parent, p = [0, 0, 0], r = [0, 0, 0], s = [1, 1, 1], name) => {
+    const m = new T.Mesh(geo, mat); m.position.set(...p); m.rotation.set(...r); m.scale.set(...s);
+    m.castShadow = true; m.receiveShadow = true; if (name) m.name = name; parent.add(m); return m;
+  };
+  const sph = (r) => new T.SphereGeometry(r, 24, 16);
+  const cyl = (rt, rb, h, open = false) => new T.CylinderGeometry(rt, rb, h, 20, 1, open);
+  const cap = (r, l) => new T.CapsuleGeometry(r, l, 6, 16);
+  // mirror across X and restore triangle winding so normals face outward
+  const mirrorX = (geo) => {
+    const g = geo.index ? geo.toNonIndexed() : geo.clone(); g.scale(-1, 1, 1);
+    for (const key of Object.keys(g.attributes)) {
+      const a = g.attributes[key], n = a.itemSize;
+      for (let i = 0; i < a.count; i += 3) for (let k = 0; k < n; k++) {
+        const t = a.array[i * n + k]; a.array[i * n + k] = a.array[(i + 2) * n + k]; a.array[(i + 2) * n + k] = t;
+      }
+    }
+    g.computeVertexNormals(); return g;
+  };
+
+  const root = node('Mahoraga');
+  const hips = node('Hips', root, 0, 2.0, 0);
+  const spine = node('Spine', hips, 0, 0.18, 0);
+  const chest = node('Chest', spine, 0, 0.5, 0);
+
+  // pelvis + abdomen
+  part(sph(0.46), M.skin, hips, [0, 0.02, 0], [0, 0, 0], [1.05, 0.55, 0.75]);
+  part(cap(0.4, 0.35), M.skin, spine, [0, 0.2, 0], [0, 0, 0], [1.05, 1, 0.72]);
+  for (let row = 0; row < 3; row++) for (const sx of [-1, 1])
+    part(sph(0.1), M.skin, spine, [sx * 0.11, 0.05 + row * 0.15, 0.27], [0, 0, 0], [1, 0.75, 0.45]);
+  for (const sx of [-1, 1]) part(sph(0.2), M.skin, spine, [sx * 0.34, 0.25, 0.05], [0, 0, sx * 0.2], [0.6, 1.3, 0.8]); // obliques
+
+  // chest, pecs, lats, traps
+  part(sph(0.6), M.skin, chest, [0, 0.22, -0.02], [0, 0, 0], [1.25, 0.8, 0.72]);
+  for (const sx of [-1, 1]) {
+    part(sph(0.3), M.skin, chest, [sx * 0.27, 0.26, 0.28], [0, 0, sx * -0.15], [1.2, 0.72, 0.55]);
+    part(sph(0.3), M.skin, chest, [sx * 0.55, 0.1, -0.12], [0, 0, sx * 0.25], [0.7, 1.35, 0.8]);
+    part(sph(0.22), M.skin, chest, [sx * 0.28, 0.58, -0.08], [0, 0, sx * 0.6], [1.4, 0.7, 0.9]);
+  }
+
+  // neck + head
+  const neck = node('Neck', chest, 0, 0.66, 0);
+  part(cyl(0.2, 0.26, 0.4), M.skin, neck, [0, 0.12, 0]);
+  const head = node('Head', neck, 0, 0.45, 0.04);
+  part(sph(0.3), M.skin, head, [0, 0.02, 0], [0, 0, 0], [1, 1.12, 1.05], 'Skull');
+  part(sph(0.24), M.skin, head, [0, -0.17, 0.07], [0, 0, 0], [0.95, 0.7, 0.9], 'Jaw');
+  part(cap(0.045, 0.14), M.lip, head, [0, -0.13, 0.28], [0, 0, Math.PI / 2], [1, 1, 0.8]);
+  part(cap(0.05, 0.16), M.lip, head, [0, -0.21, 0.27], [0, 0, Math.PI / 2], [1, 1, 0.8]);
+  part(new T.BoxGeometry(0.2, 0.025, 0.04), M.mouth, head, [0, -0.17, 0.29]);
+  part(sph(0.07), M.skin, head, [0, 0.0, 0.3], [0, 0, 0], [0.7, 1, 0.8], 'Nose');
+
+  // four head wings, two per side, covering the eyes
+  const wingShape = new T.Shape();
+  wingShape.moveTo(0, 0.05);
+  wingShape.quadraticCurveTo(0.28, 0.2, 0.62, 0.12);
+  const n = 6;
+  for (let i = 0; i < n; i++) {
+    const x0 = 0.62 - (i * 0.62) / n, x1 = 0.62 - ((i + 1) * 0.62) / n;
+    const yb = -0.02 - 0.06 * Math.sin((i / n) * Math.PI);
+    wingShape.quadraticCurveTo((x0 + x1) / 2 + 0.02, yb - 0.06, x1, yb + 0.02);
+  }
+  wingShape.lineTo(0, -0.05);
+  const wingGeo = new T.ExtrudeGeometry(wingShape, { depth: 0.018, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 1, curveSegments: 8 });
+  wingGeo.translate(0, 0, -0.009);
+  const wingGeoR = mirrorX(wingGeo);
+  for (const sx of [-1, 1]) for (const [dy, rz, sc] of [[0.08, 0.28, 1], [-0.02, -0.08, 0.85]]) {
+    const w = part(sx > 0 ? wingGeo : wingGeoR, M.feather, head, [sx * 0.1, 0.06 + dy, 0.26], [0, sx * 0.5, sx * rz], [sc, sc, sc]);
+    w.name = (sx > 0 ? 'L' : 'R') + '_Wing' + (dy > 0 ? 'Upper' : 'Lower');
+  }
+
+  // the eight-handled wheel
+  const wheelBase = node('WheelBase', head, 0, 0.95, -0.08);
+  wheelBase.rotation.x = -0.22;
+  const wheel = node('WheelSpin', wheelBase);
+  part(new T.TorusGeometry(0.58, 0.045, 12, 64), M.gold, wheel, [0, 0, 0], [0, 0, 0], [1, 1, 1], 'Rim');
+  part(new T.TorusGeometry(0.2, 0.03, 10, 32), M.gold, wheel);
+  part(cyl(0.1, 0.1, 0.12), M.gold, wheel, [0, 0, 0], [Math.PI / 2, 0, 0], [1, 1, 1], 'Hub');
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+    part(new T.BoxGeometry(0.035, 0.56, 0.035), M.gold, wheel, [c * 0.33, s * 0.33, 0], [0, 0, a - Math.PI / 2]);
+    part(cyl(0.025, 0.035, 0.3), M.gold, wheel, [c * 0.75, s * 0.75, 0], [0, 0, a - Math.PI / 2]);
+    part(new T.OctahedronGeometry(0.07, 0), M.gold, wheel, [c * 0.93, s * 0.93, 0], [0, 0, a], [1, 1.6, 0.6], 'Handle' + (i + 1));
+  }
+
+  // arms: +x is Mahoraga's left
+  function arm(side) {
+    const sx = side === 'L' ? 1 : -1;
+    const sh = node(side + '_UpperArm', chest, sx * 0.8, 0.38, -0.04);
+    sh.rotation.z = sx * 0.2;
+    part(sph(0.3), M.skin, sh, [sx * 0.02, 0.02, 0], [0, 0, 0], [1.05, 0.95, 1], side + '_Deltoid');
+    part(cap(0.2, 0.6), M.skin, sh, [0, -0.45, 0]);
+    part(sph(0.17), M.skin, sh, [0, -0.42, 0.1], [0, 0, 0], [0.95, 1.5, 0.9]);
+    part(sph(0.16), M.skin, sh, [0, -0.45, -0.1], [0, 0, 0], [0.95, 1.5, 0.9]);
+    const fa = node(side + '_ForeArm', sh, 0, -0.9, 0);
+    fa.rotation.x = -0.25;
+    part(sph(0.16), M.skin, fa);
+    part(cyl(0.19, 0.13, 0.75), M.skin, fa, [0, -0.38, 0]);
+    part(sph(0.17), M.skin, fa, [sx * 0.03, -0.2, 0.02], [0, 0, 0], [1, 1.6, 0.95]);
+    const hand = node(side + '_Hand', fa, 0, -0.8, 0);
+    part(new T.BoxGeometry(0.22, 0.26, 0.24), M.skin, hand, [0, -0.1, 0.02]);
+    for (let i = 0; i < 4; i++) part(sph(0.045), M.skin, hand, [0, -0.2, 0.12 - i * 0.075], [0, 0, 0], [1.1, 1, 0.9]);
+    part(cap(0.04, 0.08), M.skin, hand, [sx * -0.1, -0.12, 0.12], [0.4, 0, 0]);
+    return { sh, fa, hand };
+  }
+  arm('L');
+  const R = arm('R');
+  // Sword of Extermination along the right forearm
+  const bs = new T.Shape();
+  bs.moveTo(0, 0.1); bs.lineTo(0.09, 0.05);
+  bs.quadraticCurveTo(0.2, -1.2, 0.17, -1.75);
+  bs.quadraticCurveTo(0.12, -2.1, 0, -2.35);
+  bs.lineTo(-0.03, -1.8); bs.lineTo(-0.03, 0.05); bs.lineTo(0, 0.1);
+  const bladeGeo = new T.ExtrudeGeometry(bs, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.01, bevelSegments: 1, curveSegments: 12 });
+  bladeGeo.translate(0, 0, -0.015);
+  const blade = node('Blade', R.fa, -0.2, -0.1, 0);
+  part(bladeGeo, M.blade, blade, [0, 0, 0], [0, -Math.PI / 2, 0], [1, 1, 1], 'SwordOfExtermination');
+  for (const y of [-0.15, -0.55]) part(new T.TorusGeometry(0.19, 0.035, 8, 24), M.gold, R.fa, [-0.02, y, 0], [Math.PI / 2, 0, 0], [1.05, 1, 1]);
+
+  // legs + hakama
+  function leg(side) {
+    const sx = side === 'L' ? 1 : -1;
+    const th = node(side + '_Thigh', hips, sx * 0.3, -0.08, 0);
+    part(cyl(0.3, 0.22, 0.95), M.skin, th, [0, -0.48, 0]);
+    part(cyl(0.38, 0.5, 1.4, true), M.cloth, th, [0, -0.62, 0.02], [0, 0, 0], [1, 1, 1], side + '_HakamaLeg');
+    const sh = node(side + '_Shin', th, 0, -0.95, 0);
+    part(sph(0.2), M.skin, sh);
+    part(cyl(0.21, 0.14, 0.85), M.skin, sh, [0, -0.44, 0]);
+    part(sph(0.15), M.skin, sh, [0, -0.28, -0.08], [0, 0, 0], [1, 1.7, 1]);
+    const ft = node(side + '_Foot', sh, 0, -0.88, 0);
+    part(sph(0.15), M.skin, ft, [0, -0.02, 0.1], [0, 0, 0], [0.95, 0.55, 1.9]);
+    return th;
+  }
+  leg('L'); leg('R');
+  part(new T.LatheGeometry([[0.5, 0.12], [0.58, -0.1], [0.66, -0.35]].map(([x, y]) => new T.Vector2(x, y)), 28), M.cloth, hips, [0, 0, 0], [0, 0, 0], [1, 1, 0.8], 'HakamaWaist');
+  part(new T.TorusGeometry(0.5, 0.06, 10, 36), M.sash, hips, [0, 0.1, 0], [Math.PI / 2, 0, 0], [1.02, 0.78, 1], 'Obi');
+  part(new T.BoxGeometry(0.38, 0.95, 0.03), M.sash, hips, [0, -0.38, 0.42], [-0.08, 0, 0], [1, 1, 1], 'FrontPanel');
+
+  return { root, wheelBase, wheel, materials: M };
+}
+
+const model = buildMahoraga();
+for (const k of ['skin', 'cloth', 'sash', 'feather', 'lip']) model.materials[k].envMapIntensity = 0.35;
+scene.add(model.root);
+
+// ---------------- animation clips ----------------
+const E = (x, y, z) => new T.Quaternion().setFromEuler(new T.Euler(x, y, z)).toArray();
+function qTrack(nodeName, times, eulers) { return new T.QuaternionKeyframeTrack(nodeName + '.quaternion', times, eulers.flatMap(e => E(...e))); }
+function pTrack(nodeName, times, vecs) { return new T.VectorKeyframeTrack(nodeName + '.position', times, vecs.flat()); }
+
+const clips = [
+  new T.AnimationClip('Idle', 3, [
+    pTrack('Chest', [0, 1.5, 3], [[0, 0.5, 0], [0, 0.52, 0], [0, 0.5, 0]]),
+    qTrack('L_UpperArm', [0, 1.5, 3], [[0, 0, 0.2], [0.05, 0, 0.24], [0, 0, 0.2]]),
+    qTrack('R_UpperArm', [0, 1.5, 3], [[0, 0, -0.2], [0.05, 0, -0.24], [0, 0, -0.2]]),
+    qTrack('Head', [0, 1.5, 3], [[0, 0, 0], [0.04, 0.06, 0], [0, 0, 0]]),
+    pTrack('WheelBase', [0, 1.5, 3], [[0, 0.95, -0.08], [0, 1.0, -0.08], [0, 0.95, -0.08]]),
+  ]),
+  new T.AnimationClip('Walk', 1.4, (() => {
+    const t = [0, 0.35, 0.7, 1.05, 1.4];
+    return [
+      pTrack('Hips', t, [[0, 2.0, 0], [0, 2.07, 0], [0, 2.0, 0], [0, 2.07, 0], [0, 2.0, 0]]),
+      qTrack('L_Thigh', t, [[-0.45, 0, 0], [0, 0, 0], [0.4, 0, 0], [0, 0, 0], [-0.45, 0, 0]]),
+      qTrack('R_Thigh', t, [[0.4, 0, 0], [0, 0, 0], [-0.45, 0, 0], [0, 0, 0], [0.4, 0, 0]]),
+      qTrack('L_Shin', t, [[0.1, 0, 0], [0.6, 0, 0], [0.15, 0, 0], [0.05, 0, 0], [0.1, 0, 0]]),
+      qTrack('R_Shin', t, [[0.15, 0, 0], [0.05, 0, 0], [0.1, 0, 0], [0.6, 0, 0], [0.15, 0, 0]]),
+      qTrack('L_UpperArm', t, [[0.35, 0, 0.2], [0, 0, 0.2], [-0.35, 0, 0.2], [0, 0, 0.2], [0.35, 0, 0.2]]),
+      qTrack('R_UpperArm', t, [[-0.35, 0, -0.2], [0, 0, -0.2], [0.35, 0, -0.2], [0, 0, -0.2], [-0.35, 0, -0.2]]),
+      qTrack('Chest', t, [[0, 0.12, 0], [0, 0, 0], [0, -0.12, 0], [0, 0, 0], [0, 0.12, 0]]),
+    ];
+  })()),
+  new T.AnimationClip('Slash', 1.3, [
+    qTrack('R_UpperArm', [0, 0.35, 0.55, 0.75, 1.3], [[0, 0, -0.2], [-2.6, 0.2, -0.5], [-2.7, 0.2, -0.45], [-0.6, 0.3, 0.7], [0, 0, -0.2]]),
+    qTrack('R_ForeArm', [0, 0.35, 0.55, 0.75, 1.3], [[-0.25, 0, 0], [-1.2, 0, 0], [-1.3, 0, 0], [-0.2, 0, 0], [-0.25, 0, 0]]),
+    qTrack('Chest', [0, 0.35, 0.55, 0.75, 1.3], [[0, 0, 0], [-0.1, 0.35, 0], [-0.12, 0.4, 0], [0.15, -0.45, 0], [0, 0, 0]]),
+    qTrack('Spine', [0, 0.55, 0.75, 1.3], [[0, 0, 0], [-0.05, 0.1, 0], [0.12, -0.15, 0], [0, 0, 0]]),
+    qTrack('L_UpperArm', [0, 0.55, 0.75, 1.3], [[0, 0, 0.2], [0.3, 0, 0.5], [-0.3, 0, 0.4], [0, 0, 0.2]]),
+  ]),
+  new T.AnimationClip('Hit', 0.7, [
+    qTrack('Spine', [0, 0.1, 0.7], [[0, 0, 0], [-0.22, 0, 0.06], [0, 0, 0]]),
+    qTrack('Head', [0, 0.12, 0.7], [[0, 0, 0], [-0.3, 0.1, 0], [0, 0, 0]]),
+    qTrack('L_UpperArm', [0, 0.1, 0.7], [[0, 0, 0.2], [0.2, 0, 0.45], [0, 0, 0.2]]),
+    qTrack('R_UpperArm', [0, 0.1, 0.7], [[0, 0, -0.2], [0.2, 0, -0.45], [0, 0, -0.2]]),
+  ]),
+  // Relative turn: play after subtracting 45° from WheelBase.z. It swings WheelSpin from +45° back to 0 with a settle.
+  new T.AnimationClip('WheelTurn', 0.9, [
+    qTrack('WheelSpin', [0, 0.45, 0.62, 0.78, 0.9], [[0, 0, Math.PI / 4], [0, 0, -0.07], [0, 0, 0.03], [0, 0, -0.01], [0, 0, 0]]),
+  ]),
+];
+const clipMap = Object.fromEntries(clips.map(c => [c.name, c]));
+const mixer = new T.AnimationMixer(model.root);
+const act = Object.fromEntries(clips.map(c => [c.name, mixer.clipAction(c)]));
+for (const n of ['Slash', 'Hit', 'WheelTurn']) { act[n].setLoop(T.LoopOnce); act[n].clampWhenFinished = false; }
+let loopName = 'Idle';
+act.Idle.play();
+
+function setLoop(name) {
+  if (name === loopName) return;
+  const from = act[loopName], to = act[name];
+  to.reset().play(); from.crossFadeTo(to, 0.35, false);
+  loopName = name;
+  for (const n of ['Idle', 'Walk']) document.getElementById('a-' + n).setAttribute('aria-pressed', String(n === name));
+}
+function oneShot(name) {
+  const a = act[name];
+  a.reset().setEffectiveWeight(1).play();
+  act[loopName].crossFadeTo(a, 0.12, false);
+}
+mixer.addEventListener('finished', (e) => {
+  const n = e.action.getClip().name;
+  if (n === 'WheelTurn') return;
+  const back = act[loopName];
+  back.reset().play(); e.action.crossFadeTo(back, 0.25, false);
+});
+
+// ---------------- adaptation test ----------------
+const PHEN = [
+  { id: 'slash', name: 'Slashing', dmg: 120, color: 0xe2795a },
+  { id: 'flame', name: 'Flame', dmg: 150, color: 0xff9a2e },
+  { id: 'impact', name: 'Impact', dmg: 90, color: 0xc8c2e0 },
+  { id: 'ce', name: 'Cursed energy', dmg: 200, color: 0x5ad0ff },
+];
+const MAX_HP = 1000;
+let hp, prog, turns;
+const phenEl = document.getElementById('phen');
+const logEl = document.getElementById('log');
+phenEl.innerHTML = PHEN.map(p => `<li id="p-${p.id}"><span class="name">${p.name}</span><button type="button" data-p="${p.id}">Strike</button><span class="st"></span><span class="pips" style="grid-column:1">${'<b></b>'.repeat(4)}</span></li>`).join('');
+
+function log(msg) { const li = document.createElement('li'); li.textContent = msg; logEl.prepend(li); while (logEl.children.length > 30) logEl.lastChild.remove(); }
+function render() {
+  document.getElementById('hpText').textContent = `${hp} / ${MAX_HP}`;
+  document.getElementById('hpFill').style.width = (hp / MAX_HP * 100) + '%';
+  document.getElementById('sTurns').textContent = turns;
+  for (const p of PHEN) {
+    const li = document.getElementById('p-' + p.id), k = prog[p.id];
+    li.classList.toggle('adapted', k >= 4);
+    li.querySelector('.st').textContent = k >= 4 ? 'Adapted · 0 damage' : `Takes ${Math.round(p.dmg * (1 - k / 4))} damage`;
+    li.querySelectorAll('.pips b').forEach((b, i) => b.classList.toggle('on', i < k));
+    li.querySelector('button').disabled = hp <= 0;
+  }
+}
+function reset() {
+  hp = MAX_HP; turns = 0; prog = Object.fromEntries(PHEN.map(p => [p.id, 0]));
+  model.wheelBase.rotation.z = 0; logEl.innerHTML = ''; log('Test started. Wheel at rest.'); render();
+}
+let toastT = 0;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1600); }
+
+function strike(id) {
+  if (hp <= 0) return;
+  const p = PHEN.find(x => x.id === id), k = prog[id];
+  const dmg = Math.round(p.dmg * (1 - Math.min(k, 4) / 4));
+  hp = Math.max(0, hp - dmg);
+  burst(p.color, dmg > 0);
+  if (dmg > 0) { flash(p.color); oneShot('Hit'); }
+  if (k < 4) {
+    prog[id] = k + 1; turns++;
+    model.wheelBase.rotation.z -= Math.PI / 4;
+    act.WheelTurn.reset().play();
+    wheelGlow = 1;
+    if (prog[id] === 4) {
+      hp = Math.min(MAX_HP, hp + 150);
+      log(`${p.name}: −${dmg}. Wheel turn ${turns}. Fully adapted, healed 150.`);
+      toast(`Adapted to ${p.name.toLowerCase()}`);
+      setTimeout(() => hp > 0 && oneShot('Slash'), 700);
+    } else log(`${p.name}: −${dmg}. Wheel turn ${turns} (${prog[id]}/4).`);
+  } else log(`${p.name}: no effect. Already adapted.`);
+  if (hp <= 0) { log('Mahoraga is exorcised.'); toast('Exorcised'); }
+  render();
+}
+phenEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-p]'); b && strike(b.dataset.p); });
+document.getElementById('reset').onclick = reset;
+
+// ---------------- effects ----------------
+const fxGroup = new T.Group(); scene.add(fxGroup);
+const fx = [];
+const sparkGeo = new T.SphereGeometry(0.035, 6, 4);
+function burst(color, hurt) {
+  const origin = new T.Vector3(); model.root.getObjectByName('Chest').getWorldPosition(origin);
+  origin.z += 0.6; origin.y += 0.1;
+  const ringMat = new T.MeshBasicMaterial({ color, transparent: true, side: T.DoubleSide, depthWrite: false });
+  const ring = new T.Mesh(new T.RingGeometry(0.2, 0.28, 48), ringMat);
+  ring.position.copy(origin); fxGroup.add(ring);
+  fx.push({ obj: ring, life: 0, max: 0.5, update(t) { ring.scale.setScalar(1 + t * 5); ringMat.opacity = 1 - t; } });
+  const count = hurt ? 26 : 10;
+  for (let i = 0; i < count; i++) {
+    const m = new T.MeshBasicMaterial({ color, transparent: true, depthWrite: false });
+    const s = new T.Mesh(sparkGeo, m); s.position.copy(origin); fxGroup.add(s);
+    const v = new T.Vector3(Math.random() - 0.5, Math.random() - 0.3, Math.random() * 0.8 + 0.2).normalize().multiplyScalar(2 + Math.random() * 3);
+    fx.push({ obj: s, life: 0, max: 0.6 + Math.random() * 0.3, update(t, dt) { s.position.addScaledVector(v, dt); v.y -= 6 * dt; m.opacity = 1 - t; } });
+  }
+}
+let flashAmt = 0; const flashCol = new T.Color();
+function flash(color) { flashAmt = 1; flashCol.set(color); }
+let wheelGlow = 0;
+
+// ---------------- UI ----------------
+document.getElementById('a-Idle').onclick = () => setLoop('Idle');
+document.getElementById('a-Walk').onclick = () => setLoop('Walk');
+document.getElementById('a-Slash').onclick = () => oneShot('Slash');
+document.getElementById('a-Hit').onclick = () => oneShot('Hit');
+const wireBtn = document.getElementById('wire');
+wireBtn.onclick = () => {
+  const on = wireBtn.getAttribute('aria-pressed') !== 'true';
+  wireBtn.setAttribute('aria-pressed', String(on));
+  Object.values(model.materials).forEach(m => { m.wireframe = on; });
+};
+let turntable = false;
+const spinBtn = document.getElementById('spin');
+spinBtn.onclick = () => { turntable = !turntable; spinBtn.setAttribute('aria-pressed', String(turntable)); };
+
+const exporter = new T.GLTFExporter();
+function exportGLB() {
+  return new Promise((res, rej) => {
+    const saved = { z: model.wheelBase.rotation.z };
+    mixer.stopAllAction(); model.root.traverse(o => { if (o.isMesh) o.material.emissive && o.material.emissive.setHex(0); });
+    model.wheelBase.rotation.z = 0;
+    exporter.parse(model.root, (buf) => {
+      model.wheelBase.rotation.z = saved.z; act[loopName].reset().play();
+      res(buf);
+    }, (err) => { act[loopName].reset().play(); rej(err); }, { binary: true, animations: clips });
+  });
+}
+window.__view = (p, t) => { camera.position.set(...p); controls.target.set(...t); controls.update(); };
+window.__exportGLB = async () => { const b = new Uint8Array(await exportGLB()); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+document.getElementById('export').onclick = async () => {
+  try {
+    const buf = await exportGLB();
+    const url = URL.createObjectURL(new Blob([buf], { type: 'model/gltf-binary' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'mahoraga.glb'; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast('Exported mahoraga.glb');
+  } catch (e) { toast('Export failed'); console.error(e); }
+};
+
+// stats
+let tris = 0, meshes = 0, nodes = 0;
+model.root.traverse(o => {
+  if (o.isMesh) { meshes++; const g = o.geometry; tris += (g.index ? g.index.count : g.attributes.position.count) / 3; }
+  else nodes++;
+});
+const box = new T.Box3().setFromObject(model.root);
+document.getElementById('sTris').textContent = Math.round(tris).toLocaleString('en-US');
+document.getElementById('sMesh').textContent = meshes;
+document.getElementById('sNodes').textContent = nodes;
+document.getElementById('sClips').textContent = clips.length;
+document.getElementById('sH').textContent = (box.max.y - box.min.y).toFixed(2) + ' m';
+
+// ---------------- loop ----------------
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+
+const clock = new T.Clock();
+const wheelPos = new T.Vector3();
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  mixer.update(dt);
+  if (turntable && !reduceMotion) model.root.rotation.y += dt * 0.5;
+  if (flashAmt > 0) {
+    flashAmt = Math.max(0, flashAmt - dt * 3);
+    model.materials.skin.emissive.copy(flashCol).multiplyScalar(flashAmt * 0.6);
+  }
+  wheelGlow = Math.max(0, wheelGlow - dt * 1.2);
+  model.materials.gold.emissive.setRGB(0.9, 0.6, 0.15).multiplyScalar(wheelGlow * 0.7);
+  model.wheel.getWorldPosition(wheelPos); wheelLight.position.copy(wheelPos); wheelLight.intensity = wheelGlow * 6;
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const f = fx[i]; f.life += dt; const t = f.life / f.max;
+    if (t >= 1) { fxGroup.remove(f.obj); f.obj.geometry !== sparkGeo && f.obj.geometry.dispose(); f.obj.material.dispose(); fx.splice(i, 1); continue; }
+    f.update(t, dt);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+reset();
+frame();
+})();
+</script>
