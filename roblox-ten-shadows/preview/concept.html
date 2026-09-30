@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mahoraga Concept Sheet</title>
+<meta name="description" content="Character concept sheet for the Roblox Mahoraga boss, rendered live from the same part data the game builds.">
+<style>
+  :root { --bg: #0e0d15; --panel: #17151f; --line: #2c2940; --ink: #ece8df; --muted: #9b95b2; --gold: #ffd678; --purple: #be96ff; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI", "Noto Sans CJK JP", system-ui, sans-serif; }
+  .sheet { width: 1600px; padding: 28px 32px 32px; box-sizing: border-box; }
+  header { display: flex; align-items: baseline; gap: 18px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  header h1 { margin: 0; font-size: 30px; letter-spacing: .03em; }
+  header .jp { font-size: 26px; color: var(--gold); font-weight: 800; }
+  header .sub { margin-left: auto; color: var(--muted); font-size: 13px; text-align: right; }
+  .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+  .view { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; position: relative; height: 470px; }
+  .view span { position: absolute; left: 12px; top: 10px; font-size: 12px; letter-spacing: .12em; color: var(--muted); }
+  .lower { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .card h2 { margin: 0 0 8px; font-size: 14px; letter-spacing: .12em; color: var(--gold); }
+  .card p, .card li { font-size: 13px; line-height: 1.5; color: #d5d0e2; margin: 0 0 4px; }
+  .card ul { margin: 0; padding-left: 18px; }
+  .details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .detail { height: 170px; background: #121019; border-radius: 6px; position: relative; }
+  .detail span { position: absolute; left: 8px; bottom: 6px; font-size: 11px; color: var(--muted); }
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .sw { width: 86px; font-size: 11px; color: var(--muted); }
+  .sw div { height: 36px; border-radius: 5px; border: 1px solid rgba(255,255,255,.15); margin-bottom: 4px; }
+  canvas#gl { position: fixed; left: 0; top: 0; pointer-events: none; }
+  .view span, .detail span { z-index: 5; background: rgba(14,13,21,.75); padding: 2px 6px; border-radius: 4px; }
+  b { color: var(--ink); }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div class="sheet" id="sheet">
+  <header><h1>MAHORAGA — BOSS CONCEPT</h1><div class="jp">八握剣異戒神将魔虚羅</div>
+    <div class="sub">Roblox part-built model · 81 parts · ~23 studs tall<br>Rendered live from assets/models.json (same data ModelFactory.luau builds in-game)</div></header>
+  <div class="views">
+    <div class="view" data-view="front"><span>FRONT</span></div>
+    <div class="view" data-view="side"><span>SIDE</span></div>
+    <div class="view" data-view="back"><span>BACK</span></div>
+    <div class="view" data-view="three"><span>3/4 · ATTACK POSE</span></div>
+  </div>
+  <div class="lower">
+    <div class="card"><h2>DETAILS</h2>
+      <div class="details">
+        <div class="detail" data-view="wheel"><span>Adaptation wheel · 8 handles · turns 45° per notch</span></div>
+        <div class="detail" data-view="head"><span>Eyeless head · 4 wings, front pair covers the eyes</span></div>
+        <div class="detail" data-view="sword"><span>Sword of Extermination · positive-energy edge</span></div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><div style="background:#ece9e1"></div>Skin 236,233,225</div>
+        <div class="sw"><div style="background:#cdc8be"></div>Shade 205,200,190</div>
+        <div class="sw"><div style="background:#1a1820"></div>Cloth 26,24,32</div>
+        <div class="sw"><div style="background:#d6b24a"></div>Gold 214,178,74</div>
+        <div class="sw"><div style="background:#fff6de"></div>Blade neon</div>
+        <div class="sw"><div style="background:#7846c8"></div>Shadow rim</div>
+      </div>
+    </div>
+    <div class="card"><h2>BEHAVIOUR (canon → game)</h2><ul>
+      <li><b>Adaptation:</b> every 3 hits of a damage type turn the wheel one notch (−17% damage). 4 notches = adapted: 95% resist, heals 6%, shockwave.</li>
+      <li><b>Counter:</b> using an adapted technique can make it blink behind you and strike.</li>
+      <li><b>Untamed ritual:</b> summoned with <i>Furube Yura Yura</i>, it attacks everyone, summoner included.</li>
+      <li><b>Taming:</b> defeat it and everyone who fought unlocks it as a summon (H).</li>
+      <li><b>Phase 2</b> (&lt;50% HP): faster, shorter cooldowns, World-Cutting Slash once it has adapted to something.</li></ul></div>
+    <div class="card"><h2>STATS &amp; FAIRNESS</h2><ul>
+      <li>16,000 HP (+60% per extra player), takes 80% damage before adaptation.</li>
+      <li>Attacks: 3-hit combo, Sword of Extermination, leaping Ground Slam, Rush, World-Cutting Slash — all telegraphed in red.</li>
+      <li><b>No instant kills:</b> one hit never removes more than 20% of max HP; above 35% HP a hit can't kill; 0.35 s i-frames after each hit; Guard (F) blocks 60%.</li>
+      <li>From full HP it takes at least 5 hits to fall (unit-tested).</li></ul></div>
+  </div>
+</div>
+<canvas id="gl"></canvas>
+<script type="module">
+import * as THREE from "three";
+import { buildModel } from "./parts.js";
+const MODELS = await (await fetch("../assets/models.json")).json();
+const canvas = document.getElementById("gl");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+const sheet = document.getElementById("sheet");
+renderer.setSize(sheet.offsetWidth, sheet.offsetHeight);
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.setScissorTest(true);
+
+function makeScene(pose) {
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xe4e0f0, 0x241e32, 1.0));
+  const key = new THREE.DirectionalLight(0xfff2e2, 2.6); key.position.set(-30, 50, -40); key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024); Object.assign(key.shadow.camera, { left: -20, right: 20, top: 30, bottom: -5 }); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xa088ff, 0.5); rim.position.set(30, 20, 40); scene.add(rim);
+  const fill = new THREE.DirectionalLight(0xf4f0ff, 1.6); fill.position.set(20, 40, 50); scene.add(fill);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(14, 48), new THREE.MeshStandardMaterial({ color: 0x1d1a26 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  const m = buildModel(MODELS.Mahoraga); scene.add(m);
+  if (pose) { m.userData.pivots.RightArm.rotation.set(150 * Math.PI / 180, 0, 20 * Math.PI / 180); m.userData.pivots.LeftArm.rotation.set(40 * Math.PI / 180, 0, -30 * Math.PI / 180); m.userData.pivots.Wheel.rotation.y = Math.PI / 8; }
+  return scene;
+}
+const blade = MODELS.Mahoraga.parts.find((p) => p.name === "SwordEdge");
+const base = makeScene(false), posed = makeScene(true);
+const views = {
+  front: { scene: base, pos: [0, 12, -52], look: [0, 11.5, 0], fov: 30 },
+  side: { scene: base, pos: [52, 12, 0], look: [0, 11.5, 0], fov: 30 },
+  back: { scene: base, pos: [0, 12, 52], look: [0, 11.5, 0], fov: 30 },
+  three: { scene: posed, pos: [-34, 20, -36], look: [0, 12, 0], fov: 32 },
+  wheel: { scene: base, pos: [5, 29, -9], look: [0, 22.4, 0], fov: 34 },
+  head: { scene: base, pos: [-4, 20, -8], look: [0, 19.4, -0.5], fov: 34 },
+  sword: { scene: base, pos: [blade.pos[0] - 9, blade.pos[1] + 3, blade.pos[2] - 8], look: blade.pos, fov: 38 },
+};
+const origin = sheet.getBoundingClientRect();
+for (const el of document.querySelectorAll("[data-view]")) {
+  const v = views[el.dataset.view]; const r = el.getBoundingClientRect();
+  const cam = new THREE.PerspectiveCamera(v.fov, r.width / r.height, 0.1, 400); cam.position.set(...v.pos); cam.lookAt(...v.look);
+  const x = r.left - origin.left, y = sheet.offsetHeight - (r.bottom - origin.top);
+  renderer.setViewport(x, y, r.width, r.height); renderer.setScissor(x, y, r.width, r.height);
+  renderer.render(v.scene, cam);
+}
+window.__ready = true;
+</script>
+</body>
+</html>

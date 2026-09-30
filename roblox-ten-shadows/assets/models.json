@@ -1,0 +1,13264 @@
+{
+ "Mahoraga": {
+  "desc": "Eight-Handled Sword Divergent Sila Divine General Mahoraga. ~20 studs tall, adaptation wheel above the head, Sword of Extermination on the right arm.",
+  "parts": [
+   {
+    "name": "FootR",
+    "shape": "Block",
+    "size": [
+     2.2,
+     0.8,
+     3.2
+    ],
+    "pos": [
+     1.8,
+     0.4,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FootL",
+    "shape": "Block",
+    "size": [
+     2.2,
+     0.8,
+     3.2
+    ],
+    "pos": [
+     -1.8,
+     0.4,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ShinR",
+    "shape": "Block",
+    "size": [
+     1.8,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     1.8,
+     2.9,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ShinL",
+    "shape": "Block",
+    "size": [
+     1.8,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     -1.8,
+     2.9,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "KneeR",
+    "shape": "Ball",
+    "size": [
+     2.1,
+     2.1,
+     2.1
+    ],
+    "pos": [
+     1.8,
+     5.0,
+     -0.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "KneeL",
+    "shape": "Ball",
+    "size": [
+     2.1,
+     2.1,
+     2.1
+    ],
+    "pos": [
+     -1.8,
+     5.0,
+     -0.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ThighR",
+    "shape": "Block",
+    "size": [
+     2.4,
+     4.0,
+     2.4
+    ],
+    "pos": [
+     1.8,
+     7.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ThighL",
+    "shape": "Block",
+    "size": [
+     2.4,
+     4.0,
+     2.4
+    ],
+    "pos": [
+     -1.8,
+     7.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Skirt",
+    "shape": "Block",
+    "size": [
+     5.8,
+     3.2,
+     3.6
+    ],
+    "pos": [
+     0,
+     8.1,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     26,
+     24,
+     32
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SkirtFlapF",
+    "shape": "Block",
+    "size": [
+     2.6,
+     4.6,
+     0.3
+    ],
+    "pos": [
+     0,
+     6.9,
+     -1.9
+    ],
+    "rot": [
+     -6,
+     0,
+     0
+    ],
+    "color": [
+     26,
+     24,
+     32
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SkirtFlapB",
+    "shape": "Block",
+    "size": [
+     3.4,
+     4.2,
+     0.3
+    ],
+    "pos": [
+     0,
+     7.0,
+     1.9
+    ],
+    "rot": [
+     6,
+     0,
+     0
+    ],
+    "color": [
+     26,
+     24,
+     32
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Rope",
+    "shape": "Block",
+    "size": [
+     6.0,
+     0.5,
+     3.8
+    ],
+    "pos": [
+     0,
+     9.5,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "RopeKnot",
+    "shape": "Ball",
+    "size": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "pos": [
+     0,
+     9.4,
+     -2.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Abdomen",
+    "shape": "Block",
+    "size": [
+     4.6,
+     2.6,
+     2.9
+    ],
+    "pos": [
+     0,
+     11.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab0R",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     0.7,
+     10.3,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab0L",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     -0.7,
+     10.3,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab1R",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     0.7,
+     11.15,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab1L",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     -0.7,
+     11.15,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab2R",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     0.7,
+     12.0,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab2L",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     -0.7,
+     12.0,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Torso",
+    "shape": "Block",
+    "size": [
+     6.2,
+     4.4,
+     3.4
+    ],
+    "pos": [
+     0,
+     14.3,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "PecR",
+    "shape": "Block",
+    "size": [
+     2.7,
+     1.9,
+     0.4
+    ],
+    "pos": [
+     1.45,
+     15.0,
+     -1.75
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "PecL",
+    "shape": "Block",
+    "size": [
+     2.7,
+     1.9,
+     0.4
+    ],
+    "pos": [
+     -1.45,
+     15.0,
+     -1.75
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Spine",
+    "shape": "Block",
+    "size": [
+     0.5,
+     4.0,
+     0.3
+    ],
+    "pos": [
+     0,
+     13.6,
+     1.75
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TrapR",
+    "shape": "Wedge",
+    "size": [
+     1.8,
+     1.2,
+     2.6
+    ],
+    "pos": [
+     1.9,
+     17.0,
+     0.2
+    ],
+    "rot": [
+     0,
+     180,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TrapL",
+    "shape": "Wedge",
+    "size": [
+     1.8,
+     1.2,
+     2.6
+    ],
+    "pos": [
+     -1.9,
+     17.0,
+     0.2
+    ],
+    "rot": [
+     0,
+     -180,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Neck",
+    "shape": "Cylinder",
+    "size": [
+     1.6,
+     1.8,
+     1.8
+    ],
+    "pos": [
+     0,
+     17.2,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     2.3,
+     2.5,
+     2.4
+    ],
+    "pos": [
+     0,
+     18.9,
+     -0.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Jaw",
+    "shape": "Block",
+    "size": [
+     1.9,
+     0.8,
+     2.0
+    ],
+    "pos": [
+     0,
+     17.8,
+     -0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Mouth",
+    "shape": "Block",
+    "size": [
+     1.1,
+     0.12,
+     0.1
+    ],
+    "pos": [
+     0,
+     18.0,
+     -1.25
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     50,
+     50
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingR",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.8,
+     0.28
+    ],
+    "pos": [
+     0.6,
+     19.25,
+     -1.42
+    ],
+    "rot": [
+     0,
+     -12,
+     -14
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingL",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.8,
+     0.28
+    ],
+    "pos": [
+     -0.6,
+     19.25,
+     -1.42
+    ],
+    "rot": [
+     0,
+     12,
+     14
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingTipR",
+    "shape": "Block",
+    "size": [
+     0.9,
+     0.5,
+     0.24
+    ],
+    "pos": [
+     1.45,
+     19.55,
+     -1.25
+    ],
+    "rot": [
+     0,
+     -25,
+     -30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingTipL",
+    "shape": "Block",
+    "size": [
+     0.9,
+     0.5,
+     0.24
+    ],
+    "pos": [
+     -1.45,
+     19.55,
+     -1.25
+    ],
+    "rot": [
+     0,
+     25,
+     30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.3,
+     3.8
+    ],
+    "pos": [
+     1.3,
+     20.0,
+     0.3
+    ],
+    "rot": [
+     -18,
+     0,
+     -24
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.3,
+     3.8
+    ],
+    "pos": [
+     -1.3,
+     20.0,
+     0.3
+    ],
+    "rot": [
+     -18,
+     0,
+     24
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperTipR",
+    "shape": "Block",
+    "size": [
+     0.26,
+     0.9,
+     1.8
+    ],
+    "pos": [
+     1.75,
+     21.0,
+     2.0
+    ],
+    "rot": [
+     -35,
+     0,
+     -30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperTipL",
+    "shape": "Block",
+    "size": [
+     0.26,
+     0.9,
+     1.8
+    ],
+    "pos": [
+     -1.75,
+     21.0,
+     2.0
+    ],
+    "rot": [
+     -35,
+     0,
+     30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingLowerR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.1,
+     3.2
+    ],
+    "pos": [
+     1.3,
+     18.6,
+     0.5
+    ],
+    "rot": [
+     -4,
+     0,
+     -12
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingLowerL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.1,
+     3.2
+    ],
+    "pos": [
+     -1.3,
+     18.6,
+     0.5
+    ],
+    "rot": [
+     -4,
+     0,
+     12
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim0",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     2.31,
+     22.6,
+     0.957
+    ],
+    "rot": [
+     0,
+     -22.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim1",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     0.957,
+     22.6,
+     2.31
+    ],
+    "rot": [
+     0,
+     -67.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim2",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -0.957,
+     22.6,
+     2.31
+    ],
+    "rot": [
+     0,
+     -112.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim3",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -2.31,
+     22.6,
+     0.957
+    ],
+    "rot": [
+     0,
+     -157.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim4",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -2.31,
+     22.6,
+     -0.957
+    ],
+    "rot": [
+     0,
+     -202.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim5",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -0.957,
+     22.6,
+     -2.31
+    ],
+    "rot": [
+     0,
+     -247.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim6",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     0.957,
+     22.6,
+     -2.31
+    ],
+    "rot": [
+     0,
+     -292.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim7",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     2.31,
+     22.6,
+     -0.957
+    ],
+    "rot": [
+     0,
+     -337.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHub",
+    "shape": "Cylinder",
+    "size": [
+     0.6,
+     1.2,
+     1.2
+    ],
+    "pos": [
+     0,
+     22.6,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHubCore",
+    "shape": "Ball",
+    "size": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "pos": [
+     0,
+     22.95,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     226,
+     140
+    ],
+    "material": "Neon",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke0",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     1.75,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     -0.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle0",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     3.55,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke1",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     1.237,
+     22.6,
+     1.237
+    ],
+    "rot": [
+     0,
+     -45.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle1",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     2.51,
+     22.6,
+     2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke2",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     0.0,
+     22.6,
+     1.75
+    ],
+    "rot": [
+     0,
+     -90.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle2",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     0.0,
+     22.6,
+     3.55
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke3",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -1.237,
+     22.6,
+     1.237
+    ],
+    "rot": [
+     0,
+     -135.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle3",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -2.51,
+     22.6,
+     2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke4",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -1.75,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     -180.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle4",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -3.55,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke5",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -1.237,
+     22.6,
+     -1.237
+    ],
+    "rot": [
+     0,
+     -225.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle5",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -2.51,
+     22.6,
+     -2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke6",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -0.0,
+     22.6,
+     -1.75
+    ],
+    "rot": [
+     0,
+     -270.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle6",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -0.0,
+     22.6,
+     -3.55
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke7",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     1.237,
+     22.6,
+     -1.237
+    ],
+    "rot": [
+     0,
+     -315.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle7",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     2.51,
+     22.6,
+     -2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelStem",
+    "shape": "Cylinder",
+    "size": [
+     1.6,
+     0.18,
+     0.18
+    ],
+    "pos": [
+     0,
+     21.3,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.3
+   },
+   {
+    "name": "ShoulderR",
+    "shape": "Ball",
+    "size": [
+     2.8,
+     2.8,
+     2.8
+    ],
+    "pos": [
+     4.0,
+     16.0,
+     0.0
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "UpperArmR",
+    "shape": "Block",
+    "size": [
+     2.0,
+     4.6,
+     2.0
+    ],
+    "pos": [
+     5.005,
+     14.096,
+     -1.488
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ElbowR",
+    "shape": "Ball",
+    "size": [
+     1.9,
+     1.9,
+     1.9
+    ],
+    "pos": [
+     5.667,
+     12.278,
+     -2.908
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ForearmR",
+    "shape": "Block",
+    "size": [
+     1.9,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     6.245,
+     10.749,
+     -4.23
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "BracerR",
+    "shape": "Block",
+    "size": [
+     2.1,
+     1.0,
+     2.1
+    ],
+    "pos": [
+     6.659,
+     9.612,
+     -5.117
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "HandR",
+    "shape": "Block",
+    "size": [
+     1.6,
+     1.6,
+     1.4
+    ],
+    "pos": [
+     6.99,
+     8.703,
+     -5.828
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ShoulderL",
+    "shape": "Ball",
+    "size": [
+     2.8,
+     2.8,
+     2.8
+    ],
+    "pos": [
+     -4.0,
+     16.0,
+     0.0
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "UpperArmL",
+    "shape": "Block",
+    "size": [
+     2.0,
+     4.6,
+     2.0
+    ],
+    "pos": [
+     -4.747,
+     13.516,
+     -0.349
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ElbowL",
+    "shape": "Ball",
+    "size": [
+     1.9,
+     1.9,
+     1.9
+    ],
+    "pos": [
+     -5.164,
+     11.175,
+     -0.678
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ForearmL",
+    "shape": "Block",
+    "size": [
+     1.9,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     -5.528,
+     9.141,
+     -1.065
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "BracerL",
+    "shape": "Block",
+    "size": [
+     2.1,
+     1.0,
+     2.1
+    ],
+    "pos": [
+     -5.789,
+     7.679,
+     -1.27
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "HandL",
+    "shape": "Block",
+    "size": [
+     1.6,
+     1.6,
+     1.4
+    ],
+    "pos": [
+     -5.997,
+     6.508,
+     -1.435
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordGuard",
+    "shape": "Block",
+    "size": [
+     2.4,
+     0.5,
+     2.4
+    ],
+    "pos": [
+     7.265,
+     7.946,
+     -6.419
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordBlade",
+    "shape": "Block",
+    "size": [
+     0.35,
+     7.0,
+     1.2
+    ],
+    "pos": [
+     8.285,
+     5.143,
+     -8.609
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     235,
+     235,
+     240
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordEdge",
+    "shape": "Block",
+    "size": [
+     0.2,
+     7.0,
+     0.3
+    ],
+    "pos": [
+     8.285,
+     5.574,
+     -9.161
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     255,
+     246,
+     222
+    ],
+    "material": "Neon",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordTip",
+    "shape": "Wedge",
+    "size": [
+     0.35,
+     1.4,
+     1.2
+    ],
+    "pos": [
+     9.443,
+     1.962,
+     -11.095
+    ],
+    "rot": [
+     -142.0,
+     0.0,
+     -16.0
+    ],
+    "color": [
+     235,
+     235,
+     240
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {
+   "Wheel": {
+    "part0": "Head",
+    "pivot": [
+     0,
+     22.6,
+     0
+    ]
+   },
+   "RightArm": {
+    "part0": "Torso",
+    "pivot": [
+     4.0,
+     16.0,
+     0
+    ]
+   },
+   "LeftArm": {
+    "part0": "Torso",
+    "pivot": [
+     -4.0,
+     16.0,
+     0
+    ]
+   }
+  },
+  "minY": 0.0,
+  "root": {
+   "size": [
+    4,
+    4,
+    2
+   ],
+   "pos": [
+    0,
+    11.0,
+    0
+   ]
+  },
+  "hipHeight": 9.0
+ },
+ "MahoragaTamed": {
+  "desc": "Eight-Handled Sword Divergent Sila Divine General Mahoraga. ~20 studs tall, adaptation wheel above the head, Sword of Extermination on the right arm.",
+  "parts": [
+   {
+    "name": "FootR",
+    "shape": "Block",
+    "size": [
+     2.2,
+     0.8,
+     3.2
+    ],
+    "pos": [
+     1.8,
+     0.4,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FootL",
+    "shape": "Block",
+    "size": [
+     2.2,
+     0.8,
+     3.2
+    ],
+    "pos": [
+     -1.8,
+     0.4,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ShinR",
+    "shape": "Block",
+    "size": [
+     1.8,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     1.8,
+     2.9,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ShinL",
+    "shape": "Block",
+    "size": [
+     1.8,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     -1.8,
+     2.9,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "KneeR",
+    "shape": "Ball",
+    "size": [
+     2.1,
+     2.1,
+     2.1
+    ],
+    "pos": [
+     1.8,
+     5.0,
+     -0.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "KneeL",
+    "shape": "Ball",
+    "size": [
+     2.1,
+     2.1,
+     2.1
+    ],
+    "pos": [
+     -1.8,
+     5.0,
+     -0.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ThighR",
+    "shape": "Block",
+    "size": [
+     2.4,
+     4.0,
+     2.4
+    ],
+    "pos": [
+     1.8,
+     7.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ThighL",
+    "shape": "Block",
+    "size": [
+     2.4,
+     4.0,
+     2.4
+    ],
+    "pos": [
+     -1.8,
+     7.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Skirt",
+    "shape": "Block",
+    "size": [
+     5.8,
+     3.2,
+     3.6
+    ],
+    "pos": [
+     0,
+     8.1,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     26,
+     24,
+     32
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SkirtFlapF",
+    "shape": "Block",
+    "size": [
+     2.6,
+     4.6,
+     0.3
+    ],
+    "pos": [
+     0,
+     6.9,
+     -1.9
+    ],
+    "rot": [
+     -6,
+     0,
+     0
+    ],
+    "color": [
+     26,
+     24,
+     32
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SkirtFlapB",
+    "shape": "Block",
+    "size": [
+     3.4,
+     4.2,
+     0.3
+    ],
+    "pos": [
+     0,
+     7.0,
+     1.9
+    ],
+    "rot": [
+     6,
+     0,
+     0
+    ],
+    "color": [
+     26,
+     24,
+     32
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Rope",
+    "shape": "Block",
+    "size": [
+     6.0,
+     0.5,
+     3.8
+    ],
+    "pos": [
+     0,
+     9.5,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "RopeKnot",
+    "shape": "Ball",
+    "size": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "pos": [
+     0,
+     9.4,
+     -2.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Abdomen",
+    "shape": "Block",
+    "size": [
+     4.6,
+     2.6,
+     2.9
+    ],
+    "pos": [
+     0,
+     11.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab0R",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     0.7,
+     10.3,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab0L",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     -0.7,
+     10.3,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab1R",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     0.7,
+     11.15,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab1L",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     -0.7,
+     11.15,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab2R",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     0.7,
+     12.0,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ab2L",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.7,
+     0.25
+    ],
+    "pos": [
+     -0.7,
+     12.0,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Torso",
+    "shape": "Block",
+    "size": [
+     6.2,
+     4.4,
+     3.4
+    ],
+    "pos": [
+     0,
+     14.3,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "PecR",
+    "shape": "Block",
+    "size": [
+     2.7,
+     1.9,
+     0.4
+    ],
+    "pos": [
+     1.45,
+     15.0,
+     -1.75
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "PecL",
+    "shape": "Block",
+    "size": [
+     2.7,
+     1.9,
+     0.4
+    ],
+    "pos": [
+     -1.45,
+     15.0,
+     -1.75
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Spine",
+    "shape": "Block",
+    "size": [
+     0.5,
+     4.0,
+     0.3
+    ],
+    "pos": [
+     0,
+     13.6,
+     1.75
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TrapR",
+    "shape": "Wedge",
+    "size": [
+     1.8,
+     1.2,
+     2.6
+    ],
+    "pos": [
+     1.9,
+     17.0,
+     0.2
+    ],
+    "rot": [
+     0,
+     180,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TrapL",
+    "shape": "Wedge",
+    "size": [
+     1.8,
+     1.2,
+     2.6
+    ],
+    "pos": [
+     -1.9,
+     17.0,
+     0.2
+    ],
+    "rot": [
+     0,
+     -180,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Neck",
+    "shape": "Cylinder",
+    "size": [
+     1.6,
+     1.8,
+     1.8
+    ],
+    "pos": [
+     0,
+     17.2,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     2.3,
+     2.5,
+     2.4
+    ],
+    "pos": [
+     0,
+     18.9,
+     -0.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Jaw",
+    "shape": "Block",
+    "size": [
+     1.9,
+     0.8,
+     2.0
+    ],
+    "pos": [
+     0,
+     17.8,
+     -0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Mouth",
+    "shape": "Block",
+    "size": [
+     1.1,
+     0.12,
+     0.1
+    ],
+    "pos": [
+     0,
+     18.0,
+     -1.25
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     50,
+     50
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingR",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.8,
+     0.28
+    ],
+    "pos": [
+     0.6,
+     19.25,
+     -1.42
+    ],
+    "rot": [
+     0,
+     -12,
+     -14
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingL",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.8,
+     0.28
+    ],
+    "pos": [
+     -0.6,
+     19.25,
+     -1.42
+    ],
+    "rot": [
+     0,
+     12,
+     14
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingTipR",
+    "shape": "Block",
+    "size": [
+     0.9,
+     0.5,
+     0.24
+    ],
+    "pos": [
+     1.45,
+     19.55,
+     -1.25
+    ],
+    "rot": [
+     0,
+     -25,
+     -30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeWingTipL",
+    "shape": "Block",
+    "size": [
+     0.9,
+     0.5,
+     0.24
+    ],
+    "pos": [
+     -1.45,
+     19.55,
+     -1.25
+    ],
+    "rot": [
+     0,
+     25,
+     30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.3,
+     3.8
+    ],
+    "pos": [
+     1.3,
+     20.0,
+     0.3
+    ],
+    "rot": [
+     -18,
+     0,
+     -24
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.3,
+     3.8
+    ],
+    "pos": [
+     -1.3,
+     20.0,
+     0.3
+    ],
+    "rot": [
+     -18,
+     0,
+     24
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperTipR",
+    "shape": "Block",
+    "size": [
+     0.26,
+     0.9,
+     1.8
+    ],
+    "pos": [
+     1.75,
+     21.0,
+     2.0
+    ],
+    "rot": [
+     -35,
+     0,
+     -30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingUpperTipL",
+    "shape": "Block",
+    "size": [
+     0.26,
+     0.9,
+     1.8
+    ],
+    "pos": [
+     -1.75,
+     21.0,
+     2.0
+    ],
+    "rot": [
+     -35,
+     0,
+     30
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingLowerR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.1,
+     3.2
+    ],
+    "pos": [
+     1.3,
+     18.6,
+     0.5
+    ],
+    "rot": [
+     -4,
+     0,
+     -12
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingLowerL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.1,
+     3.2
+    ],
+    "pos": [
+     -1.3,
+     18.6,
+     0.5
+    ],
+    "rot": [
+     -4,
+     0,
+     12
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim0",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     2.31,
+     22.6,
+     0.957
+    ],
+    "rot": [
+     0,
+     -22.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim1",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     0.957,
+     22.6,
+     2.31
+    ],
+    "rot": [
+     0,
+     -67.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim2",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -0.957,
+     22.6,
+     2.31
+    ],
+    "rot": [
+     0,
+     -112.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim3",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -2.31,
+     22.6,
+     0.957
+    ],
+    "rot": [
+     0,
+     -157.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim4",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -2.31,
+     22.6,
+     -0.957
+    ],
+    "rot": [
+     0,
+     -202.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim5",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     -0.957,
+     22.6,
+     -2.31
+    ],
+    "rot": [
+     0,
+     -247.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim6",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     0.957,
+     22.6,
+     -2.31
+    ],
+    "rot": [
+     0,
+     -292.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelRim7",
+    "shape": "Block",
+    "size": [
+     0.55,
+     0.55,
+     2.2
+    ],
+    "pos": [
+     2.31,
+     22.6,
+     -0.957
+    ],
+    "rot": [
+     0,
+     -337.5,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHub",
+    "shape": "Cylinder",
+    "size": [
+     0.6,
+     1.2,
+     1.2
+    ],
+    "pos": [
+     0,
+     22.6,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHubCore",
+    "shape": "Ball",
+    "size": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "pos": [
+     0,
+     22.95,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     226,
+     140
+    ],
+    "material": "Neon",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke0",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     1.75,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     -0.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle0",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     3.55,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke1",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     1.237,
+     22.6,
+     1.237
+    ],
+    "rot": [
+     0,
+     -45.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle1",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     2.51,
+     22.6,
+     2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke2",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     0.0,
+     22.6,
+     1.75
+    ],
+    "rot": [
+     0,
+     -90.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle2",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     0.0,
+     22.6,
+     3.55
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke3",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -1.237,
+     22.6,
+     1.237
+    ],
+    "rot": [
+     0,
+     -135.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle3",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -2.51,
+     22.6,
+     2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke4",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -1.75,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     -180.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle4",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -3.55,
+     22.6,
+     0.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke5",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -1.237,
+     22.6,
+     -1.237
+    ],
+    "rot": [
+     0,
+     -225.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle5",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -2.51,
+     22.6,
+     -2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke6",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     -0.0,
+     22.6,
+     -1.75
+    ],
+    "rot": [
+     0,
+     -270.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle6",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -0.0,
+     22.6,
+     -3.55
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelSpoke7",
+    "shape": "Cylinder",
+    "size": [
+     3.5,
+     0.36,
+     0.36
+    ],
+    "pos": [
+     1.237,
+     22.6,
+     -1.237
+    ],
+    "rot": [
+     0,
+     -315.0,
+     0
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelHandle7",
+    "shape": "Ball",
+    "size": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     2.51,
+     22.6,
+     -2.51
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.0
+   },
+   {
+    "name": "WheelStem",
+    "shape": "Cylinder",
+    "size": [
+     1.6,
+     0.18,
+     0.18
+    ],
+    "pos": [
+     0,
+     21.3,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     150,
+     116,
+     40
+    ],
+    "material": "Metal",
+    "group": "Wheel",
+    "transparency": 0.3
+   },
+   {
+    "name": "ShoulderR",
+    "shape": "Ball",
+    "size": [
+     2.8,
+     2.8,
+     2.8
+    ],
+    "pos": [
+     4.0,
+     16.0,
+     0.0
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "UpperArmR",
+    "shape": "Block",
+    "size": [
+     2.0,
+     4.6,
+     2.0
+    ],
+    "pos": [
+     5.005,
+     14.096,
+     -1.488
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ElbowR",
+    "shape": "Ball",
+    "size": [
+     1.9,
+     1.9,
+     1.9
+    ],
+    "pos": [
+     5.667,
+     12.278,
+     -2.908
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ForearmR",
+    "shape": "Block",
+    "size": [
+     1.9,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     6.245,
+     10.749,
+     -4.23
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "BracerR",
+    "shape": "Block",
+    "size": [
+     2.1,
+     1.0,
+     2.1
+    ],
+    "pos": [
+     6.659,
+     9.612,
+     -5.117
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "HandR",
+    "shape": "Block",
+    "size": [
+     1.6,
+     1.6,
+     1.4
+    ],
+    "pos": [
+     6.99,
+     8.703,
+     -5.828
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ShoulderL",
+    "shape": "Ball",
+    "size": [
+     2.8,
+     2.8,
+     2.8
+    ],
+    "pos": [
+     -4.0,
+     16.0,
+     0.0
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "UpperArmL",
+    "shape": "Block",
+    "size": [
+     2.0,
+     4.6,
+     2.0
+    ],
+    "pos": [
+     -4.747,
+     13.516,
+     -0.349
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ElbowL",
+    "shape": "Ball",
+    "size": [
+     1.9,
+     1.9,
+     1.9
+    ],
+    "pos": [
+     -5.164,
+     11.175,
+     -0.678
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "ForearmL",
+    "shape": "Block",
+    "size": [
+     1.9,
+     4.2,
+     1.9
+    ],
+    "pos": [
+     -5.528,
+     9.141,
+     -1.065
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     236,
+     233,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "BracerL",
+    "shape": "Block",
+    "size": [
+     2.1,
+     1.0,
+     2.1
+    ],
+    "pos": [
+     -5.789,
+     7.679,
+     -1.27
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "HandL",
+    "shape": "Block",
+    "size": [
+     1.6,
+     1.6,
+     1.4
+    ],
+    "pos": [
+     -5.997,
+     6.508,
+     -1.435
+    ],
+    "rot": [
+     8.0,
+     0.0,
+     -10.0
+    ],
+    "color": [
+     205,
+     200,
+     190
+    ],
+    "material": "SmoothPlastic",
+    "group": "LeftArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordGuard",
+    "shape": "Block",
+    "size": [
+     2.4,
+     0.5,
+     2.4
+    ],
+    "pos": [
+     7.265,
+     7.946,
+     -6.419
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordBlade",
+    "shape": "Block",
+    "size": [
+     0.35,
+     7.0,
+     1.2
+    ],
+    "pos": [
+     8.285,
+     5.143,
+     -8.609
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     235,
+     235,
+     240
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordEdge",
+    "shape": "Block",
+    "size": [
+     0.2,
+     7.0,
+     0.3
+    ],
+    "pos": [
+     8.285,
+     5.574,
+     -9.161
+    ],
+    "rot": [
+     38.0,
+     0.0,
+     16.0
+    ],
+    "color": [
+     255,
+     246,
+     222
+    ],
+    "material": "Neon",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "SwordTip",
+    "shape": "Wedge",
+    "size": [
+     0.35,
+     1.4,
+     1.2
+    ],
+    "pos": [
+     9.443,
+     1.962,
+     -11.095
+    ],
+    "rot": [
+     -142.0,
+     0.0,
+     -16.0
+    ],
+    "color": [
+     235,
+     235,
+     240
+    ],
+    "material": "Metal",
+    "group": "RightArm",
+    "transparency": 0.0
+   },
+   {
+    "name": "TamedSash",
+    "shape": "Block",
+    "size": [
+     6.4,
+     0.6,
+     3.6
+    ],
+    "pos": [
+     0,
+     16.4,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     28
+    ],
+    "color": [
+     120,
+     70,
+     200
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {
+   "Wheel": {
+    "part0": "Head",
+    "pivot": [
+     0,
+     22.6,
+     0
+    ]
+   },
+   "RightArm": {
+    "part0": "Torso",
+    "pivot": [
+     4.0,
+     16.0,
+     0
+    ]
+   },
+   "LeftArm": {
+    "part0": "Torso",
+    "pivot": [
+     -4.0,
+     16.0,
+     0
+    ]
+   }
+  },
+  "minY": 0.0,
+  "root": {
+   "size": [
+    4,
+    4,
+    2
+   ],
+   "pos": [
+    0,
+    11.0,
+    0
+   ]
+  },
+  "hipHeight": 9.0
+ },
+ "DivineDogWhite": {
+  "desc": "Divine Dog shikigami.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     1.6,
+     1.6,
+     3.2
+    ],
+    "pos": [
+     0.0,
+     2.3,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Chest",
+    "shape": "Block",
+    "size": [
+     1.9,
+     1.9,
+     1.5
+    ],
+    "pos": [
+     0.0,
+     2.5,
+     -1.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ruff",
+    "shape": "Block",
+    "size": [
+     2.2,
+     1.2,
+     0.8
+    ],
+    "pos": [
+     0.0,
+     2.9,
+     -1.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Neck",
+    "shape": "Block",
+    "size": [
+     1.1,
+     1.3,
+     1.0
+    ],
+    "pos": [
+     0.0,
+     3.2,
+     -1.9
+    ],
+    "rot": [
+     -30,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     1.35,
+     1.25,
+     1.35
+    ],
+    "pos": [
+     0.0,
+     3.7,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Snout",
+    "shape": "Block",
+    "size": [
+     0.85,
+     0.65,
+     1.1
+    ],
+    "pos": [
+     0.0,
+     3.45,
+     -3.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Nose",
+    "shape": "Ball",
+    "size": [
+     0.38,
+     0.38,
+     0.38
+    ],
+    "pos": [
+     0.0,
+     3.62,
+     -3.85
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     20,
+     20,
+     22
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Mask",
+    "shape": "Block",
+    "size": [
+     1.38,
+     0.3,
+     0.2
+    ],
+    "pos": [
+     0.0,
+     3.95,
+     -3.06
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarR",
+    "shape": "Wedge",
+    "size": [
+     0.35,
+     0.9,
+     0.55
+    ],
+    "pos": [
+     0.45,
+     4.7,
+     -2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarL",
+    "shape": "Wedge",
+    "size": [
+     0.35,
+     0.9,
+     0.55
+    ],
+    "pos": [
+     -0.45,
+     4.7,
+     -2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     0.2,
+     0.1
+    ],
+    "pos": [
+     0.36,
+     3.8,
+     -3.12
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     214,
+     90
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     0.2,
+     0.1
+    ],
+    "pos": [
+     -0.36,
+     3.8,
+     -3.12
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     214,
+     90
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0R",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     0.58,
+     0.95,
+     -1.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0L",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     -0.58,
+     0.95,
+     -1.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw0R",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     0.58,
+     0.15,
+     -1.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw0L",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     -0.58,
+     0.15,
+     -1.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1R",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     0.58,
+     0.95,
+     1.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1L",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     -0.58,
+     0.95,
+     1.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw1R",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     0.58,
+     0.15,
+     1.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw1L",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     -0.58,
+     0.15,
+     1.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Block",
+    "size": [
+     0.38,
+     0.38,
+     1.5
+    ],
+    "pos": [
+     0.0,
+     2.9,
+     2.4
+    ],
+    "rot": [
+     35,
+     0,
+     0
+    ],
+    "color": [
+     242,
+     242,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe",
+    "shape": "Block",
+    "size": [
+     1.62,
+     0.2,
+     2.6
+    ],
+    "pos": [
+     0.0,
+     3.12,
+     0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "DivineDogBlack": {
+  "desc": "Divine Dog shikigami.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     1.6,
+     1.6,
+     3.2
+    ],
+    "pos": [
+     0.0,
+     2.3,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Chest",
+    "shape": "Block",
+    "size": [
+     1.9,
+     1.9,
+     1.5
+    ],
+    "pos": [
+     0.0,
+     2.5,
+     -1.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ruff",
+    "shape": "Block",
+    "size": [
+     2.2,
+     1.2,
+     0.8
+    ],
+    "pos": [
+     0.0,
+     2.9,
+     -1.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Neck",
+    "shape": "Block",
+    "size": [
+     1.1,
+     1.3,
+     1.0
+    ],
+    "pos": [
+     0.0,
+     3.2,
+     -1.9
+    ],
+    "rot": [
+     -30,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     1.35,
+     1.25,
+     1.35
+    ],
+    "pos": [
+     0.0,
+     3.7,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Snout",
+    "shape": "Block",
+    "size": [
+     0.85,
+     0.65,
+     1.1
+    ],
+    "pos": [
+     0.0,
+     3.45,
+     -3.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Nose",
+    "shape": "Ball",
+    "size": [
+     0.38,
+     0.38,
+     0.38
+    ],
+    "pos": [
+     0.0,
+     3.62,
+     -3.85
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     20,
+     20,
+     22
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Mask",
+    "shape": "Block",
+    "size": [
+     1.38,
+     0.3,
+     0.2
+    ],
+    "pos": [
+     0.0,
+     3.95,
+     -3.06
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     200,
+     205
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarR",
+    "shape": "Wedge",
+    "size": [
+     0.35,
+     0.9,
+     0.55
+    ],
+    "pos": [
+     0.45,
+     4.7,
+     -2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarL",
+    "shape": "Wedge",
+    "size": [
+     0.35,
+     0.9,
+     0.55
+    ],
+    "pos": [
+     -0.45,
+     4.7,
+     -2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     0.2,
+     0.1
+    ],
+    "pos": [
+     0.36,
+     3.8,
+     -3.12
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     214,
+     90
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     0.2,
+     0.1
+    ],
+    "pos": [
+     -0.36,
+     3.8,
+     -3.12
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     214,
+     90
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0R",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     0.58,
+     0.95,
+     -1.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0L",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     -0.58,
+     0.95,
+     -1.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw0R",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     0.58,
+     0.15,
+     -1.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     200,
+     205
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw0L",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     -0.58,
+     0.15,
+     -1.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     200,
+     205
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1R",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     0.58,
+     0.95,
+     1.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1L",
+    "shape": "Block",
+    "size": [
+     0.5,
+     1.8,
+     0.5
+    ],
+    "pos": [
+     -0.58,
+     0.95,
+     1.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw1R",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     0.58,
+     0.15,
+     1.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     200,
+     205
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw1L",
+    "shape": "Block",
+    "size": [
+     0.6,
+     0.3,
+     0.75
+    ],
+    "pos": [
+     -0.58,
+     0.15,
+     1.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     200,
+     205
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Block",
+    "size": [
+     0.38,
+     0.38,
+     1.5
+    ],
+    "pos": [
+     0.0,
+     2.9,
+     2.4
+    ],
+    "rot": [
+     35,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     30,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe",
+    "shape": "Block",
+    "size": [
+     1.62,
+     0.2,
+     2.6
+    ],
+    "pos": [
+     0.0,
+     3.12,
+     0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     200,
+     205
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "DivineDogTotality": {
+  "desc": "Divine Dog: Totality shikigami.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     4.16,
+     4.16,
+     8.32
+    ],
+    "pos": [
+     0.0,
+     5.98,
+     0.78
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Chest",
+    "shape": "Block",
+    "size": [
+     4.94,
+     4.94,
+     3.9
+    ],
+    "pos": [
+     0.0,
+     6.5,
+     -2.86
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ruff",
+    "shape": "Block",
+    "size": [
+     5.72,
+     3.12,
+     2.08
+    ],
+    "pos": [
+     0.0,
+     7.54,
+     -4.16
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Neck",
+    "shape": "Block",
+    "size": [
+     2.86,
+     3.38,
+     2.6
+    ],
+    "pos": [
+     0.0,
+     8.32,
+     -4.94
+    ],
+    "rot": [
+     -30,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     3.51,
+     3.25,
+     3.51
+    ],
+    "pos": [
+     0.0,
+     9.62,
+     -6.24
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Snout",
+    "shape": "Block",
+    "size": [
+     2.21,
+     1.69,
+     2.86
+    ],
+    "pos": [
+     0.0,
+     8.97,
+     -8.58
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Nose",
+    "shape": "Ball",
+    "size": [
+     0.988,
+     0.988,
+     0.988
+    ],
+    "pos": [
+     0.0,
+     9.412,
+     -10.01
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     20,
+     20,
+     22
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Mask",
+    "shape": "Block",
+    "size": [
+     3.588,
+     0.78,
+     0.52
+    ],
+    "pos": [
+     0.0,
+     10.27,
+     -7.956
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarR",
+    "shape": "Wedge",
+    "size": [
+     0.91,
+     2.34,
+     1.43
+    ],
+    "pos": [
+     1.17,
+     12.22,
+     -5.98
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarL",
+    "shape": "Wedge",
+    "size": [
+     0.91,
+     2.34,
+     1.43
+    ],
+    "pos": [
+     -1.17,
+     12.22,
+     -5.98
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.78,
+     0.52,
+     0.26
+    ],
+    "pos": [
+     0.936,
+     9.88,
+     -8.112
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     190,
+     120,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.78,
+     0.52,
+     0.26
+    ],
+    "pos": [
+     -0.936,
+     9.88,
+     -8.112
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     190,
+     120,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0R",
+    "shape": "Block",
+    "size": [
+     1.3,
+     4.68,
+     1.3
+    ],
+    "pos": [
+     1.508,
+     2.47,
+     -2.86
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0L",
+    "shape": "Block",
+    "size": [
+     1.3,
+     4.68,
+     1.3
+    ],
+    "pos": [
+     -1.508,
+     2.47,
+     -2.86
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw0R",
+    "shape": "Block",
+    "size": [
+     1.56,
+     0.78,
+     1.95
+    ],
+    "pos": [
+     1.508,
+     0.39,
+     -3.12
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw0L",
+    "shape": "Block",
+    "size": [
+     1.56,
+     0.78,
+     1.95
+    ],
+    "pos": [
+     -1.508,
+     0.39,
+     -3.12
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1R",
+    "shape": "Block",
+    "size": [
+     1.3,
+     4.68,
+     1.3
+    ],
+    "pos": [
+     1.508,
+     2.47,
+     3.64
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1L",
+    "shape": "Block",
+    "size": [
+     1.3,
+     4.68,
+     1.3
+    ],
+    "pos": [
+     -1.508,
+     2.47,
+     3.64
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw1R",
+    "shape": "Block",
+    "size": [
+     1.56,
+     0.78,
+     1.95
+    ],
+    "pos": [
+     1.508,
+     0.39,
+     3.38
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Paw1L",
+    "shape": "Block",
+    "size": [
+     1.56,
+     0.78,
+     1.95
+    ],
+    "pos": [
+     -1.508,
+     0.39,
+     3.38
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Block",
+    "size": [
+     0.988,
+     0.988,
+     3.9
+    ],
+    "pos": [
+     0.0,
+     7.54,
+     6.24
+    ],
+    "rot": [
+     35,
+     0,
+     0
+    ],
+    "color": [
+     34,
+     32,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe",
+    "shape": "Block",
+    "size": [
+     4.212,
+     0.52,
+     6.76
+    ],
+    "pos": [
+     0.0,
+     8.112,
+     1.04
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ClawR",
+    "shape": "Wedge",
+    "size": [
+     0.52,
+     0.78,
+     1.82
+    ],
+    "pos": [
+     1.872,
+     0.39,
+     -4.68
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     180,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ClawL",
+    "shape": "Wedge",
+    "size": [
+     0.52,
+     0.78,
+     1.82
+    ],
+    "pos": [
+     -1.872,
+     0.39,
+     -4.68
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     180,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Spine",
+    "shape": "Block",
+    "size": [
+     0.78,
+     1.3,
+     7.8
+    ],
+    "pos": [
+     0.0,
+     8.58,
+     1.04
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     230,
+     236
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FangR",
+    "shape": "Wedge",
+    "size": [
+     0.312,
+     0.91,
+     0.364
+    ],
+    "pos": [
+     0.65,
+     7.852,
+     -9.75
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     250,
+     250,
+     250
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FangL",
+    "shape": "Wedge",
+    "size": [
+     0.312,
+     0.91,
+     0.364
+    ],
+    "pos": [
+     -0.65,
+     7.852,
+     -9.75
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     250,
+     250,
+     250
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "Nue": {
+  "desc": "Nue: owl-like shikigami that dives and discharges lightning.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Ball",
+    "size": [
+     2.8,
+     2.8,
+     2.8
+    ],
+    "pos": [
+     0,
+     4.2,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     46,
+     38,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly",
+    "shape": "Block",
+    "size": [
+     1.9,
+     2.0,
+     0.6
+    ],
+    "pos": [
+     0,
+     3.9,
+     -1.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     90,
+     80,
+     86
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Ball",
+    "size": [
+     2.0,
+     2.0,
+     2.0
+    ],
+    "pos": [
+     0,
+     6.0,
+     -0.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     46,
+     38,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Mask",
+    "shape": "Block",
+    "size": [
+     1.6,
+     1.4,
+     0.25
+    ],
+    "pos": [
+     0,
+     6.0,
+     -1.45
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     228,
+     214
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeHoleR",
+    "shape": "Block",
+    "size": [
+     0.42,
+     0.26,
+     0.1
+    ],
+    "pos": [
+     0.38,
+     6.15,
+     -1.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     220,
+     90
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeHoleL",
+    "shape": "Block",
+    "size": [
+     0.42,
+     0.26,
+     0.1
+    ],
+    "pos": [
+     -0.38,
+     6.15,
+     -1.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     220,
+     90
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Beak",
+    "shape": "Wedge",
+    "size": [
+     0.45,
+     0.6,
+     0.6
+    ],
+    "pos": [
+     0,
+     5.6,
+     -1.8
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     170,
+     90
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TuftR",
+    "shape": "Wedge",
+    "size": [
+     0.3,
+     0.8,
+     0.5
+    ],
+    "pos": [
+     0.7,
+     7.1,
+     -0.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TuftL",
+    "shape": "Wedge",
+    "size": [
+     0.3,
+     0.8,
+     0.5
+    ],
+    "pos": [
+     -0.7,
+     7.1,
+     -0.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing0R",
+    "shape": "Block",
+    "size": [
+     3.6,
+     0.25,
+     2.0
+    ],
+    "pos": [
+     2.9,
+     4.8,
+     0.1
+    ],
+    "rot": [
+     0,
+     0,
+     14
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing0L",
+    "shape": "Block",
+    "size": [
+     3.6,
+     0.25,
+     2.0
+    ],
+    "pos": [
+     -2.9,
+     4.8,
+     0.1
+    ],
+    "rot": [
+     0,
+     0,
+     -14
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing1R",
+    "shape": "Block",
+    "size": [
+     3.4,
+     0.22,
+     1.6
+    ],
+    "pos": [
+     6.1,
+     5.7,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     20
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing1L",
+    "shape": "Block",
+    "size": [
+     3.4,
+     0.22,
+     1.6
+    ],
+    "pos": [
+     -6.1,
+     5.7,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     -20
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing2R",
+    "shape": "Block",
+    "size": [
+     2.4,
+     0.2,
+     1.1
+    ],
+    "pos": [
+     8.8,
+     6.6,
+     0.5
+    ],
+    "rot": [
+     0,
+     -12,
+     26
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing2L",
+    "shape": "Block",
+    "size": [
+     2.4,
+     0.2,
+     1.1
+    ],
+    "pos": [
+     -8.8,
+     6.6,
+     0.5
+    ],
+    "rot": [
+     0,
+     12,
+     -26
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingBoltR",
+    "shape": "Block",
+    "size": [
+     6.6,
+     0.1,
+     0.18
+    ],
+    "pos": [
+     4.6,
+     5.2,
+     -0.8
+    ],
+    "rot": [
+     0,
+     0,
+     17
+    ],
+    "color": [
+     150,
+     205,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WingBoltL",
+    "shape": "Block",
+    "size": [
+     6.6,
+     0.1,
+     0.18
+    ],
+    "pos": [
+     -4.6,
+     5.2,
+     -0.8
+    ],
+    "rot": [
+     0,
+     0,
+     -17
+    ],
+    "color": [
+     150,
+     205,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Block",
+    "size": [
+     1.4,
+     0.2,
+     2.4
+    ],
+    "pos": [
+     0,
+     3.6,
+     2.0
+    ],
+    "rot": [
+     -22,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     26,
+     34
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "LegR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     0.55,
+     2.2,
+     -0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     170,
+     90
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "LegL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     -0.55,
+     2.2,
+     -0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     170,
+     90
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TalonR",
+    "shape": "Wedge",
+    "size": [
+     0.5,
+     0.4,
+     0.8
+    ],
+    "pos": [
+     0.55,
+     1.4,
+     -0.5
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     60
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TalonL",
+    "shape": "Wedge",
+    "size": [
+     0.5,
+     0.4,
+     0.8
+    ],
+    "pos": [
+     -0.55,
+     1.4,
+     -0.5
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     60,
+     60
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 1.2
+ },
+ "Toad": {
+  "desc": "Toad: extends its tongue to grab and pull targets.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Ball",
+    "size": [
+     4.6,
+     4.6,
+     4.6
+    ],
+    "pos": [
+     0,
+     2.5,
+     0.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     4.2,
+     1.7,
+     3.2
+    ],
+    "pos": [
+     0,
+     3.4,
+     -1.7
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Lip",
+    "shape": "Block",
+    "size": [
+     4.0,
+     0.25,
+     3.0
+    ],
+    "pos": [
+     0,
+     2.6,
+     -1.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     120,
+     60,
+     70
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly",
+    "shape": "Block",
+    "size": [
+     3.2,
+     1.6,
+     0.6
+    ],
+    "pos": [
+     0,
+     1.9,
+     -1.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     150,
+     150,
+     120
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Ball",
+    "size": [
+     1.3,
+     1.3,
+     1.3
+    ],
+    "pos": [
+     1.3,
+     4.5,
+     -2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     230,
+     200,
+     70
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Ball",
+    "size": [
+     1.3,
+     1.3,
+     1.3
+    ],
+    "pos": [
+     -1.3,
+     4.5,
+     -2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     230,
+     200,
+     70
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "PupilR",
+    "shape": "Block",
+    "size": [
+     0.8,
+     0.25,
+     0.2
+    ],
+    "pos": [
+     1.3,
+     4.55,
+     -2.95
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     15,
+     15,
+     15
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "PupilL",
+    "shape": "Block",
+    "size": [
+     0.8,
+     0.25,
+     0.2
+    ],
+    "pos": [
+     -1.3,
+     4.55,
+     -2.95
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     15,
+     15,
+     15
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Spot0R",
+    "shape": "Ball",
+    "size": [
+     0.9,
+     0.9,
+     0.9
+    ],
+    "pos": [
+     1.5,
+     3.8,
+     1.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     48,
+     38
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Spot0L",
+    "shape": "Ball",
+    "size": [
+     0.9,
+     0.9,
+     0.9
+    ],
+    "pos": [
+     -1.5,
+     3.8,
+     1.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     48,
+     38
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Spot1",
+    "shape": "Ball",
+    "size": [
+     1.1,
+     1.1,
+     1.1
+    ],
+    "pos": [
+     0,
+     4.7,
+     1.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     48,
+     38
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FrontLegR",
+    "shape": "Block",
+    "size": [
+     0.7,
+     1.8,
+     0.7
+    ],
+    "pos": [
+     1.6,
+     0.9,
+     -2.0
+    ],
+    "rot": [
+     0,
+     0,
+     -12
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FrontLegL",
+    "shape": "Block",
+    "size": [
+     0.7,
+     1.8,
+     0.7
+    ],
+    "pos": [
+     -1.6,
+     0.9,
+     -2.0
+    ],
+    "rot": [
+     0,
+     0,
+     12
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "BackLegR",
+    "shape": "Block",
+    "size": [
+     1.4,
+     1.2,
+     2.8
+    ],
+    "pos": [
+     2.2,
+     0.6,
+     1.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "BackLegL",
+    "shape": "Block",
+    "size": [
+     1.4,
+     1.2,
+     2.8
+    ],
+    "pos": [
+     -2.2,
+     0.6,
+     1.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FootR",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.3,
+     1.2
+    ],
+    "pos": [
+     1.8,
+     0.15,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FootL",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.3,
+     1.2
+    ],
+    "pos": [
+     -1.8,
+     0.15,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     84,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Rune",
+    "shape": "Block",
+    "size": [
+     1.6,
+     0.1,
+     0.6
+    ],
+    "pos": [
+     0,
+     4.28,
+     -1.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     160,
+     110,
+     230
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "GreatSerpent": {
+  "desc": "Great Serpent: bursts out of the ground beneath the target.",
+  "parts": [
+   {
+    "name": "Segment0",
+    "shape": "Cylinder",
+    "size": [
+     3.3,
+     3.8,
+     3.8
+    ],
+    "pos": [
+     0,
+     1.8,
+     0.0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly0",
+    "shape": "Block",
+    "size": [
+     2.2,
+     2.6,
+     0.5
+    ],
+    "pos": [
+     0,
+     1.8,
+     -1.75
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     170,
+     160,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Segment1",
+    "shape": "Cylinder",
+    "size": [
+     3.3,
+     3.72,
+     3.72
+    ],
+    "pos": [
+     0,
+     4.9,
+     0.313
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly1",
+    "shape": "Block",
+    "size": [
+     2.2,
+     2.6,
+     0.5
+    ],
+    "pos": [
+     0,
+     4.9,
+     -1.437
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     170,
+     160,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Segment2",
+    "shape": "Cylinder",
+    "size": [
+     3.3,
+     3.64,
+     3.64
+    ],
+    "pos": [
+     0,
+     8.0,
+     0.39
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly2",
+    "shape": "Block",
+    "size": [
+     2.2,
+     2.6,
+     0.5
+    ],
+    "pos": [
+     0,
+     8.0,
+     -1.36
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     170,
+     160,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Segment3",
+    "shape": "Cylinder",
+    "size": [
+     3.3,
+     3.56,
+     3.56
+    ],
+    "pos": [
+     0,
+     11.1,
+     0.171
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly3",
+    "shape": "Block",
+    "size": [
+     2.2,
+     2.6,
+     0.5
+    ],
+    "pos": [
+     0,
+     11.1,
+     -1.579
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     170,
+     160,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Segment4",
+    "shape": "Cylinder",
+    "size": [
+     3.3,
+     3.48,
+     3.48
+    ],
+    "pos": [
+     0,
+     14.2,
+     -0.177
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly4",
+    "shape": "Block",
+    "size": [
+     2.2,
+     2.6,
+     0.5
+    ],
+    "pos": [
+     0,
+     14.2,
+     -1.927
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     170,
+     160,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Segment5",
+    "shape": "Cylinder",
+    "size": [
+     3.3,
+     3.4,
+     3.4
+    ],
+    "pos": [
+     0,
+     17.3,
+     -0.391
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly5",
+    "shape": "Block",
+    "size": [
+     2.2,
+     2.6,
+     0.5
+    ],
+    "pos": [
+     0,
+     17.3,
+     -2.141
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     170,
+     160,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     4.2,
+     2.6,
+     6.2
+    ],
+    "pos": [
+     0,
+     21.0,
+     -2.0
+    ],
+    "rot": [
+     -12,
+     0,
+     0
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Snout",
+    "shape": "Block",
+    "size": [
+     3.4,
+     1.8,
+     2.0
+    ],
+    "pos": [
+     0,
+     20.5,
+     -5.6
+    ],
+    "rot": [
+     -12,
+     0,
+     0
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Jaw",
+    "shape": "Block",
+    "size": [
+     3.8,
+     1.0,
+     5.6
+    ],
+    "pos": [
+     0,
+     18.6,
+     -2.8
+    ],
+    "rot": [
+     18,
+     0,
+     0
+    ],
+    "color": [
+     170,
+     160,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.3,
+     0.6,
+     1.2
+    ],
+    "pos": [
+     2.12,
+     21.4,
+     -3.2
+    ],
+    "rot": [
+     -12,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     206,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.3,
+     0.6,
+     1.2
+    ],
+    "pos": [
+     -2.12,
+     21.4,
+     -3.2
+    ],
+    "rot": [
+     -12,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     206,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "BrowR",
+    "shape": "Wedge",
+    "size": [
+     0.6,
+     0.8,
+     1.8
+    ],
+    "pos": [
+     1.7,
+     22.5,
+     -2.6
+    ],
+    "rot": [
+     -12,
+     0,
+     0
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "BrowL",
+    "shape": "Wedge",
+    "size": [
+     0.6,
+     0.8,
+     1.8
+    ],
+    "pos": [
+     -1.7,
+     22.5,
+     -2.6
+    ],
+    "rot": [
+     -12,
+     0,
+     0
+    ],
+    "color": [
+     38,
+     42,
+     52
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FangR",
+    "shape": "Wedge",
+    "size": [
+     0.3,
+     1.2,
+     0.4
+    ],
+    "pos": [
+     1.2,
+     19.3,
+     -5.8
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     245,
+     245,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FangL",
+    "shape": "Wedge",
+    "size": [
+     0.3,
+     1.2,
+     0.4
+    ],
+    "pos": [
+     -1.2,
+     19.3,
+     -5.8
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     245,
+     245,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Fang2R",
+    "shape": "Wedge",
+    "size": [
+     0.25,
+     0.9,
+     0.35
+    ],
+    "pos": [
+     0.6,
+     19.4,
+     -6.0
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     245,
+     245,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Fang2L",
+    "shape": "Wedge",
+    "size": [
+     0.25,
+     0.9,
+     0.35
+    ],
+    "pos": [
+     -0.6,
+     19.4,
+     -6.0
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     245,
+     245,
+     240
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Crest",
+    "shape": "Block",
+    "size": [
+     0.3,
+     1.0,
+     4.4
+    ],
+    "pos": [
+     0,
+     22.6,
+     -0.6
+    ],
+    "rot": [
+     -12,
+     0,
+     0
+    ],
+    "color": [
+     140,
+     90,
+     220
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.15
+ },
+ "MaxElephant": {
+  "desc": "Max Elephant: huge shikigami that crashes down and floods the area with water.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     9.0,
+     8.0,
+     13.0
+    ],
+    "pos": [
+     0,
+     11.0,
+     0.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Back",
+    "shape": "Block",
+    "size": [
+     7.6,
+     2.0,
+     11.0
+    ],
+    "pos": [
+     0,
+     15.6,
+     0.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     7.0,
+     7.0,
+     5.0
+    ],
+    "pos": [
+     0,
+     13.2,
+     -7.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Brow",
+    "shape": "Block",
+    "size": [
+     7.2,
+     1.2,
+     1.2
+    ],
+    "pos": [
+     0,
+     16.2,
+     -9.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     80,
+     98
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarR",
+    "shape": "Block",
+    "size": [
+     0.6,
+     6.4,
+     5.6
+    ],
+    "pos": [
+     4.4,
+     13.4,
+     -6.2
+    ],
+    "rot": [
+     0,
+     22,
+     8
+    ],
+    "color": [
+     70,
+     80,
+     98
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarL",
+    "shape": "Block",
+    "size": [
+     0.6,
+     6.4,
+     5.6
+    ],
+    "pos": [
+     -4.4,
+     13.4,
+     -6.2
+    ],
+    "rot": [
+     0,
+     -22,
+     -8
+    ],
+    "color": [
+     70,
+     80,
+     98
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.8,
+     0.5,
+     0.2
+    ],
+    "pos": [
+     2.4,
+     14.3,
+     -10.35
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     240,
+     230,
+     160
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.8,
+     0.5,
+     0.2
+    ],
+    "pos": [
+     -2.4,
+     14.3,
+     -10.35
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     240,
+     230,
+     160
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Trunk0",
+    "shape": "Cylinder",
+    "size": [
+     2.2,
+     2.6,
+     2.6
+    ],
+    "pos": [
+     0,
+     10.8,
+     -10.6
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Trunk1",
+    "shape": "Cylinder",
+    "size": [
+     2.2,
+     2.3,
+     2.3
+    ],
+    "pos": [
+     0,
+     8.9,
+     -11.15
+    ],
+    "rot": [
+     0,
+     0,
+     84
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Trunk2",
+    "shape": "Cylinder",
+    "size": [
+     2.2,
+     2.0,
+     2.0
+    ],
+    "pos": [
+     0,
+     7.0,
+     -11.7
+    ],
+    "rot": [
+     0,
+     0,
+     78
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Trunk3",
+    "shape": "Cylinder",
+    "size": [
+     2.2,
+     1.7,
+     1.7
+    ],
+    "pos": [
+     0,
+     5.1,
+     -12.25
+    ],
+    "rot": [
+     0,
+     0,
+     72
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Trunk4",
+    "shape": "Cylinder",
+    "size": [
+     2.2,
+     1.4,
+     1.4
+    ],
+    "pos": [
+     0,
+     3.2,
+     -12.8
+    ],
+    "rot": [
+     0,
+     0,
+     66
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TrunkTip",
+    "shape": "Ball",
+    "size": [
+     1.4,
+     1.4,
+     1.4
+    ],
+    "pos": [
+     0,
+     1.3,
+     -13.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     80,
+     98
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TuskR",
+    "shape": "Cylinder",
+    "size": [
+     5.0,
+     0.9,
+     0.9
+    ],
+    "pos": [
+     2.0,
+     9.6,
+     -11.8
+    ],
+    "rot": [
+     0,
+     70,
+     -30
+    ],
+    "color": [
+     238,
+     234,
+     220
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TuskL",
+    "shape": "Cylinder",
+    "size": [
+     5.0,
+     0.9,
+     0.9
+    ],
+    "pos": [
+     -2.0,
+     9.6,
+     -11.8
+    ],
+    "rot": [
+     0,
+     -70,
+     30
+    ],
+    "color": [
+     238,
+     234,
+     220
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0R",
+    "shape": "Cylinder",
+    "size": [
+     7.2,
+     3.6,
+     3.6
+    ],
+    "pos": [
+     3.1,
+     3.6,
+     -4.2
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0L",
+    "shape": "Cylinder",
+    "size": [
+     7.2,
+     3.6,
+     3.6
+    ],
+    "pos": [
+     -3.1,
+     3.6,
+     -4.2
+    ],
+    "rot": [
+     0,
+     0,
+     -90
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Toe0R",
+    "shape": "Block",
+    "size": [
+     3.2,
+     0.6,
+     1.0
+    ],
+    "pos": [
+     3.1,
+     0.3,
+     -5.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     238,
+     234,
+     220
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Toe0L",
+    "shape": "Block",
+    "size": [
+     3.2,
+     0.6,
+     1.0
+    ],
+    "pos": [
+     -3.1,
+     0.3,
+     -5.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     238,
+     234,
+     220
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1R",
+    "shape": "Cylinder",
+    "size": [
+     7.2,
+     3.6,
+     3.6
+    ],
+    "pos": [
+     3.1,
+     3.6,
+     5.0
+    ],
+    "rot": [
+     0,
+     0,
+     90
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1L",
+    "shape": "Cylinder",
+    "size": [
+     7.2,
+     3.6,
+     3.6
+    ],
+    "pos": [
+     -3.1,
+     3.6,
+     5.0
+    ],
+    "rot": [
+     0,
+     0,
+     -90
+    ],
+    "color": [
+     104,
+     116,
+     136
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Toe1R",
+    "shape": "Block",
+    "size": [
+     3.2,
+     0.6,
+     1.0
+    ],
+    "pos": [
+     3.1,
+     0.3,
+     3.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     238,
+     234,
+     220
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Toe1L",
+    "shape": "Block",
+    "size": [
+     3.2,
+     0.6,
+     1.0
+    ],
+    "pos": [
+     -3.1,
+     0.3,
+     3.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     238,
+     234,
+     220
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Block",
+    "size": [
+     0.5,
+     4.0,
+     0.5
+    ],
+    "pos": [
+     0,
+     11.0,
+     7.3
+    ],
+    "rot": [
+     20,
+     0,
+     0
+    ],
+    "color": [
+     70,
+     80,
+     98
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "WaterMark",
+    "shape": "Block",
+    "size": [
+     5.0,
+     0.2,
+     9.0
+    ],
+    "pos": [
+     0,
+     16.65,
+     0.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     90,
+     180,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideMarkR",
+    "shape": "Block",
+    "size": [
+     0.2,
+     3.0,
+     8.0
+    ],
+    "pos": [
+     4.52,
+     11.0,
+     0.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     90,
+     180,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideMarkL",
+    "shape": "Block",
+    "size": [
+     0.2,
+     3.0,
+     8.0
+    ],
+    "pos": [
+     -4.52,
+     11.0,
+     0.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     90,
+     180,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "Rabbit": {
+  "desc": "Rabbit Escape: a swarm of rabbits that scatters to cover an escape.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     0.8,
+     0.75,
+     1.1
+    ],
+    "pos": [
+     0,
+     0.55,
+     0.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     246,
+     246,
+     246
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Ball",
+    "size": [
+     0.65,
+     0.65,
+     0.65
+    ],
+    "pos": [
+     0,
+     0.95,
+     -0.45
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     246,
+     246,
+     246
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarR",
+    "shape": "Block",
+    "size": [
+     0.14,
+     0.75,
+     0.26
+    ],
+    "pos": [
+     0.16,
+     1.55,
+     -0.35
+    ],
+    "rot": [
+     10,
+     0,
+     -8
+    ],
+    "color": [
+     246,
+     246,
+     246
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarL",
+    "shape": "Block",
+    "size": [
+     0.14,
+     0.75,
+     0.26
+    ],
+    "pos": [
+     -0.16,
+     1.55,
+     -0.35
+    ],
+    "rot": [
+     10,
+     0,
+     8
+    ],
+    "color": [
+     246,
+     246,
+     246
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.1,
+     0.12,
+     0.05
+    ],
+    "pos": [
+     0.18,
+     1.02,
+     -0.77
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     230,
+     40,
+     60
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.1,
+     0.12,
+     0.05
+    ],
+    "pos": [
+     -0.18,
+     1.02,
+     -0.77
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     230,
+     40,
+     60
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Ball",
+    "size": [
+     0.35,
+     0.35,
+     0.35
+    ],
+    "pos": [
+     0,
+     0.65,
+     0.7
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     225,
+     225,
+     225
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FootR",
+    "shape": "Block",
+    "size": [
+     0.22,
+     0.18,
+     0.6
+    ],
+    "pos": [
+     0.25,
+     0.09,
+     0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     246,
+     246,
+     246
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "FootL",
+    "shape": "Block",
+    "size": [
+     0.22,
+     0.18,
+     0.6
+    ],
+    "pos": [
+     -0.25,
+     0.09,
+     0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     246,
+     246,
+     246
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "RoundDeer": {
+  "desc": "Round Deer: shikigami with reverse cursed technique output, heals its user.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     1.9,
+     1.9,
+     4.2
+    ],
+    "pos": [
+     0,
+     4.4,
+     0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     224,
+     218,
+     204
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Neck",
+    "shape": "Block",
+    "size": [
+     1.0,
+     2.4,
+     1.0
+    ],
+    "pos": [
+     0,
+     5.8,
+     -1.9
+    ],
+    "rot": [
+     -25,
+     0,
+     0
+    ],
+    "color": [
+     224,
+     218,
+     204
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     1.2,
+     1.1,
+     1.6
+    ],
+    "pos": [
+     0,
+     7.0,
+     -2.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     224,
+     218,
+     204
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Muzzle",
+    "shape": "Block",
+    "size": [
+     0.8,
+     0.7,
+     0.9
+    ],
+    "pos": [
+     0,
+     6.7,
+     -3.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     200,
+     192,
+     178
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.1,
+     0.2,
+     0.3
+    ],
+    "pos": [
+     0.61,
+     7.2,
+     -2.9
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     40,
+     30
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.1,
+     0.2,
+     0.3
+    ],
+    "pos": [
+     -0.61,
+     7.2,
+     -2.9
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     40,
+     30
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0R",
+    "shape": "Block",
+    "size": [
+     0.35,
+     3.6,
+     0.35
+    ],
+    "pos": [
+     0.65,
+     1.8,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     224,
+     218,
+     204
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0L",
+    "shape": "Block",
+    "size": [
+     0.35,
+     3.6,
+     0.35
+    ],
+    "pos": [
+     -0.65,
+     1.8,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     224,
+     218,
+     204
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1R",
+    "shape": "Block",
+    "size": [
+     0.35,
+     3.6,
+     0.35
+    ],
+    "pos": [
+     0.65,
+     1.8,
+     1.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     224,
+     218,
+     204
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1L",
+    "shape": "Block",
+    "size": [
+     0.35,
+     3.6,
+     0.35
+    ],
+    "pos": [
+     -0.65,
+     1.8,
+     1.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     224,
+     218,
+     204
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Antler0R",
+    "shape": "Block",
+    "size": [
+     0.2,
+     1.8,
+     0.2
+    ],
+    "pos": [
+     0.45,
+     8.3,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     -22
+    ],
+    "color": [
+     240,
+     230,
+     200
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Antler0L",
+    "shape": "Block",
+    "size": [
+     0.2,
+     1.8,
+     0.2
+    ],
+    "pos": [
+     -0.45,
+     8.3,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     22
+    ],
+    "color": [
+     240,
+     230,
+     200
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Antler1R",
+    "shape": "Block",
+    "size": [
+     0.16,
+     1.1,
+     0.16
+    ],
+    "pos": [
+     0.95,
+     9.0,
+     -2.2
+    ],
+    "rot": [
+     0,
+     0,
+     -60
+    ],
+    "color": [
+     240,
+     230,
+     200
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Antler1L",
+    "shape": "Block",
+    "size": [
+     0.16,
+     1.1,
+     0.16
+    ],
+    "pos": [
+     -0.95,
+     9.0,
+     -2.2
+    ],
+    "rot": [
+     0,
+     0,
+     60
+    ],
+    "color": [
+     240,
+     230,
+     200
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Antler2R",
+    "shape": "Block",
+    "size": [
+     0.16,
+     1.0,
+     0.16
+    ],
+    "pos": [
+     0.55,
+     9.3,
+     -2.6
+    ],
+    "rot": [
+     0,
+     0,
+     10
+    ],
+    "color": [
+     240,
+     230,
+     200
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Antler2L",
+    "shape": "Block",
+    "size": [
+     0.16,
+     1.0,
+     0.16
+    ],
+    "pos": [
+     -0.55,
+     9.3,
+     -2.6
+    ],
+    "rot": [
+     0,
+     0,
+     -10
+    ],
+    "color": [
+     240,
+     230,
+     200
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo0",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     3.1,
+     5.2,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     90.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo1",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     2.864,
+     6.386,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     112.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo2",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     2.192,
+     7.392,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     135.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo3",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     1.186,
+     8.064,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     157.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo4",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     0.0,
+     8.3,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     180.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo5",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -1.186,
+     8.064,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     202.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo6",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -2.192,
+     7.392,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     225.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo7",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -2.864,
+     6.386,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     247.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo8",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -3.1,
+     5.2,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     270.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo9",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -2.864,
+     4.014,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     292.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo10",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -2.192,
+     3.008,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     315.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo11",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -1.186,
+     2.336,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     337.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo12",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     -0.0,
+     2.1,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     360.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo13",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     1.186,
+     2.336,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     382.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo14",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     2.192,
+     3.008,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     405.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo15",
+    "shape": "Block",
+    "size": [
+     1.25,
+     0.3,
+     0.3
+    ],
+    "pos": [
+     2.864,
+     4.014,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     427.5
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "HaloCore",
+    "shape": "Ball",
+    "size": [
+     0.9,
+     0.9,
+     0.9
+    ],
+    "pos": [
+     0,
+     5.2,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Spots",
+    "shape": "Block",
+    "size": [
+     1.92,
+     0.15,
+     3.0
+    ],
+    "pos": [
+     0,
+     5.36,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     190,
+     170,
+     140
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "PiercingOx": {
+  "desc": "Piercing Ox: charges in a straight line; the longer the run, the harder it hits.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     4.2,
+     3.8,
+     6.6
+    ],
+    "pos": [
+     0,
+     4.4,
+     0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Hump",
+    "shape": "Block",
+    "size": [
+     3.6,
+     1.6,
+     3.0
+    ],
+    "pos": [
+     0,
+     6.8,
+     -1.2
+    ],
+    "rot": [
+     8,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     2.6,
+     2.4,
+     2.6
+    ],
+    "pos": [
+     0,
+     4.0,
+     -3.8
+    ],
+    "rot": [
+     18,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Snout",
+    "shape": "Block",
+    "size": [
+     1.8,
+     1.2,
+     1.0
+    ],
+    "pos": [
+     0,
+     3.2,
+     -5.0
+    ],
+    "rot": [
+     18,
+     0,
+     0
+    ],
+    "color": [
+     80,
+     70,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "NoseRing",
+    "shape": "Cylinder",
+    "size": [
+     0.2,
+     0.9,
+     0.9
+    ],
+    "pos": [
+     0,
+     2.7,
+     -5.5
+    ],
+    "rot": [
+     0,
+     90,
+     0
+    ],
+    "color": [
+     214,
+     178,
+     74
+    ],
+    "material": "Metal",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "HornBaseR",
+    "shape": "Cylinder",
+    "size": [
+     1.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     1.8,
+     4.9,
+     -4.4
+    ],
+    "rot": [
+     0,
+     30,
+     10
+    ],
+    "color": [
+     232,
+     222,
+     196
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "HornBaseL",
+    "shape": "Cylinder",
+    "size": [
+     1.8,
+     0.8,
+     0.8
+    ],
+    "pos": [
+     -1.8,
+     4.9,
+     -4.4
+    ],
+    "rot": [
+     0,
+     -30,
+     -10
+    ],
+    "color": [
+     232,
+     222,
+     196
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "HornR",
+    "shape": "Cylinder",
+    "size": [
+     3.0,
+     0.55,
+     0.55
+    ],
+    "pos": [
+     2.4,
+     5.1,
+     -6.4
+    ],
+    "rot": [
+     0,
+     80,
+     8
+    ],
+    "color": [
+     232,
+     222,
+     196
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "HornL",
+    "shape": "Cylinder",
+    "size": [
+     3.0,
+     0.55,
+     0.55
+    ],
+    "pos": [
+     -2.4,
+     5.1,
+     -6.4
+    ],
+    "rot": [
+     0,
+     -80,
+     -8
+    ],
+    "color": [
+     232,
+     222,
+     196
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "HornTipR",
+    "shape": "Wedge",
+    "size": [
+     0.4,
+     0.5,
+     1.2
+    ],
+    "pos": [
+     2.55,
+     5.25,
+     -8.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     222,
+     196
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "HornTipL",
+    "shape": "Wedge",
+    "size": [
+     0.4,
+     0.5,
+     1.2
+    ],
+    "pos": [
+     -2.55,
+     5.25,
+     -8.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     232,
+     222,
+     196
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.2,
+     0.3,
+     0.5
+    ],
+    "pos": [
+     1.32,
+     4.5,
+     -4.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     70,
+     60
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.2,
+     0.3,
+     0.5
+    ],
+    "pos": [
+     -1.32,
+     4.5,
+     -4.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     70,
+     60
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0R",
+    "shape": "Block",
+    "size": [
+     1.0,
+     2.8,
+     1.0
+    ],
+    "pos": [
+     1.4,
+     1.4,
+     -2.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0L",
+    "shape": "Block",
+    "size": [
+     1.0,
+     2.8,
+     1.0
+    ],
+    "pos": [
+     -1.4,
+     1.4,
+     -2.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Hoof0R",
+    "shape": "Block",
+    "size": [
+     1.1,
+     0.4,
+     1.2
+    ],
+    "pos": [
+     1.4,
+     0.2,
+     -2.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     28,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Hoof0L",
+    "shape": "Block",
+    "size": [
+     1.1,
+     0.4,
+     1.2
+    ],
+    "pos": [
+     -1.4,
+     0.2,
+     -2.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     28,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1R",
+    "shape": "Block",
+    "size": [
+     1.0,
+     2.8,
+     1.0
+    ],
+    "pos": [
+     1.4,
+     1.4,
+     2.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1L",
+    "shape": "Block",
+    "size": [
+     1.0,
+     2.8,
+     1.0
+    ],
+    "pos": [
+     -1.4,
+     1.4,
+     2.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Hoof1R",
+    "shape": "Block",
+    "size": [
+     1.1,
+     0.4,
+     1.2
+    ],
+    "pos": [
+     1.4,
+     0.2,
+     2.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     28,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Hoof1L",
+    "shape": "Block",
+    "size": [
+     1.1,
+     0.4,
+     1.2
+    ],
+    "pos": [
+     -1.4,
+     0.2,
+     2.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     30,
+     28,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Block",
+    "size": [
+     0.3,
+     2.2,
+     0.3
+    ],
+    "pos": [
+     0,
+     5.0,
+     3.8
+    ],
+    "rot": [
+     25,
+     0,
+     0
+    ],
+    "color": [
+     48,
+     42,
+     40
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Rune",
+    "shape": "Block",
+    "size": [
+     0.2,
+     0.2,
+     5.0
+    ],
+    "pos": [
+     0,
+     6.35,
+     0.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     110,
+     70
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "TigerFuneral": {
+  "desc": "Tiger Funeral: a pale funeral tiger that pounces and rends.",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Block",
+    "size": [
+     2.5,
+     2.3,
+     6.2
+    ],
+    "pos": [
+     0,
+     3.3,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Shoulders",
+    "shape": "Block",
+    "size": [
+     2.8,
+     2.6,
+     1.8
+    ],
+    "pos": [
+     0,
+     3.5,
+     -2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     2.3,
+     2.1,
+     2.2
+    ],
+    "pos": [
+     0,
+     4.0,
+     -3.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Muzzle",
+    "shape": "Block",
+    "size": [
+     1.5,
+     1.0,
+     1.1
+    ],
+    "pos": [
+     0,
+     3.4,
+     -5.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     236,
+     232,
+     226
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Nose",
+    "shape": "Block",
+    "size": [
+     0.5,
+     0.35,
+     0.2
+    ],
+    "pos": [
+     0,
+     3.85,
+     -5.65
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     60,
+     40,
+     50
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarR",
+    "shape": "Wedge",
+    "size": [
+     0.5,
+     0.7,
+     0.5
+    ],
+    "pos": [
+     0.8,
+     5.35,
+     -3.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EarL",
+    "shape": "Wedge",
+    "size": [
+     0.5,
+     0.7,
+     0.5
+    ],
+    "pos": [
+     -0.8,
+     5.35,
+     -3.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.4,
+     0.2,
+     0.1
+    ],
+    "pos": [
+     0.55,
+     4.4,
+     -4.91
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     190,
+     120,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.4,
+     0.2,
+     0.1
+    ],
+    "pos": [
+     -0.55,
+     4.4,
+     -4.91
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     190,
+     120,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe0",
+    "shape": "Block",
+    "size": [
+     2.55,
+     0.35,
+     0.3
+    ],
+    "pos": [
+     0,
+     3.9,
+     -1.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe0R",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     1.27,
+     3.3,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe0L",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     -1.27,
+     3.3,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     -15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe1",
+    "shape": "Block",
+    "size": [
+     2.55,
+     0.35,
+     0.3
+    ],
+    "pos": [
+     0,
+     3.9,
+     -0.7
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe1R",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     1.27,
+     3.3,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe1L",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     -1.27,
+     3.3,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     -15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe2",
+    "shape": "Block",
+    "size": [
+     2.55,
+     0.35,
+     0.3
+    ],
+    "pos": [
+     0,
+     3.9,
+     0.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe2R",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     1.27,
+     3.3,
+     0.7
+    ],
+    "rot": [
+     0,
+     0,
+     15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe2L",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     -1.27,
+     3.3,
+     0.7
+    ],
+    "rot": [
+     0,
+     0,
+     -15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe3",
+    "shape": "Block",
+    "size": [
+     2.55,
+     0.35,
+     0.3
+    ],
+    "pos": [
+     0,
+     3.9,
+     1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe3R",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     1.27,
+     3.3,
+     1.8
+    ],
+    "rot": [
+     0,
+     0,
+     15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe3L",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     -1.27,
+     3.3,
+     1.8
+    ],
+    "rot": [
+     0,
+     0,
+     -15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Stripe4",
+    "shape": "Block",
+    "size": [
+     2.55,
+     0.35,
+     0.3
+    ],
+    "pos": [
+     0,
+     3.9,
+     2.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe4R",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     1.27,
+     3.3,
+     2.9
+    ],
+    "rot": [
+     0,
+     0,
+     15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "SideStripe4L",
+    "shape": "Block",
+    "size": [
+     0.1,
+     1.4,
+     0.3
+    ],
+    "pos": [
+     -1.27,
+     3.3,
+     2.9
+    ],
+    "rot": [
+     0,
+     0,
+     -15
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0R",
+    "shape": "Block",
+    "size": [
+     0.8,
+     2.4,
+     0.8
+    ],
+    "pos": [
+     0.9,
+     1.2,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg0L",
+    "shape": "Block",
+    "size": [
+     0.8,
+     2.4,
+     0.8
+    ],
+    "pos": [
+     -0.9,
+     1.2,
+     -2.4
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Claw0R",
+    "shape": "Wedge",
+    "size": [
+     0.8,
+     0.3,
+     0.5
+    ],
+    "pos": [
+     0.9,
+     0.15,
+     -3.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     40,
+     44
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Claw0L",
+    "shape": "Wedge",
+    "size": [
+     0.8,
+     0.3,
+     0.5
+    ],
+    "pos": [
+     -0.9,
+     0.15,
+     -3.0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     40,
+     44
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1R",
+    "shape": "Block",
+    "size": [
+     0.8,
+     2.4,
+     0.8
+    ],
+    "pos": [
+     0.9,
+     1.2,
+     2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Leg1L",
+    "shape": "Block",
+    "size": [
+     0.8,
+     2.4,
+     0.8
+    ],
+    "pos": [
+     -0.9,
+     1.2,
+     2.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Claw1R",
+    "shape": "Wedge",
+    "size": [
+     0.8,
+     0.3,
+     0.5
+    ],
+    "pos": [
+     0.9,
+     0.15,
+     1.7
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     40,
+     44
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Claw1L",
+    "shape": "Wedge",
+    "size": [
+     0.8,
+     0.3,
+     0.5
+    ],
+    "pos": [
+     -0.9,
+     0.15,
+     1.7
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     40,
+     44
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Block",
+    "size": [
+     0.4,
+     0.4,
+     3.6
+    ],
+    "pos": [
+     0,
+     4.0,
+     4.6
+    ],
+    "rot": [
+     -25,
+     0,
+     0
+    ],
+    "color": [
+     214,
+     210,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TailTip",
+    "shape": "Block",
+    "size": [
+     0.42,
+     0.42,
+     0.8
+    ],
+    "pos": [
+     0,
+     4.9,
+     6.2
+    ],
+    "rot": [
+     -25,
+     0,
+     0
+    ],
+    "color": [
+     24,
+     22,
+     26
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "Agito": {
+  "desc": "Agito: chimera of Nue, Great Serpent, Tiger Funeral and Round Deer (fused by Sukuna); fights and heals with reverse cursed technique.",
+  "parts": [
+   {
+    "name": "LegR",
+    "shape": "Block",
+    "size": [
+     1.4,
+     5.0,
+     1.6
+    ],
+    "pos": [
+     1.4,
+     2.5,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "LegL",
+    "shape": "Block",
+    "size": [
+     1.4,
+     5.0,
+     1.6
+    ],
+    "pos": [
+     -1.4,
+     2.5,
+     0.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ClawR",
+    "shape": "Wedge",
+    "size": [
+     1.6,
+     0.6,
+     1.4
+    ],
+    "pos": [
+     1.4,
+     0.3,
+     -0.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ClawL",
+    "shape": "Wedge",
+    "size": [
+     1.6,
+     0.6,
+     1.4
+    ],
+    "pos": [
+     -1.4,
+     0.3,
+     -0.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Tail",
+    "shape": "Cylinder",
+    "size": [
+     6.0,
+     1.4,
+     1.4
+    ],
+    "pos": [
+     0,
+     3.0,
+     3.8
+    ],
+    "rot": [
+     0,
+     90,
+     30
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Hips",
+    "shape": "Block",
+    "size": [
+     4.0,
+     2.0,
+     2.4
+    ],
+    "pos": [
+     0,
+     5.8,
+     0.2
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Torso",
+    "shape": "Block",
+    "size": [
+     4.8,
+     4.6,
+     2.8
+    ],
+    "pos": [
+     0,
+     8.8,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Ribs",
+    "shape": "Block",
+    "size": [
+     3.4,
+     3.0,
+     0.3
+    ],
+    "pos": [
+     0,
+     8.8,
+     -1.5
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ArmR",
+    "shape": "Block",
+    "size": [
+     1.2,
+     4.6,
+     1.2
+    ],
+    "pos": [
+     3.0,
+     7.9,
+     -0.4
+    ],
+    "rot": [
+     -15,
+     0,
+     -10
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ArmL",
+    "shape": "Block",
+    "size": [
+     1.2,
+     4.6,
+     1.2
+    ],
+    "pos": [
+     -3.0,
+     7.9,
+     -0.4
+    ],
+    "rot": [
+     -15,
+     0,
+     10
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TigerClawR",
+    "shape": "Wedge",
+    "size": [
+     1.1,
+     1.4,
+     1.2
+    ],
+    "pos": [
+     3.3,
+     5.3,
+     -1.2
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     190,
+     120,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "TigerClawL",
+    "shape": "Wedge",
+    "size": [
+     1.1,
+     1.4,
+     1.2
+    ],
+    "pos": [
+     -3.3,
+     5.3,
+     -1.2
+    ],
+    "rot": [
+     180,
+     0,
+     0
+    ],
+    "color": [
+     190,
+     120,
+     255
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Head",
+    "shape": "Block",
+    "size": [
+     2.2,
+     2.2,
+     2.6
+    ],
+    "pos": [
+     0,
+     12.2,
+     -0.6
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Maw",
+    "shape": "Block",
+    "size": [
+     1.8,
+     0.9,
+     2.2
+    ],
+    "pos": [
+     0,
+     11.2,
+     -1.3
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     40,
+     36,
+     46
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeR",
+    "shape": "Block",
+    "size": [
+     0.5,
+     0.25,
+     0.1
+    ],
+    "pos": [
+     0.55,
+     12.5,
+     -1.95
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     206,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "EyeL",
+    "shape": "Block",
+    "size": [
+     0.5,
+     0.25,
+     0.1
+    ],
+    "pos": [
+     -0.55,
+     12.5,
+     -1.95
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     206,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "AntlerR",
+    "shape": "Block",
+    "size": [
+     0.25,
+     2.4,
+     0.25
+    ],
+    "pos": [
+     1.0,
+     14.0,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     -30
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "AntlerL",
+    "shape": "Block",
+    "size": [
+     0.25,
+     2.4,
+     0.25
+    ],
+    "pos": [
+     -1.0,
+     14.0,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     30
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "AntlerTineR",
+    "shape": "Block",
+    "size": [
+     0.2,
+     1.2,
+     0.2
+    ],
+    "pos": [
+     1.9,
+     14.6,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     -70
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "AntlerTineL",
+    "shape": "Block",
+    "size": [
+     0.2,
+     1.2,
+     0.2
+    ],
+    "pos": [
+     -1.9,
+     14.6,
+     -0.4
+    ],
+    "rot": [
+     0,
+     0,
+     70
+    ],
+    "color": [
+     226,
+     220,
+     206
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing0R",
+    "shape": "Block",
+    "size": [
+     4.6,
+     0.3,
+     2.4
+    ],
+    "pos": [
+     4.6,
+     11.2,
+     1.4
+    ],
+    "rot": [
+     0,
+     -10,
+     30
+    ],
+    "color": [
+     24,
+     22,
+     30
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing0L",
+    "shape": "Block",
+    "size": [
+     4.6,
+     0.3,
+     2.4
+    ],
+    "pos": [
+     -4.6,
+     11.2,
+     1.4
+    ],
+    "rot": [
+     0,
+     10,
+     -30
+    ],
+    "color": [
+     24,
+     22,
+     30
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing1R",
+    "shape": "Wedge",
+    "size": [
+     0.3,
+     2.0,
+     3.2
+    ],
+    "pos": [
+     7.8,
+     13.3,
+     1.8
+    ],
+    "rot": [
+     0,
+     90,
+     30
+    ],
+    "color": [
+     24,
+     22,
+     30
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Wing1L",
+    "shape": "Wedge",
+    "size": [
+     0.3,
+     2.0,
+     3.2
+    ],
+    "pos": [
+     -7.8,
+     13.3,
+     1.8
+    ],
+    "rot": [
+     0,
+     -90,
+     -30
+    ],
+    "color": [
+     24,
+     22,
+     30
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo0",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     2.2,
+     12.2,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     90.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo1",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     1.905,
+     13.3,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     120.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo2",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     1.1,
+     14.105,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     150.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo3",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     0.0,
+     14.4,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     180.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo4",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     -1.1,
+     14.105,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     210.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo5",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     -1.905,
+     13.3,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     240.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo6",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     -2.2,
+     12.2,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     270.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo7",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     -1.905,
+     11.1,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     300.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo8",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     -1.1,
+     10.295,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     330.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo9",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     -0.0,
+     10.0,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     360.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo10",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     1.1,
+     10.295,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     390.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Halo11",
+    "shape": "Block",
+    "size": [
+     1.2,
+     0.22,
+     0.22
+    ],
+    "pos": [
+     1.905,
+     11.1,
+     1.6
+    ],
+    "rot": [
+     0,
+     0,
+     420.0
+    ],
+    "color": [
+     255,
+     226,
+     150
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Serpent",
+    "shape": "Cylinder",
+    "size": [
+     3.0,
+     1.0,
+     1.0
+    ],
+    "pos": [
+     0,
+     9.4,
+     1.9
+    ],
+    "rot": [
+     0,
+     90,
+     -40
+    ],
+    "color": [
+     60,
+     64,
+     76
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0
+ },
+ "CursedSpirit": {
+  "desc": "Training cursed spirit (target dummy).",
+  "parts": [
+   {
+    "name": "Body",
+    "shape": "Ball",
+    "size": [
+     5.0,
+     5.0,
+     5.0
+    ],
+    "pos": [
+     0,
+     4.2,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     96,
+     76,
+     110
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Belly",
+    "shape": "Ball",
+    "size": [
+     3.6,
+     3.6,
+     3.6
+    ],
+    "pos": [
+     0,
+     3.6,
+     -1.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     54,
+     40,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Mouth",
+    "shape": "Block",
+    "size": [
+     2.6,
+     0.5,
+     0.4
+    ],
+    "pos": [
+     0,
+     3.4,
+     -2.8
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     20,
+     10,
+     20
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Eye0",
+    "shape": "Ball",
+    "size": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "pos": [
+     -1.2,
+     5.6,
+     -2.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     250,
+     245,
+     230
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Pupil0",
+    "shape": "Ball",
+    "size": [
+     0.32,
+     0.32,
+     0.32
+    ],
+    "pos": [
+     -1.2,
+     5.6,
+     -2.42
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     80,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Eye1",
+    "shape": "Ball",
+    "size": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "pos": [
+     0.2,
+     6.2,
+     -2.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     250,
+     245,
+     230
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Pupil1",
+    "shape": "Ball",
+    "size": [
+     0.32,
+     0.32,
+     0.32
+    ],
+    "pos": [
+     0.2,
+     6.2,
+     -2.42
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     80,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Eye2",
+    "shape": "Ball",
+    "size": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "pos": [
+     1.3,
+     5.2,
+     -2.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     250,
+     245,
+     230
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Pupil2",
+    "shape": "Ball",
+    "size": [
+     0.32,
+     0.32,
+     0.32
+    ],
+    "pos": [
+     1.3,
+     5.2,
+     -2.42
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     80,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Eye3",
+    "shape": "Ball",
+    "size": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "pos": [
+     -0.4,
+     4.9,
+     -2.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     250,
+     245,
+     230
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Pupil3",
+    "shape": "Ball",
+    "size": [
+     0.32,
+     0.32,
+     0.32
+    ],
+    "pos": [
+     -0.4,
+     4.9,
+     -2.42
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     80,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Eye4",
+    "shape": "Ball",
+    "size": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "pos": [
+     0.9,
+     6.6,
+     -2.1
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     250,
+     245,
+     230
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "Pupil4",
+    "shape": "Ball",
+    "size": [
+     0.32,
+     0.32,
+     0.32
+    ],
+    "pos": [
+     0.9,
+     6.6,
+     -2.42
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     255,
+     80,
+     80
+    ],
+    "material": "Neon",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ArmR",
+    "shape": "Block",
+    "size": [
+     0.9,
+     4.0,
+     0.9
+    ],
+    "pos": [
+     2.8,
+     3.0,
+     -0.4
+    ],
+    "rot": [
+     10,
+     0,
+     -20
+    ],
+    "color": [
+     96,
+     76,
+     110
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "ArmL",
+    "shape": "Block",
+    "size": [
+     0.9,
+     4.0,
+     0.9
+    ],
+    "pos": [
+     -2.8,
+     3.0,
+     -0.4
+    ],
+    "rot": [
+     10,
+     0,
+     20
+    ],
+    "color": [
+     96,
+     76,
+     110
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "LegR",
+    "shape": "Block",
+    "size": [
+     1.1,
+     2.0,
+     1.1
+    ],
+    "pos": [
+     1.2,
+     1.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     54,
+     40,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   },
+   {
+    "name": "LegL",
+    "shape": "Block",
+    "size": [
+     1.1,
+     2.0,
+     1.1
+    ],
+    "pos": [
+     -1.2,
+     1.0,
+     0
+    ],
+    "rot": [
+     0,
+     0,
+     0
+    ],
+    "color": [
+     54,
+     40,
+     66
+    ],
+    "material": "SmoothPlastic",
+    "group": "Body",
+    "transparency": 0.0
+   }
+  ],
+  "joints": {},
+  "minY": 0.0,
+  "root": {
+   "size": [
+    3,
+    3,
+    2
+   ],
+   "pos": [
+    0,
+    3.5,
+    0
+   ]
+  },
+  "hipHeight": 2.0
+ }
+}

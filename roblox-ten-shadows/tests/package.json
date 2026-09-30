@@ -1,0 +1,11 @@
+{
+  "name": "ten-shadows-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run_tests.mjs"
+  },
+  "devDependencies": {
+    "luau-web": "1.4.0"
+  }
+}

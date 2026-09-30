@@ -1,0 +1,133 @@
+{
+ "name": "TenShadows",
+ "className": "DataModel",
+ "children": [
+  {
+   "name": "ReplicatedStorage",
+   "className": "ReplicatedStorage",
+   "children": [
+    {
+     "name": "TenShadows",
+     "className": "Folder",
+     "children": [
+      {
+       "name": "Adaptation",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ReplicatedStorage/TenShadows/Adaptation.luau"
+       ]
+      },
+      {
+       "name": "Config",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ReplicatedStorage/TenShadows/Config.luau"
+       ]
+      },
+      {
+       "name": "DamageRules",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ReplicatedStorage/TenShadows/DamageRules.luau"
+       ]
+      },
+      {
+       "name": "ModelData",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ReplicatedStorage/TenShadows/ModelData.luau"
+       ]
+      },
+      {
+       "name": "ModelFactory",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ReplicatedStorage/TenShadows/ModelFactory.luau"
+       ]
+      },
+      {
+       "name": "VFX",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ReplicatedStorage/TenShadows/VFX.luau"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ServerScriptService",
+   "className": "ServerScriptService",
+   "children": [
+    {
+     "name": "TenShadows",
+     "className": "Folder",
+     "children": [
+      {
+       "name": "Abilities",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ServerScriptService/TenShadows/Abilities.luau"
+       ]
+      },
+      {
+       "name": "Arena",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ServerScriptService/TenShadows/Arena.luau"
+       ]
+      },
+      {
+       "name": "Combat",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ServerScriptService/TenShadows/Combat.luau"
+       ]
+      },
+      {
+       "name": "Curses",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ServerScriptService/TenShadows/Curses.luau"
+       ]
+      },
+      {
+       "name": "Mahoraga",
+       "className": "ModuleScript",
+       "filePaths": [
+        "src/ServerScriptService/TenShadows/Mahoraga.luau"
+       ]
+      },
+      {
+       "name": "Main",
+       "className": "Script",
+       "filePaths": [
+        "src/ServerScriptService/TenShadows/Main.server.luau"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "StarterPlayer",
+   "className": "StarterPlayer",
+   "children": [
+    {
+     "name": "StarterPlayerScripts",
+     "className": "StarterPlayerScripts",
+     "children": [
+      {
+       "name": "TenShadowsClient",
+       "className": "LocalScript",
+       "filePaths": [
+        "src/StarterPlayer/StarterPlayerScripts/TenShadowsClient.client.luau"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

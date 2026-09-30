@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ten Shadows Preview</title>
+<meta name="description" content="Scripted three.js preview of the Ten Shadows Roblox project: the same part-built models, recreated effects and the in-game HUD layout. Not Roblox Studio footage.">
+<style>
+  :root { --ink: #0c0b12; --paper: #eeeae2; --muted: #968fae; --gold: #ffd678; --purple: #7846c8; --red: #ff6e6e; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color: var(--paper);
+    font-family: "Segoe UI", "Hiragino Sans", "Noto Sans CJK JP", system-ui, sans-serif; }
+  #stage { position: fixed; inset: 0; }
+  canvas { display: block; }
+  .hud { position: fixed; inset: 0; pointer-events: none; }
+  #bossbar { position: absolute; left: 50%; top: 26px; width: 620px; transform: translateX(-50%); opacity: 0; transition: opacity .4s; }
+  #bossbar .name { text-align: center; font-weight: 900; color: var(--gold); font-size: 15px; letter-spacing: .02em; text-shadow: 0 1px 3px #000; }
+  #bossbar .bar { position: relative; height: 16px; margin-top: 4px; background: rgba(12,11,18,.9); border: 1.5px solid rgba(255,214,120,.7); border-radius: 4px; overflow: hidden; }
+  #bossbar .lag { position: absolute; inset: 0; background: #ff785a; transform-origin: left; }
+  #bossbar .fill { position: absolute; inset: 0; background: #f0e6d2; transform-origin: left; }
+  #bossbar .hp { position: absolute; inset: 0; text-align: center; font-size: 11px; line-height: 16px; color: #0c0b12; font-weight: 700; }
+  #bossbar .phase { position: absolute; right: 0; top: 0; font-size: 12px; font-weight: 800; color: var(--red); }
+  #chips { display: flex; gap: 6px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+  .chip { width: 98px; height: 32px; border-radius: 6px; background: rgba(12,11,18,.85); border: 1px solid; text-align: center; font-size: 11px; font-weight: 700; line-height: 15px; padding-top: 1px; box-sizing: border-box; }
+  .chip.adapted { background: rgba(70,56,20,.9); border-color: var(--gold) !important; }
+  .chip .pips { color: var(--muted); font-weight: 900; }
+  .chip.adapted .pips { color: var(--gold); }
+  #hotbar { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; gap: 5px; }
+  .slot { position: relative; width: 56px; height: 62px; background: rgba(12,11,18,.85); border: 1.5px solid rgba(120,70,200,.65); border-radius: 8px; text-align: center; overflow: hidden; }
+  .slot.special { border-color: rgba(255,214,120,.65); }
+  .slot .k { font-weight: 900; font-size: 17px; margin-top: 6px; white-space: nowrap; }
+  .slot.special .k { color: var(--gold); font-size: 12px; margin-top: 10px; }
+  .slot .n { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .slot .key { font-size: 11px; color: var(--gold); font-weight: 700; }
+  .slot .cd { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.6); height: 0; }
+  .slot .lock { position: absolute; inset: 0; background: rgba(0,0,0,.7); color: var(--red); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .slot.pulse { box-shadow: 0 0 0 3px rgba(255,214,120,.9); }
+  #hp { position: absolute; left: 50%; bottom: 88px; transform: translateX(-50%); width: 340px; height: 14px; border-radius: 7px; background: rgba(12,11,18,.85); overflow: hidden; border: 1px solid rgba(255,255,255,.2); }
+  #hp .fill { position: absolute; inset: 0; background: #6edc8c; transform-origin: left; }
+  #hp .t { position: absolute; inset: 0; text-align: center; font-size: 11px; line-height: 14px; font-weight: 700; }
+  #incant { position: absolute; left: 0; right: 0; top: 30%; text-align: center; opacity: 0; }
+  #incant .kanji { font-size: 64px; font-weight: 900; letter-spacing: .05em; text-shadow: 0 0 18px rgba(120,70,200,.9), 0 2px 4px #000; }
+  #incant .title { font-size: 22px; font-weight: 900; color: var(--gold); letter-spacing: .06em; text-shadow: 0 2px 4px #000; margin-top: 4px; }
+  #notices { position: absolute; left: 50%; top: 128px; transform: translateX(-50%); width: 760px; text-align: center; }
+  #notices div { font-size: 15px; font-weight: 700; text-shadow: 0 1px 3px #000, 0 0 2px #000; margin-bottom: 3px; }
+  #chant { position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); width: 300px; height: 9px; border-radius: 5px; border: 1.5px solid var(--purple); background: var(--ink); display: none; overflow: hidden; }
+  #chant .fill { height: 100%; background: #be96ff; width: 0; }
+  .dmg { position: absolute; font-weight: 900; font-size: 22px; transform: translate(-50%, -50%); text-shadow: 0 0 3px #000, 0 2px 3px #000; white-space: nowrap; }
+  #disclaimer { position: absolute; left: 12px; bottom: 96px; max-width: 250px; font-size: 11px; color: rgba(238,234,226,.75); background: rgba(0,0,0,.45); padding: 4px 8px; border-radius: 4px; }
+  #card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: radial-gradient(ellipse at center, rgba(12,11,18,.55), rgba(0,0,0,.92)); opacity: 0; }
+  #card h1 { margin: 0; font-size: 54px; font-weight: 900; letter-spacing: .04em; }
+  #card h1 span { color: var(--gold); }
+  #card p { margin: 10px 0 0; color: var(--muted); font-size: 17px; }
+  #card .jp { font-size: 30px; font-weight: 900; color: #be96ff; margin-bottom: 8px; }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div class="hud">
+  <div id="bossbar"><div class="name">EIGHT-HANDLED SWORD DIVERGENT SILA DIVINE GENERAL MAHORAGA</div>
+    <div class="bar"><div class="lag"></div><div class="fill"></div><div class="hp"></div></div><div class="phase"></div>
+    <div id="chips"></div></div>
+  <div id="notices"></div>
+  <div id="incant"><div class="kanji"></div><div class="title"></div></div>
+  <div id="chant"><div class="fill"></div></div>
+  <div id="hp"><div class="fill"></div><div class="t"></div></div>
+  <div id="hotbar"></div>
+  <div id="dmg"></div>
+  <div id="flash"></div>
+  <div id="card"></div>
+  <div id="disclaimer">Preview render (three.js) of this project's models, effects &amp; HUD — not Roblox Studio footage</div>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { buildModel } from "./parts.js";
+
+const MODELS = await (await fetch("../assets/models.json")).json();
+const W = innerWidth, H = innerHeight;
+
+// ---------------------------------------------------------------- deterministic helpers
+let seed = 1337;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const rr = (a, b) => a + (b - a) * rnd();
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const UP = V(0, 1, 0);
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const ease = { out: (x) => 1 - (1 - x) ** 2, in: (x) => x * x, inout: (x) => x < .5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2,
+  back: (x) => { const c = 1.70158, c3 = c + 1; return 1 + c3 * (x - 1) ** 3 + c * (x - 1) ** 2; }, lin: (x) => x };
+const col = (hex) => new THREE.Color(hex);
+
+// ---------------------------------------------------------------- renderer / scene
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.getElementById("stage").appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = col(0x14111f);
+scene.fog = new THREE.FogExp2(0x1a1528, 0.0065);
+const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 800);
+scene.add(new THREE.HemisphereLight(0xdcd8ea, 0x221c2e, 0.9));
+const sun = new THREE.DirectionalLight(0xfff0e0, 2.8);
+sun.position.set(-60, 90, -40);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, far: 300 });
+scene.add(sun);
+const rim = new THREE.DirectionalLight(0x9a80ff, 0.45);
+rim.position.set(50, 30, 80);
+scene.add(rim);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), 0.6, 0.45, 0.86));
+composer.addPass(new OutputPass());
+
+// ---------------------------------------------------------------- arena (mirrors Arena.luau)
+const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, ...o });
+const glow = (c, o = {}) => new THREE.MeshBasicMaterial({ color: col(c).multiplyScalar(1.5), ...o });
+function add(geo, mat, pos, rot) { const m = new THREE.Mesh(geo, mat); m.position.copy(pos); if (rot) m.rotation.set(...rot); m.receiveShadow = true; m.castShadow = true; scene.add(m); return m; }
+const floor = add(new THREE.CylinderGeometry(170, 170, 4, 96), std(0x26242e), V(0, -2, 0));
+floor.castShadow = false;
+add(new THREE.CylinderGeometry(75, 75, 0.2, 96), std(0x3a3646, { roughness: 0.4 }), V(0, 0.05, -20)).castShadow = false;
+for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2;
+  const m = add(new THREE.BoxGeometry(0.6, 0.1, 8.6), glow(0x7846c8), V(Math.cos(a) * 74, 0.12, -20 + Math.sin(a) * 74));
+  m.rotation.y = -a; m.castShadow = false; }
+for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2;
+  const m = add(new THREE.BoxGeometry(0.5, 0.1, 70), glow(0xd6b24a, { transparent: true, opacity: 0.55 }), V(Math.cos(a) * 37, 0.12, -20 + Math.sin(a) * 37));
+  m.rotation.y = Math.PI / 2 - a; m.castShadow = false; }
+add(new THREE.BoxGeometry(26, 1.2, 26), std(0x1c1a22), V(0, 0.6, -60));
+const red = std(0x96202a, { roughness: 0.7 });
+for (const x of [-16, 16]) add(new THREE.CylinderGeometry(1.5, 1.5, 40, 20), red, V(x, 20, -90));
+add(new THREE.BoxGeometry(46, 2.4, 4), std(0x181418), V(0, 41, -90));
+add(new THREE.BoxGeometry(38, 1.6, 2.4), red, V(0, 34, -90));
+add(new THREE.BoxGeometry(4, 5, 0.6), std(0xd6b24a, { metalness: .7, roughness: .3 }), V(0, 37.5, -91.3));
+for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r = 158;
+  add(new THREE.BoxGeometry(4, 18, 4), std(0x32303a), V(Math.cos(a) * r, 9, Math.sin(a) * r));
+  add(new THREE.BoxGeometry(3, 3, 3), glow(0x966eff), V(Math.cos(a) * r, 19.5, Math.sin(a) * r)).castShadow = false; }
+const lanternLights = [];
+for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + 0.4; const l = new THREE.PointLight(0x966eff, 60, 90, 1.6);
+  l.position.set(Math.cos(a) * 150, 20, Math.sin(a) * 150); scene.add(l); lanternLights.push(l); }
+// cursed spirits (training dummies) in the back
+const dummies = [V(-40, 0, 70), V(0, 0, 90), V(40, 0, 70)].map((p) => { const m = buildModel(MODELS.CursedSpirit); m.position.copy(p); m.rotation.y = Math.atan2(p.x, p.z); scene.add(m); return m; });
+
+// ---------------------------------------------------------------- player stand-in (blocky R6 avatar)
+function makeAvatar() {
+  const g = new THREE.Group();
+  const uni = std(0x1b1d2c, { roughness: .7 }), skin = std(0xf1d3bc), hair = std(0x0d0c12), shoe = std(0x111111);
+  const box = (s, p, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(...s), m); b.position.set(...p); b.castShadow = true; g.add(b); return b; };
+  box([2, 2, 1], [0, 3, 0], uni); box([1, 2, 1], [-0.5, 1, 0], uni); box([1, 2, 1], [0.5, 1, 0], uni);
+  box([1.1, .3, 1.2], [-0.5, .15, -.05], shoe); box([1.1, .3, 1.2], [0.5, .15, -.05], shoe);
+  g.userData.armR = box([1, 2, 1], [1.5, 3, 0], uni); g.userData.armL = box([1, 2, 1], [-1.5, 3, 0], uni);
+  box([1.2, 1.2, 1.2], [0, 4.6, 0], skin);
+  box([1.3, .5, 1.3], [0, 5.3, .05], hair);
+  for (let i = 0; i < 9; i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(.28, 1, 4), hair);
+    s.position.set(-0.5 + (i % 3) * 0.5, 5.6, -0.4 + Math.floor(i / 3) * 0.45); s.rotation.set(rr(-.5, .5), 0, rr(-.6, .6)); s.castShadow = true; g.add(s); }
+  box([1.25, .12, .05], [0, 4.75, -.62], hair).scale.y = .6;
+  const collar = box([2.05, .35, 1.05], [0, 3.85, 0], std(0x2a2d44));
+  box([.25, .25, .06], [0.3, 3.3, -.52], std(0xd6b24a, { metalness: .8, roughness: .3 }));
+  g.scale.setScalar(1.25);
+  return g;
+}
+const player = makeAvatar();
+player.position.set(0, 0, 30);
+scene.add(player);
+function faceTo(obj, target) { const d = target.clone().sub(obj.position); obj.rotation.y = Math.atan2(-d.x, -d.z); }
+
+// ---------------------------------------------------------------- FX system
+const fx = [];
+function spawn(update, dur) { fx.push({ start: T, dur, update }); }
+function tween(obj, prop, from, to, t0, dur, e = ease.out) { spawn((a) => { obj[prop].copy(from.clone().lerp(to, e(a))); }, dur); }
+function matOf(color, opacity = 1, basic = true) { return basic ? new THREE.MeshBasicMaterial({ color: col(color).multiplyScalar(1.4), transparent: true, opacity, depthWrite: false })
+  : new THREE.MeshStandardMaterial({ color, transparent: true, opacity }); }
+function temp(mesh, dur, update) { scene.add(mesh); spawn((a) => { update?.(a); if (a >= 1) { scene.remove(mesh); } }, dur); return mesh; }
+const discGeo = new THREE.CylinderGeometry(1, 1, 1, 48), sphereGeo = new THREE.SphereGeometry(1, 24, 16), boxGeo = new THREE.BoxGeometry(1, 1, 1);
+
+function puddle(pos, r, life = 1.2) {
+  const rimM = new THREE.Mesh(discGeo, matOf(0x7846c8, .75)); const d = new THREE.Mesh(discGeo, new THREE.MeshStandardMaterial({ color: 0x07060b, roughness: .15, metalness: .3 }));
+  rimM.position.copy(pos).setY(.1); d.position.copy(pos).setY(.14);
+  temp(rimM, life + .3, (a) => { const k = a * (life + .3) < .25 ? ease.back(a * (life + .3) / .25) : a * (life + .3) > life ? 1 - (a * (life + .3) - life) / .3 : 1; rimM.scale.set((r + .6) * k + .01, .12, (r + .6) * k + .01); });
+  temp(d, life + .3, (a) => { const k = a * (life + .3) < .25 ? ease.back(a * (life + .3) / .25) : a * (life + .3) > life ? 1 - (a * (life + .3) - life) / .3 : 1; d.scale.set(r * k + .01, .12, r * k + .01); });
+  smoke(pos.clone().setY(1), 0x0e0c14, 8, r * .6, 3);
+}
+function flash(pos, color, size, dur = .35) { const m = new THREE.Mesh(sphereGeo, matOf(color, .55)); m.material.blending = THREE.AdditiveBlending; m.position.copy(pos);
+  const light = new THREE.PointLight(color, 160, size * 3, 1.5); light.position.copy(pos); scene.add(light);
+  temp(m, dur, (a) => { const s = .5 + size / 2 * ease.out(a); m.scale.setScalar(s); m.material.opacity = .55 * (1 - a); light.intensity = 160 * (1 - a); if (a >= 1) scene.remove(light); }); }
+function ring(pos, radius, color, dur = .5, segs = 28, h = .6) {
+  for (let i = 0; i < segs; i++) { const a = i / segs * Math.PI * 2; const dir = V(Math.cos(a), 0, Math.sin(a));
+    const m = new THREE.Mesh(boxGeo, matOf(color, 1)); m.rotation.y = -a + Math.PI / 2;
+    temp(m, dur, (k) => { const e = ease.out(k); m.position.copy(pos).addScaledVector(dir, 1.5 + radius * e).setY(pos.y + .4); m.scale.set(.6 * (1 - e * .5), h * (1 - e * .7), radius * .18 * (1 - e * .4)); m.material.opacity = 1 - k; }); }
+  const d = new THREE.Mesh(discGeo, matOf(color, .4));
+  temp(d, dur, (k) => { d.position.copy(pos).setY(pos.y + .1); d.scale.set(radius * ease.out(k) + .1, .1, radius * ease.out(k) + .1); d.material.opacity = .4 * (1 - k); });
+}
+// sprite particles
+const spriteTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.4, "rgba(255,255,255,.5)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+function particles(pos, { color = 0xffffff, count = 20, size = 1, speed = 20, life = .5, gravity = 0, additive = true, grow = 0, spread = 1, dir = null, opacity = 1 }) {
+  for (let i = 0; i < count; i++) {
+    const mat = new THREE.SpriteMaterial({ map: spriteTex, color: additive ? col(color).multiplyScalar(1.5) : col(color), transparent: true, opacity, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending });
+    const s = new THREE.Sprite(mat); const v = V(rr(-1, 1), rr(-1, 1) * spread, rr(-1, 1)).normalize().multiplyScalar(speed * rr(.4, 1));
+    if (dir) v.lerp(dir.clone().multiplyScalar(speed * rr(.6, 1.2)), .75); const p0 = pos.clone(); const l = life * rr(.7, 1.3);
+    temp(s, l, (a) => { const t = a * l; s.position.copy(p0).addScaledVector(v, t * (1 - a * .5)).add(V(0, gravity * t * t * .5, 0)); s.scale.setScalar(size * (1 + grow * a) * (additive ? 1 - a * .6 : 1)); s.material.opacity = opacity * (1 - a); });
+  }
+}
+const smoke = (pos, color, count, size, speed) => particles(pos, { color, count, size, speed, life: .9, gravity: 5, additive: false, grow: 1.4, opacity: .75 });
+const sparks = (pos, color, count = 24, speed = 40) => particles(pos, { color, count, size: .9, speed, life: .35 });
+function bolt(p0, p1, color, width = .3, dur = .3) {
+  const n = Math.max(4, Math.floor(p0.distanceTo(p1) / 5)); let last = p0.clone();
+  for (let i = 1; i <= n; i++) { const tgt = p0.clone().lerp(p1, i / n); if (i < n) tgt.add(V(rr(-2, 2), rr(-2, 2), rr(-2, 2)));
+    const len = last.distanceTo(tgt); const m = new THREE.Mesh(boxGeo, matOf(color, 1)); m.position.copy(last).lerp(tgt, .5); m.lookAt(tgt);
+    temp(m, dur, (a) => { m.scale.set(width * (1 - a * .8), width * (1 - a * .8), len); m.material.opacity = 1 - a; }); last = tgt; }
+}
+function slashArc(center, facing, radius, color, span = 150, tilt = 0, dur = .3, thick = .5) {
+  const base = new THREE.Object3D(); base.position.copy(center); base.rotation.set(0, Math.atan2(-facing.x, -facing.z), 0); base.rotateZ(tilt * Math.PI / 180); base.updateMatrixWorld();
+  const n = 16;
+  for (let i = 0; i <= n; i++) { const a = (-span / 2 + span * i / n) * Math.PI / 180; const mid = 1 - Math.abs(i / n - .5) * 2;
+    const local = V(Math.sin(a) * radius, 0, -Math.cos(a) * radius), next = V(Math.sin(a + .1) * radius, 0, -Math.cos(a + .1) * radius);
+    const p = local.clone().applyMatrix4(base.matrixWorld), q = next.clone().applyMatrix4(base.matrixWorld);
+    const seg = 2 * Math.PI * radius * span / 360 / n * 1.3; const m = new THREE.Mesh(boxGeo, matOf(color, 1));
+    m.position.copy(p); m.up.copy(UP.clone().applyQuaternion(base.quaternion)); m.lookAt(q); m.scale.set(thick * (.3 + mid), .15 + mid * .5, seg);
+    const delay = dur * .35 * i / n; const total = dur + delay; const outward = p.clone().sub(center).normalize();
+    temp(m, total, (a) => { const t = a * total; m.visible = t >= delay; const k = clamp01((t - delay) / dur); m.material.opacity = 1 - k; m.position.copy(p).addScaledVector(outward, radius * .15 * k); }); }
+}
+function rocks(pos, count, spread) {
+  for (let i = 0; i < count; i++) { const s = rr(.6, 1.6); const m = new THREE.Mesh(boxGeo, std(0x3a3642)); m.scale.setScalar(s); m.castShadow = true;
+    const out = V(rr(-1, 1), 0, rr(-1, 1)).normalize().multiplyScalar(spread * rr(.4, 1)); const peak = rr(6, 14); const r0 = V(rr(0, 6), rr(0, 6), 0);
+    temp(m, .7, (a) => { m.position.copy(pos).addScaledVector(out, a).add(V(0, Math.sin(a * Math.PI) * peak, 0)); m.rotation.set(r0.x * a, r0.y * a, 0); }); }
+}
+function shake(i, dur) { spawn((a) => { shakeAmt = Math.max(shakeAmt, i * (1 - a)); }, dur); }
+let shakeAmt = 0;
+function screenFlash(color, strength, dur) { const el = document.getElementById("flash"); el.style.background = color; spawn((a) => { el.style.opacity = strength * (1 - a); }, dur); }
+
+// models
+function model(name, pos, look, scale = 1) { const m = buildModel(MODELS[name], scale); m.position.copy(pos); if (look) m.rotation.y = Math.atan2(-look.x, -look.z);
+  m.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; } }); scene.add(m); return m; }
+function height(name) { return Math.max(...MODELS[name].parts.map((p) => p.pos[1] + p.size[1] / 2)); }
+function emerge(name, pos, look, { scale = 1, time = .3, puddleR } = {}) { const h = height(name) * scale; const m = model(name, pos.clone().setY(-h - .5), look, scale);
+  puddle(pos, puddleR ?? Math.max(3, h * .45), 1); tween(m, "position", pos.clone().setY(-h - .5), pos.clone().setY(0), 0, time, ease.back); m.userData.h = h; return m; }
+function sink(m, dur = .35) { const p = m.position.clone(); puddle(p, Math.max(3, m.userData.h * .45), dur + .1);
+  spawn((a) => { m.position.copy(p).setY(-(m.userData.h + 1) * ease.in(a)); if (a >= 1) scene.remove(m); }, dur); }
+function moveTo(m, to, dur, e = ease.out, arc = 0) { const from = m.position.clone(); spawn((a) => { const k = e(a); m.position.copy(from).lerp(to, k).add(V(0, Math.sin(a * Math.PI) * arc, 0)); }, dur); }
+function fade(m, dur) { spawn((a) => { m.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - a; }); if (a >= 1) scene.remove(m); }, dur); }
+function telegraphCircle(pos, r, dur) { const o = new THREE.Mesh(discGeo, matOf(0xff3c3c, .3)); o.position.copy(pos).setY(.2); o.scale.set(r, .1, r);
+  const i = new THREE.Mesh(discGeo, matOf(0xff3c3c, .5)); i.position.copy(pos).setY(.22); temp(o, dur); temp(i, dur, (a) => i.scale.set(r * a + .1, .1, r * a + .1)); }
+function telegraphLine(a, b, w, dur) { const len = a.distanceTo(b); const o = new THREE.Mesh(boxGeo, matOf(0xff3c3c, .3)); o.position.copy(a).lerp(b, .5).setY(.2); o.lookAt(b.clone().setY(.2)); o.scale.set(w, .1, len);
+  const i = new THREE.Mesh(boxGeo, matOf(0xff3c3c, .5)); temp(o, dur); temp(i, dur, (k) => { i.position.copy(a).lerp(b, k / 2).setY(.22); i.lookAt(b.clone().setY(.22)); i.scale.set(w, .1, len * k + .1); }); }
+function telegraphCone(origin, dir, range, angle, dur) { for (let i = -4; i <= 4; i++) { const a = angle / 2 * i / 4 * Math.PI / 180; const d = dir.clone().applyAxisAngle(UP, a);
+  const m = new THREE.Mesh(boxGeo, matOf(0xff3c3c, .5)); m.position.copy(origin).addScaledVector(d, range / 2).setY(.2); m.lookAt(origin.clone().addScaledVector(d, range).setY(.2)); m.scale.set(i === 0 ? 1.2 : .6, .1, range); temp(m, dur); } }
+
+// ---------------------------------------------------------------- HUD (same layout as TenShadowsClient)
+const $ = (s) => document.querySelector(s);
+const ABIL = [["玉犬", "Dogs", "1"], ["鵺", "Nue", "2"], ["蝦蟇", "Toad", "3"], ["大蛇", "Serpent", "4"], ["満象", "Elephant", "5"], ["脱兎", "Rabbits", "6"], ["円鹿", "Deer", "7"],
+  ["貫牛", "Ox", "8"], ["虎葬", "Tiger", "9"], ["玉犬・渾", "Totality", "0", 1], ["影移動", "Shadow", "Q"], ["嵌合暗翳庭", "DOMAIN", "R", 0, 1], ["顎吐", "Agito", "T"], ["布瑠部由良由良", "Ritual", "hold G", 0, 1], ["八握剣異戒神将魔虚羅", "Mahoraga", "H", 1, 1]];
+const slots = {};
+for (const [k, n, key, locked, special] of ABIL) { const d = document.createElement("div"); d.className = "slot" + (special ? " special" : "");
+  d.innerHTML = `<div class="k">${special && k.length > 3 ? k.slice(0, 3) + "…" : k}</div><div class="n">${n}</div><div class="key">${key}</div><div class="cd"></div>${locked ? '<div class="lock">LOCKED</div>' : ""}`;
+  $("#hotbar").appendChild(d); slots[n] = { el: d, cdEnd: 0, cdTotal: 1 }; }
+function press(n, cd) { const s = slots[n]; s.el.classList.add("pulse"); setTimeoutT(() => s.el.classList.remove("pulse"), .25); s.cdEnd = T + cd; s.cdTotal = cd; }
+function unlock(n) { slots[n].el.querySelector(".lock")?.remove(); slots[n].el.classList.add("pulse"); setTimeoutT(() => slots[n].el.classList.remove("pulse"), .6); }
+const timers = []; function setTimeoutT(fn, d) { timers.push({ at: T + d, fn }); }
+let playerHP = 250, bossHP = 16000, bossLag = 16000, bossVisible = false, phase = 1;
+const adapt = []; // {type, turns, adapted}
+const TYPE_COL = { Claw: "#f0f0f0", Lightning: "#8ccdff", Bite: "#ffce50", Water: "#5ab4ff", Pierce: "#ff7850", Shadow: "#7846c8", Rend: "#be78ff", Slash: "#cdbeff" };
+function renderChips() { $("#chips").innerHTML = adapt.map((a) => `<div class="chip ${a.adapted ? "adapted" : ""}" style="border-color:${TYPE_COL[a.type]};color:${TYPE_COL[a.type]}">${a.type}<div class="pips">${a.adapted ? "ADAPTED" : "◆".repeat(a.turns) + "◇".repeat(4 - a.turns)}</div></div>`).join(""); }
+function adaptHit(type, turnsAdd = 0) { let a = adapt.find((x) => x.type === type); if (!a) { a = { type, turns: 0, adapted: false }; adapt.push(a); }
+  a.turns = Math.min(4, a.turns + turnsAdd); if (a.turns >= 4) a.adapted = true; renderChips(); }
+function notice(text, color = "#eeeae2") { const d = document.createElement("div"); d.textContent = text; d.style.color = color; $("#notices").appendChild(d);
+  while ($("#notices").children.length > 3) $("#notices").firstChild.remove(); setTimeoutT(() => d.remove(), 4.5); }
+let incantUntil = 0;
+function incant(kanji, title, color = "#eeeae2") { $("#incant .kanji").textContent = kanji; $("#incant .title").textContent = title.toUpperCase(); $("#incant .kanji").style.color = color; incantUntil = T + 1.8; }
+const dmgs = [];
+function dmg(pos, amount, color = "#fff", note = "") { const d = document.createElement("div"); d.className = "dmg"; d.style.color = color; d.textContent = amount + (note ? " " + note : ""); $("#dmg").appendChild(d);
+  dmgs.push({ el: d, pos: pos.clone().add(V(rr(-1.5, 1.5), 1, 0)), t0: T }); }
+function hitBoss(amount, type, note) { bossHP = Math.max(0, bossHP - amount); dmg(boss.position.clone().add(V(0, 14, 0)), amount, TYPE_COL[type] || "#fff", note); }
+function hitPlayer(amount, note = "") { playerHP = Math.max(1, playerHP - amount); dmg(player.position.clone().add(V(0, 6, 0)), amount, "#ff5a5a", note); shake(.5, .3); }
+
+// ---------------------------------------------------------------- Mahoraga (boss) instance
+const boss = model("Mahoraga", V(0, -26, -30), V(0, 0, 1));
+boss.visible = false;
+const piv = boss.userData.pivots;
+function arm(side, rx, rz, dur) { const p = side === "R" ? piv.RightArm : piv.LeftArm; const from = p.rotation.clone(); const to = new THREE.Euler(rx * Math.PI / 180, 0, rz * Math.PI / 180);
+  spawn((a) => { const k = ease.out(a); p.rotation.set(from.x + (to.x - from.x) * k, 0, from.z + (to.z - from.z) * k); }, dur); }
+let wheelTurns = 0;
+function wheelTurn(completed) { wheelTurns++; const from = piv.Wheel.rotation.y, to = wheelTurns * Math.PI / 4;
+  spawn((a) => { piv.Wheel.rotation.y = from + (to - from) * ease.back(a); }, .35);
+  const wp = V(0, 22.6, 0).applyMatrix4(boss.matrixWorld);
+  ring(wp, completed ? 16 : 7, 0xffd678, .45, 20, .3); flash(wp, 0xffd678, completed ? 14 : 6, .3); sparks(wp, 0xffd678, completed ? 60 : 20, completed ? 60 : 25);
+  if (completed) { screenFlash("#ffecaa", .15, .5); shake(.8, .4); } }
+
+// ---------------------------------------------------------------- timeline
+const events = [];
+const at = (t, fn) => events.push({ t, fn });
+const P = () => player.position.clone();
+const B = () => boss.position.clone();
+let cam = { pos: V(0, 60, 150), look: V(0, 5, -20) }, camTarget = null;
+function camMove(pos, look, dur, e = ease.inout) { const fp = cam.pos.clone(), fl = cam.look.clone(); spawn((a) => { const k = e(a); cam.pos.copy(fp).lerp(pos, k); cam.look.copy(fl).lerp(look, k); }, dur); }
+function camCut(pos, look) { cam.pos.copy(pos); cam.look.copy(look); }
+function card(html, dur, fadeIn = .5) { const el = $("#card"); el.innerHTML = html; spawn((a) => { const t = a * dur; el.style.opacity = Math.min(1, t / fadeIn, (dur - t) / .5); }, dur); }
+
+// 0 - title
+at(0, () => { camCut(V(-120, 70, 120), V(0, 5, -30)); camMove(V(-40, 22, 70), V(0, 6, -10), 3.8);
+  card(`<div class="jp">十種影法術</div><h1>TEN SHADOWS <span>×</span> MAHORAGA</h1><p>Roblox Studio project · Luau · every shikigami, domain &amp; the adaptation boss</p>`, 3.4); });
+// 3.6 - chant
+at(3.6, () => { camCut(V(10, 8, 12), V(0, 5, 30)); camMove(V(7, 7, 16), V(0, 5.5, 30), 2.4); faceTo(player, V(0, 0, -30));
+  incant("布瑠部由良由良", "Furube Yura Yura", "#be96ff"); $("#chant").style.display = "block";
+  spawn((a) => { $("#chant .fill").style.width = (a * 100) + "%"; if (a >= 1) $("#chant").style.display = "none"; }, 1.5);
+  puddle(P(), 7, 1.4); for (let i = 0; i < 16; i++) setTimeoutT(() => { const a = i * .8; smoke(P().add(V(Math.cos(a) * 4, i * .5, Math.sin(a) * 4)), 0x1a0f2a, 3, 2, 2); }, i * .06); });
+at(5.3, () => { incant("布瑠部由良由良", "With this treasure, I summon...", "#be96ff"); press("Ritual", 10);
+  notice("Player began the exorcism ritual. Mahoraga attacks EVERYONE, summoner included.", "#ff7878"); });
+// 5.9 - Mahoraga rises
+at(5.9, () => { camCut(V(22, 3, 5), V(0, 12, -30)); camMove(V(16, 4, 12), V(0, 15, -30), 3.2);
+  puddle(B().setY(0), 16, 2.6); ring(B().setY(0), 40, 0x7846c8, .7, 36, 1); shake(1.6, 1.2); screenFlash("#7a5ab4", .25, 1);
+  for (let i = 1; i <= 5; i++) setTimeoutT(() => smoke(B().setY(i * 4), 0x0e0c14, 20, 8, 10), i * .18); });
+at(6.6, () => { boss.visible = true; tween(boss, "position", V(0, -26, -30), V(0, 0, -30), 0, 1.3, ease.back); });
+at(7.9, () => { flash(V(0, 26, -30), 0xffd678, 12, .5); ring(V(0, 0, -30), 55, 0xffd678, .8, 40, 1); arm("R", 150, 30, .5); arm("L", 150, -30, .5);
+  incant("八握剣異戒神将魔虚羅", "Eight-Handled Sword Divergent Sila Divine General Mahoraga", "#ffe296"); bossVisible = true; shake(1.4, .7); });
+at(9.0, () => { arm("R", 0, 0, .4); arm("L", 0, 0, .4); });
+// 9.6 - Divine Dogs
+let dogs = [];
+at(9.6, () => { camCut(V(-16, 9, 48), V(0, 6, -10)); camMove(V(-12, 8, 36), V(0, 7, -22), 3);
+  press("Dogs", 5); incant("玉犬", "Divine Dogs"); const look = V(0, 0, -1);
+  dogs = [["DivineDogWhite", -4], ["DivineDogBlack", 4]].map(([n, x]) => emerge(n, P().add(V(x, 0, 0)), look, { time: .25 })); });
+at(10.2, () => { dogs.forEach((d, i) => moveTo(d, V(i ? 5 : -5, 0, -21), .35, ease.out, 4)); });
+at(10.6, () => { for (const k of [0, .2]) setTimeoutT(() => { dogs.forEach((d, i) => { slashArc(V(0, 5, -30), V(0, 0, -1), 4, i ? 0x7846c8 : 0xffffff, 120, i ? 40 : -40, .2, .45); });
+  sparks(V(0, 6, -27), 0xffffff, 16, 30); hitBoss(96, "Claw"); hitBoss(96, "Claw"); }, k); adaptHit("Claw"); });
+at(12.2, () => dogs.forEach((d) => sink(d)));
+// 12.6 - Nue
+let nue;
+at(12.6, () => { camCut(V(30, 12, 30), V(0, 10, -20)); camMove(V(34, 18, 26), V(0, 8, -26), 2.6);
+  press("Nue", 7); incant("鵺", "Nue"); nue = emerge("Nue", P().add(V(0, 0, 3)), V(0, 0, -1), { time: .25 }); });
+at(12.9, () => { moveTo(nue, V(0, 28, -18), .45, ease.inout); for (let i = 0; i < 3; i++) bolt(P().add(V(0, 4, 0)), V(rr(-3, 3), 28, -18), 0x8ccdff, .25, .3); });
+at(13.4, () => { moveTo(nue, V(0, 4, -26), .18, ease.in); });
+at(13.6, () => { const t = V(0, 1, -30); for (let i = 0; i < 6; i++) bolt(t.clone().add(V(rr(-12, 12), 70, rr(-12, 12))), t, 0x8ccdff, .6, .35);
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; bolt(t.clone().add(V(0, 1, 0)), t.clone().add(V(Math.cos(a) * 12, .2, Math.sin(a) * 12)), 0x8ccdff, .35, .3); }
+  flash(t.clone().add(V(0, 2, 0)), 0x8ccdff, 12, .3); ring(t, 16, 0x8ccdff, .45); sparks(t.clone().add(V(0, 3, 0)), 0x8ccdff, 50, 70);
+  screenFlash("#c8e6ff", .18, .3); shake(.9, .35); hitBoss(176, "Lightning"); adaptHit("Lightning"); });
+at(13.8, () => { moveTo(nue, V(0, 45, 10), .6, ease.in); fade(nue, .6); });
+// 15.0 - Mahoraga: Sword of Extermination
+at(15.0, () => { camCut(V(-26, 10, 44), V(0, 8, 0)); camMove(V(-22, 9, 50), V(0, 7, 8), 2.6);
+  moveTo(boss, V(0, 0, 8), .5, ease.inout); telegraphCone(V(0, .2, 8), V(0, 0, 1), 26, 70, 1.1); });
+at(15.4, () => arm("R", 170, 10, .7));
+at(16.2, () => { arm("R", -10, 0, .12); const o = V(0, 7, 8); for (let k = 0; k < 3; k++) slashArc(o.clone().add(V(0, k * 1.2 - 1, 0)), V(0, 0, 1), 22 * (.7 + k * .15), k === 1 ? 0xfff6de : 0xffd678, 90, 80, .35, 1.4 - k * .3);
+  sparks(V(0, 5, 22), 0xfff6de, 50, 70); shake(.9, .3); hitPlayer(50); moveTo(player, V(0, 0, 38), .4, ease.out, 2); });
+at(16.9, () => { arm("R", 0, 0, .3); notice("Anti one-shot: every Mahoraga hit is capped at 20% of max HP", "#ffd678"); });
+// 17.6 - Shadow Travel
+at(17.6, () => { press("Shadow", 4); incant("影移動", "Shadow Travel"); puddle(P(), 4, .6); smoke(P().add(V(0, 2, 0)), 0x0e0c14, 20, 3.5, 10); });
+at(17.8, () => { player.position.set(-22, 0, 18); faceTo(player, B()); puddle(P(), 4, .6); smoke(P().add(V(0, 2, 0)), 0x0e0c14, 16, 3, 8);
+  camCut(V(-40, 10, 40), V(-4, 6, 6)); camMove(V(-44, 14, 36), V(0, 10, 4), 2.8); });
+// 18.4 - Great Serpent
+let serp;
+at(18.4, () => { press("Serpent", 10); incant("大蛇", "Great Serpent"); puddle(B(), 9, 1.6); shake(.35, .4);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; bolt(B(), B().add(V(Math.cos(a) * 10, .1, Math.sin(a) * 10)), 0x7846c8, .3, .5); } });
+at(18.75, () => { const p = B().add(V(-7, 0, 8)); serp = model("GreatSerpent", p.clone().setY(-26), V(-1, 0, 1).normalize()); moveTo(serp, p.clone().setY(-4), .25, ease.back);
+  rocks(B(), 14, 8); smoke(B().add(V(0, 1, 0)), 0x463e50, 22, 5, 14); });
+at(18.95, () => { sparks(B().add(V(0, 10, 0)), 0xffce50, 40, 50); flash(B().add(V(0, 8, 0)), 0xffce50, 14, .25); shake(1, .4); hitBoss(240, "Bite"); adaptHit("Bite"); });
+at(19.8, () => { moveTo(serp, serp.position.clone().setY(-30), .5, ease.in); setTimeoutT(() => scene.remove(serp), .5); });
+// 20.6 - Max Elephant
+let ele;
+at(20.6, () => { camCut(V(12, 16, 62), V(-8, 6, 8)); camMove(V(20, 22, 60), V(-6, 7, 6), 3.2);
+  press("Elephant", 14); incant("満象", "Max Elephant"); const look = B().sub(P()).setY(0).normalize(); const drop = P().addScaledVector(look, 16);
+  ele = model("MaxElephant", drop.clone().setY(60), look); puddle(drop.clone().setY(60), 10, .6); moveTo(ele, drop, .5, ease.in); ele.userData.look = look; ele.userData.h = height("MaxElephant"); });
+at(21.1, () => { const look = ele.userData.look, drop = ele.position.clone(); shake(1.4, .6); ring(drop, 26, 0x96c8ff, .5); rocks(drop, 16, 16);
+  for (let w = 0; w < 3; w++) setTimeoutT(() => { for (let i = -6; i <= 6; i++) { const d = look.clone().applyAxisAngle(UP, 35 * Math.PI / 180 * i / 6); const s = drop.clone().addScaledVector(look, 8).setY(2);
+    const m = new THREE.Mesh(boxGeo, new THREE.MeshStandardMaterial({ color: 0x5ab4ff, transparent: true, opacity: .7, roughness: .1, metalness: .2, emissive: 0x1a4a80 }));
+    temp(m, .75, (a) => { const e = ease.out(a); m.position.copy(s).addScaledVector(d, 60 * e); m.lookAt(m.position.clone().add(d)); m.scale.set(7 + 5 * e, 5 - 4 * e, 5 + 3 * e); m.material.opacity = .7 * (1 - a); }); }
+    particles(drop.clone().addScaledVector(look, 10).setY(3), { color: 0xc8e6ff, count: 30, size: 4, speed: 60, life: .8, additive: false, grow: 1, dir: look, opacity: .6 }); }, w * .12);
+  sparks(drop.clone().setY(8), 0x5ab4ff, 60, 60); });
+at(21.5, () => { hitBoss(304, "Water"); adaptHit("Water"); });
+at(22.5, () => sink(ele, .6));
+// 23.4 - wheel adapts to Claw
+at(23.4, () => { camCut(V(22, 18, 40), V(0, 14, 8)); camMove(V(26, 22, 36), V(0, 17, 8), 3.4);
+  press("Dogs", 5); incant("玉犬", "Divine Dogs"); dogs = [["DivineDogWhite", -5], ["DivineDogBlack", 5]].map(([n, x]) => emerge(n, V(x, 0, 18), V(0, 0, -1), { time: .25 })); });
+at(23.8, () => { dogs.forEach((d, i) => moveTo(d, V(i ? 4 : -4, 0, 13), .3, ease.out, 3)); });
+at(24.15, () => { for (const k of [0, .2, .4]) setTimeoutT(() => { slashArc(V(0, 5, 8), V(0, 0, -1), 4, 0xffffff, 120, 40, .2, .45); sparks(V(0, 6, 11), 0xffffff, 16, 30); hitBoss(Math.round(96 * .66), "Claw", "-34%"); }, k);
+  adaptHit("Claw", 1); wheelTurn(false); });
+at(24.9, () => { adaptHit("Claw", 2); wheelTurn(false); });
+at(25.35, () => { adaptHit("Claw", 1); wheelTurn(true); bossHP = Math.min(16000, bossHP + 960); notice("The wheel turns... Mahoraga has ADAPTED to Claw!", "#ffd678");
+  hitBoss(5, "Claw", "ADAPTED"); ring(B(), 30, 0xfff0dc, .6, 36, 2); });
+// 26.4 - Piercing Ox
+let ox;
+at(26.4, () => { camCut(V(-40, 6, 30), V(0, 4, 0)); camMove(V(-36, 5, 22), V(10, 4, -10), 2.2);
+  press("Ox", 12); incant("貫牛", "Piercing Ox"); const look = B().sub(P()).setY(0).normalize(); ox = emerge("PiercingOx", P().addScaledVector(look, -4), look, { time: .22 }); ox.userData.look = look; });
+at(26.7, () => { const look = ox.userData.look; const to = P().addScaledVector(look, 70); moveTo(ox, to, .5, ease.in);
+  for (let i = 1; i <= 12; i++) setTimeoutT(() => { smoke(ox.position.clone().add(V(0, 1, 0)), 0x5a5046, 3, 3, 4); const l = new THREE.Mesh(boxGeo, matOf(0xffffff, .6));
+    l.position.copy(ox.position).add(V(rr(-4, 4), rr(2, 7), 0)); l.lookAt(l.position.clone().add(look)); temp(l, .25, (a) => { l.scale.set(.2 * (1 - a), .2 * (1 - a), 10 + 10 * a); l.material.opacity = .6 * (1 - a); }); }, i * .04); });
+at(26.95, () => { const p = B().add(V(0, 4, 0)); flash(p, 0xff7850, 16, .3); ring(B(), 18, 0xff7850, .4); rocks(B(), 12, 10); sparks(p, 0xff7850, 45, 60); shake(1.1, .4); hitBoss(552, "Pierce"); adaptHit("Pierce"); });
+at(27.5, () => sink(ox));
+// 28.2 - Mahoraga combo destroys the White Dog (canon: its power passes to the Black Dog)
+at(28.2, () => { camCut(V(34, 14, 42), V(0, 6, 10)); camMove(V(30, 12, 46), V(0, 6, 12), 2);
+  telegraphCone(V(0, .2, 8), V(0, 0, 1), 16, 120, .45); arm("L", 110, -30, .4); });
+at(28.7, () => { arm("L", -20, 0, .1); slashArc(V(0, 7, 8), V(0, 0, 1), 13, 0xfff6de, 120, 30, .35, 1.2); shake(.9, .3);
+  const d = dogs[0]; d.traverse((o) => { if (o.isMesh) { const out = o.getWorldPosition(V(0, 0, 0)).sub(d.position).add(V(0, 1, 0)).normalize(); const p0 = o.position.clone();
+    spawn((a) => { o.position.copy(p0).addScaledVector(out, 7 * a); o.material.opacity = 1 - a; }, .6); } });
+  setTimeoutT(() => scene.remove(d), .6); smoke(d.position.clone().add(V(0, 2, 0)), 0xe6e6eb, 18, 3, 10); sparks(d.position.clone().add(V(0, 2, 0)), 0xffffff, 30, 40); });
+at(29.1, () => { sink(dogs[1]); arm("L", 0, 0, .3); notice("The White Divine Dog was destroyed. Its power passes to the Black Dog: TOTALITY unlocked (0)", "#ffe296"); unlock("Totality"); });
+// 29.9 - Ground slam
+at(29.9, () => { camCut(V(-50, 20, 40), V(-14, 6, 10)); camMove(V(-54, 26, 44), V(-16, 6, 14), 2);
+  telegraphCircle(P(), 24, 1); arm("R", 160, 20, .4); arm("L", 160, -20, .4); const from = B(), to = P().add(V(4, 0, -4));
+  spawn((a) => { boss.position.copy(from).lerp(to, a).add(V(0, Math.sin(a * Math.PI) * 22, 0)); }, 1); });
+at(30.9, () => { arm("R", 40, 0, .08); arm("L", 40, 0, .08); const p = B(); flash(p.clone().add(V(0, 2, 0)), 0xffd678, 29, .3); ring(p, 29, 0xffe6c8, .5, 36, 1); ring(p, 17, 0xffd678, .35);
+  rocks(p, 24, 19); smoke(p.clone().add(V(0, 2, 0)), 0x504a54, 30, 6, 20); shake(1.8, .6); hitPlayer(45, "ENDURE"); moveTo(player, P().add(V(-10, 0, 10)), .5, ease.out, 4); });
+at(31.6, () => { arm("R", 0, 0, .3); arm("L", 0, 0, .3); });
+// 32.2 - Domain Expansion
+let domainParts = [];
+at(32.2, () => { camCut(V(-60, 30, 60), V(-10, 2, 10)); camMove(V(-70, 40, 70), V(-10, 0, 0), 4);
+  press("DOMAIN", 60); incant("嵌合暗翳庭", "Domain Expansion: Chimera Shadow Garden", "#be96ff");
+  const c = P().setY(0); const shell = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: 0x0e0c14, transparent: true, opacity: .95, side: THREE.DoubleSide }));
+  temp(shell, .5, (a) => { shell.position.copy(c); shell.scale.setScalar(2 + 66 * ease.out(a)); shell.material.opacity = .95 * (1 - a); });
+  screenFlash("#5a3c8c", .5, 1.2); shake(1.2, .6);
+  const fl = new THREE.Mesh(discGeo, new THREE.MeshStandardMaterial({ color: 0x050409, roughness: .05, metalness: .6 })); fl.position.copy(c).setY(.14); scene.add(fl);
+  const rimD = new THREE.Mesh(discGeo, matOf(0x7846c8, .8)); rimD.position.copy(c).setY(.1); scene.add(rimD); domainParts.push(fl, rimD);
+  spawn((a) => { const r = 60 * ease.out(a); fl.scale.set(r + .1, .1, r + .1); rimD.scale.set(r + 1.5, .1, r + 1.5); }, .8);
+  for (let i = 0; i < 26; i++) { const a = rr(0, Math.PI * 2), r = Math.sqrt(rnd()) * 57, h = rr(4, 14); const s = new THREE.Mesh(new THREE.ConeGeometry(.6, 1, 5), std(0x0a0910, { roughness: .3 }));
+    s.position.copy(c).add(V(Math.cos(a) * r, 0, Math.sin(a) * r)); s.rotation.z = rr(-.25, .25); scene.add(s); domainParts.push(s); const d0 = rr(0, .4);
+    spawn((k) => { const e = ease.back(clamp01((k * 1.4 - d0))); s.scale.set(1, h * e + .01, 1); s.position.y = h * e / 2; }, 1.4); }
+  for (let i = 0; i < 6; i++) setTimeoutT(() => particles(c.clone().add(V(rr(-40, 40), 1, rr(-40, 40))), { color: 0x2a1a44, count: 12, size: 6, speed: 3, life: 2, gravity: 2, additive: false, grow: 1, opacity: .5 }), i * .5); });
+for (const [k, t] of [[0, 33.2], [1, 34.1], [2, 35.0]].map(([k, t]) => [k, t])) at(t, () => { const tp = B(); const a = k * 2.1 + .5; const sp = tp.clone().add(V(Math.cos(a) * 9, 0, Math.sin(a) * 9));
+  const cl = emerge("DivineDogBlack", sp, tp.clone().sub(sp).setY(0).normalize(), { scale: .9, time: .18 });
+  setTimeoutT(() => { slashArc(tp.clone().add(V(0, 4, 0)), tp.clone().sub(sp).setY(0).normalize(), 5, 0x7846c8, 130, rr(-50, 50), .25, .6); sparks(tp.clone().add(V(0, 4, 0)), 0x7846c8, 20, 35); hitBoss(56, "Shadow"); if (k === 0) adaptHit("Shadow"); }, .2);
+  setTimeoutT(() => sink(cl, .3), .45); });
+// 36.0 - phase 2 + world slash
+at(36.0, () => { phase = 2; bossHP = Math.min(bossHP, 7400); notice("Mahoraga's wheel spins faster. PHASE 2", "#ff7878"); ring(B(), 45, 0xfff0dc, .6, 36, 2); shake(1.4, .7);
+  camCut(V(30, 8, 40), V(-10, 6, 10)); camMove(V(26, 10, 46), V(-10, 8, 12), 3); });
+at(36.5, () => { notice("Mahoraga turns an adapted technique back on you: WORLD-CUTTING SLASH", "#ff7878"); const dir = P().sub(B()).setY(0).normalize();
+  const from = B().addScaledVector(dir, -10), to = B().addScaledVector(dir, 140); telegraphLine(from, to, 9, 1.2); arm("R", 175, 0, 1); boss.userData.ws = [from, to]; faceTo(boss, P()); });
+at(37.3, () => { press("Shadow", 4); puddle(P(), 4, .6); smoke(P().add(V(0, 2, 0)), 0x0e0c14, 16, 3, 8); });
+at(37.5, () => { player.position.add(V(-14, 0, -6)); puddle(P(), 4, .6); faceTo(player, B()); });
+at(37.7, () => { arm("R", -15, 0, .1); const [a, b] = boss.userData.ws; const len = a.distanceTo(b); const mid = a.clone().lerp(b, .5).setY(12);
+  const white = new THREE.Mesh(boxGeo, matOf(0xffffff, 1)); white.position.copy(mid); white.lookAt(b.clone().setY(12)); white.scale.set(.3, 30, len); white.material.opacity = .8; temp(white, .1);
+  const black = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0, transparent: true })); black.position.copy(mid); black.lookAt(b.clone().setY(12));
+  setTimeoutT(() => temp(black, .6, (k) => { black.scale.set(.6 * (1 - k) + .05, 30, len); black.material.opacity = 1 - ease.in(k); }), .08);
+  screenFlash("#ffffff", .25, .25); shake(2.2, .8); for (let i = 0; i <= 10; i++) setTimeoutT(() => { const p = a.clone().lerp(b, i / 10).setY(2); sparks(p, 0xfff6de, 14, 50); smoke(p, 0x46424c, 5, 4, 12); }, i * .02); });
+at(38.4, () => arm("R", 0, 0, .3));
+// 38.9 - Totality
+let tot;
+at(38.9, () => { camCut(V(-56, 18, 48), V(-10, 7, 4)); camMove(V(-50, 22, 52), V(-6, 7, 2), 3);
+  press("Totality", 15); incant("玉犬・渾", "Divine Dog: Totality"); const look = B().sub(P()).setY(0).normalize();
+  tot = emerge("DivineDogTotality", P().addScaledVector(look, -2), look, { time: .35 }); smoke(P().add(V(0, 4, 0)), 0x0e0c14, 30, 6, 12); shake(.6, .5); tot.userData.look = look; });
+at(39.3, () => moveTo(tot, B().addScaledVector(tot.userData.look, -8), .32, ease.out, 8));
+at(39.65, () => { ring(tot.position, 14, 0x7846c8, .4); for (let i = 0; i < 5; i++) setTimeoutT(() => { for (let k = -1; k <= 1; k++) slashArc(B().add(V(0, 3 + k * .9 + 4, 0)), tot.userData.look, 8, 0xd2beff, 70, (i % 2 ? 55 : -55), .2, .35);
+  sparks(B().add(V(0, 6, 0)), 0xd2beff, 20, 40); shake(.3, .15); hitBoss(i === 4 ? 1200 : 820, "Rend"); }, i * .13);
+  setTimeoutT(() => flash(B().add(V(0, 6, 0)), 0xd2beff, 14, .3), .65); });
+at(40.6, () => sink(tot, .5));
+// 41.2 - finisher + defeat
+at(41.2, () => { camCut(V(12, 8, 20), V(0, 10, -4)); camMove(V(18, 12, 30), V(0, 12, -6), 3.2); bossHP = 0; bossVisible = false;
+  for (let i = 0; i < 5; i++) setTimeoutT(() => { flash(B().add(V(0, 4 + i * 3, 0)), 0xffd678, 20 + i * 6, .5); sparks(B().add(V(0, 4 + i * 3, 0)), 0xfff6de, 40, 80); }, i * .15);
+  ring(B(), 70, 0xffd678, 1, 48, 1.5); smoke(B().add(V(0, 6, 0)), 0x0e0c14, 40, 10, 16); screenFlash("#fff0c8", .3, 1.2); shake(2, 1); fade(boss, 2);
+  notice("Mahoraga has been defeated. The ritual is complete: it is TAMED.", "#ffe296"); });
+at(42.4, () => { unlock("Mahoraga"); incant("八握剣異戒神将魔虚羅", "Unlocked: Divine General Mahoraga", "#ffd678"); });
+// 43.6 - tamed Mahoraga vs a cursed spirit
+let tm;
+at(43.6, () => { player.position.set(0, 0, 45); faceTo(player, dummies[1].position); camCut(V(46, 14, 80), V(0, 9, 84)); camMove(V(42, 18, 72), V(0, 10, 84), 3.4);
+  press("Mahoraga", 90); incant("八握剣異戒神将魔虚羅", "Divine General Mahoraga", "#ffd678"); const t = dummies[1].position; const sp = t.clone().add(V(0, 0, -13));
+  tm = emerge("MahoragaTamed", sp, V(0, 0, 1), { time: .3 }); });
+at(44.0, () => { const tp = tm.userData.pivots.RightArm; spawn((a) => { tp.rotation.x = (170 * ease.out(a)) * Math.PI / 180; }, .35); });
+at(44.4, () => { const tp = tm.userData.pivots.RightArm; spawn((a) => { tp.rotation.x = (170 - 185 * ease.out(a)) * Math.PI / 180; }, .12); const t = dummies[1].position.clone().add(V(0, 4, 0));
+  slashArc(t, V(0, 0, 1), 14, 0xfff6de, 190, -20, .3, 1.3); flash(t, 0xfff6de, 18, .3); ring(dummies[1].position, 20, 0xfff6de, .45); sparks(t, 0xfff6de, 50, 60); screenFlash("#fffae6", .3, .3); shake(.9, .35);
+  dmg(t.clone().add(V(0, 3, 0)), 760, "#fff6de"); });
+at(45.3, () => sink(tm, .4));
+// 46.2 - end card
+at(46.2, () => card(`<div class="jp">十種影法術</div><h1>TEN SHADOWS <span>×</span> MAHORAGA</h1>
+  <p>Open <b>TenShadows.rbxlx</b> in Roblox Studio → Play</p><p style="font-size:14px;margin-top:18px">15 techniques · Chimera Shadow Garden · adaptation boss · anti one-shot damage</p>`, 3.8));
+const DURATION = 50;
+
+// ---------------------------------------------------------------- frame loop
+let T = 0, evIdx = 0;
+events.sort((a, b) => a.t - b.t);
+const tmpV = new THREE.Vector3();
+function step(t) {
+  T = t;
+  while (evIdx < events.length && events[evIdx].t <= T) events[evIdx++].fn();
+  for (let i = timers.length - 1; i >= 0; i--) if (timers[i].at <= T) { const f = timers[i].fn; timers.splice(i, 1); f(); }
+  shakeAmt = 0;
+  for (let i = fx.length - 1; i >= 0; i--) { const f = fx[i]; const a = clamp01((T - f.start) / f.dur); f.update(a); if (a >= 1) fx.splice(i, 1); }
+  // idle motion
+  if (boss.visible && bossHP > 0) { piv.Wheel.rotation.y += 0; boss.position.y += Math.sin(T * 2) * 0.002; }
+  for (const d of dummies) d.rotation.z = Math.sin(T * 2 + d.position.x) * 0.03;
+  camera.position.copy(cam.pos).add(V(rr(-.5, .5) * shakeAmt, rr(-.5, .5) * shakeAmt, 0));
+  camera.lookAt(cam.look);
+  // HUD
+  $("#bossbar").style.opacity = bossVisible ? 1 : 0;
+  bossLag += (bossHP - bossLag) * .06;
+  $("#bossbar .fill").style.transform = `scaleX(${bossHP / 16000})`;
+  $("#bossbar .lag").style.transform = `scaleX(${Math.max(bossHP, bossLag) / 16000})`;
+  $("#bossbar .hp").textContent = `${Math.round(bossHP)} / 16000`;
+  $("#bossbar .phase").textContent = phase === 2 ? "PHASE 2" : "";
+  $("#hp .fill").style.transform = `scaleX(${playerHP / 250})`;
+  $("#hp .fill").style.background = playerHP / 250 > .35 ? "#6edc8c" : "#f05a5a";
+  $("#hp .t").textContent = `${Math.round(playerHP)} / 250`;
+  const ia = incantUntil - T; $("#incant").style.opacity = ia > .5 ? 1 : Math.max(0, ia / .5);
+  $("#incant").style.transform = `translateY(${Math.max(0, (ia - 1.55)) * 40}px)`;
+  for (const s of Object.values(slots)) { const left = s.cdEnd - T; s.el.querySelector(".cd").style.height = left > 0 ? `${left / s.cdTotal * 100}%` : "0"; }
+  for (let i = dmgs.length - 1; i >= 0; i--) { const d = dmgs[i]; const a = (T - d.t0) / .9; if (a >= 1) { d.el.remove(); dmgs.splice(i, 1); continue; }
+    tmpV.copy(d.pos).add(V(0, a * 5, 0)).project(camera); d.el.style.left = ((tmpV.x + 1) / 2 * W) + "px"; d.el.style.top = ((1 - tmpV.y) / 2 * H) + "px";
+    d.el.style.opacity = tmpV.z < 1 ? 1 - a * a : 0; }
+  composer.render();
+}
+window.renderAt = (t) => step(t);
+window.DURATION = DURATION;
+window.__ready = true;
+if (!new URLSearchParams(location.search).has("manual")) {
+  const t0 = performance.now(); const loop = () => { const t = (performance.now() - t0) / 1000; step(t % DURATION); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

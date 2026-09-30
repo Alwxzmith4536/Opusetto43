@@ -1,0 +1,4302 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><External>null</External><External>nil</External><Item class="ReplicatedStorage" referent="RBX00000008"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX00000007"><Properties><string name="Name">TenShadows</string></Properties><Item class="ModuleScript" referent="RBX00000001"><Properties><string name="Name">Adaptation</string><ProtectedString name="Source"><![CDATA[-- Mahoraga's wheel. Pure logic (no Roblox APIs) so it can be unit tested outside Studio.
+--
+-- Canon behaviour modelled here:
+--   * The first hits of a new phenomenon land at full strength.
+--   * Each time the wheel turns, Mahoraga takes less damage from that phenomenon.
+--   * Once fully adapted it barely takes damage from it, heals, and can counter it.
+--   * Adaptation is per phenomenon, so switching techniques is the way to win.
+
+local Adaptation = {}
+Adaptation.__index = Adaptation
+
+-- cfg needs HitsPerTurn, TurnsToAdapt, ReductionPerTurn, AdaptedMultiplier
+function Adaptation.new(cfg)
+	local self = setmetatable({}, Adaptation)
+	self.Config = cfg
+	self.Hits = {} -- [type] = hits since last turn
+	self.Turns = {} -- [type] = wheel turns so far
+	self.Adapted = {} -- [type] = true
+	self.TotalTurns = 0 -- used to rotate the wheel model
+	self.Order = {} -- types in the order they were first seen (for the UI)
+	return self
+end
+
+function Adaptation:Multiplier(damageType)
+	if self.Adapted[damageType] then
+		return self.Config.AdaptedMultiplier
+	end
+	local turns = self.Turns[damageType] or 0
+	return math.max(self.Config.AdaptedMultiplier, 1 - turns * self.Config.ReductionPerTurn)
+end
+
+function Adaptation:IsAdapted(damageType)
+	return self.Adapted[damageType] == true
+end
+
+function Adaptation:AdaptedCount()
+	local n = 0
+	for _ in pairs(self.Adapted) do
+		n += 1
+	end
+	return n
+end
+
+-- Registers one hit. Returns:
+--   multiplier (to apply to THIS hit), turned (wheel turned), completed (just became adapted)
+function Adaptation:RegisterHit(damageType)
+	local multiplier = self:Multiplier(damageType)
+	if self.Adapted[damageType] then
+		return multiplier, false, false
+	end
+	if self.Turns[damageType] == nil then
+		self.Turns[damageType] = 0
+		table.insert(self.Order, damageType)
+	end
+
+	local hits = (self.Hits[damageType] or 0) + 1
+	local turned, completed = false, false
+	if hits >= self.Config.HitsPerTurn then
+		hits = 0
+		turned = true
+		self.TotalTurns += 1
+		self.Turns[damageType] += 1
+		if self.Turns[damageType] >= self.Config.TurnsToAdapt then
+			self.Adapted[damageType] = true
+			completed = true
+		end
+	end
+	self.Hits[damageType] = hits
+	return multiplier, turned, completed
+end
+
+-- 0..TurnsToAdapt for the UI
+function Adaptation:Progress(damageType)
+	return self.Turns[damageType] or 0
+end
+
+return Adaptation
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX00000002"><Properties><string name="Name">Config</string><ProtectedString name="Source"><![CDATA[-- Ten Shadows Technique: every tunable number lives here (shared by server and client).
+
+local Config = {}
+
+Config.PvP = false -- player techniques hit other players when true
+
+Config.Player = {
+	MaxHealth = 250,
+	WalkSpeed = 20,
+	BlockWalkSpeed = 10,
+	RespawnSeconds = 5,
+	-- anti one-shot rules (see DamageRules.luau)
+	MaxHitFraction = 0.2, -- one hit never removes more than 20% of max health
+	LastStandThreshold = 0.35, -- above 35% health a single hit can never kill
+	IFrameSeconds = 0.35, -- invulnerability after being hit
+	BlockReduction = 0.6, -- holding F removes 60% of incoming damage
+}
+
+-- Damage types. Mahoraga adapts to each one separately.
+Config.DamageTypes = {
+	Slash = { Color = Color3.fromRGB(205, 190, 255), Label = "Slash" },
+	Claw = { Color = Color3.fromRGB(240, 240, 240), Label = "Claw" },
+	Lightning = { Color = Color3.fromRGB(140, 205, 255), Label = "Lightning" },
+	Crush = { Color = Color3.fromRGB(150, 200, 120), Label = "Crush" },
+	Bite = { Color = Color3.fromRGB(255, 206, 80), Label = "Bite" },
+	Water = { Color = Color3.fromRGB(90, 180, 255), Label = "Water" },
+	Pierce = { Color = Color3.fromRGB(255, 120, 80), Label = "Pierce" },
+	Rend = { Color = Color3.fromRGB(190, 120, 255), Label = "Rend" },
+	Shadow = { Color = Color3.fromRGB(120, 70, 200), Label = "Shadow" },
+	Chimera = { Color = Color3.fromRGB(255, 226, 150), Label = "Chimera" },
+	Extermination = { Color = Color3.fromRGB(255, 246, 222), Label = "Extermination" },
+	Boss = { Color = Color3.fromRGB(255, 70, 70), Label = "Mahoraga" },
+}
+
+-- Order in this list = order on the hotbar.
+Config.AbilityOrder = {
+	"DivineDogs", "Nue", "Toad", "GreatSerpent", "MaxElephant", "RabbitEscape", "RoundDeer",
+	"PiercingOx", "TigerFuneral", "Totality", "ShadowStep", "ChimeraShadowGarden", "Agito",
+	"Ritual", "TamedMahoraga",
+}
+
+Config.Abilities = {
+	ShadowBlade = {
+		Key = "MouseButton1", Name = "Shadow Blade", Kanji = "影刀",
+		Cooldown = 0.38, Damage = 45, FinisherDamage = 90, Range = 9, Angle = 110,
+		DamageType = "Slash", ComboReset = 1.1,
+	},
+	DivineDogs = {
+		Key = "One", Name = "Divine Dogs", Kanji = "玉犬",
+		Cooldown = 5, Damage = 60, Bites = 2, Range = 60, GuardSeconds = 6, DamageType = "Claw",
+	},
+	Nue = {
+		Key = "Two", Name = "Nue", Kanji = "鵺",
+		Cooldown = 7, Damage = 220, Radius = 12, Range = 80, Stun = 0.6, DamageType = "Lightning",
+	},
+	Toad = {
+		Key = "Three", Name = "Toad", Kanji = "蝦蟇",
+		Cooldown = 8, Damage = 80, Range = 50, Stun = 1.2, DamageType = "Crush",
+	},
+	GreatSerpent = {
+		Key = "Four", Name = "Great Serpent", Kanji = "大蛇",
+		Cooldown = 10, Damage = 300, Radius = 8, Range = 70, Stun = 1.2, DamageType = "Bite",
+	},
+	MaxElephant = {
+		Key = "Five", Name = "Max Elephant", Kanji = "満象",
+		Cooldown = 14, Damage = 380, Range = 60, Angle = 70, Knockback = 90, DamageType = "Water",
+	},
+	RabbitEscape = {
+		Key = "Six", Name = "Rabbit Escape", Kanji = "脱兎",
+		Cooldown = 16, Duration = 5, Radius = 18,
+	},
+	RoundDeer = {
+		Key = "Seven", Name = "Round Deer", Kanji = "円鹿",
+		Cooldown = 22, HealFraction = 0.35, Duration = 3, DamageReduction = 0.3,
+	},
+	PiercingOx = {
+		Key = "Eight", Name = "Piercing Ox", Kanji = "貫牛",
+		Cooldown = 12, BaseDamage = 150, DamagePerStud = 6, MaxDistance = 90, Width = 7, Speed = 150,
+		DamageType = "Pierce",
+	},
+	TigerFuneral = {
+		Key = "Nine", Name = "Tiger Funeral", Kanji = "虎葬",
+		Cooldown = 11, Damage = 120, Hits = 3, Range = 45, DamageType = "Rend",
+	},
+	Totality = {
+		Key = "Zero", Name = "Divine Dog: Totality", Kanji = "玉犬・渾",
+		Cooldown = 15, Damage = 110, Hits = 5, Range = 55, DamageType = "Claw",
+		Locked = true, UnlockHint = "Unlocks when one of your Divine Dogs is destroyed",
+	},
+	ShadowStep = {
+		Key = "Q", Name = "Shadow Travel", Kanji = "影移動",
+		Cooldown = 4, Range = 45, IFrames = 0.45,
+	},
+	ChimeraShadowGarden = {
+		Key = "R", Name = "Domain Expansion: Chimera Shadow Garden", Kanji = "嵌合暗翳庭",
+		Cooldown = 60, Duration = 15, Radius = 60, CloneDamage = 70, CloneInterval = 1.2,
+		EnemySlow = 0.6, CooldownMultiplier = 0.5, DamageType = "Shadow",
+	},
+	Agito = {
+		Key = "T", Name = "Agito", Kanji = "顎吐",
+		Cooldown = 40, Duration = 10, Damage = 140, Interval = 1.2, Range = 50, HealPerStrike = 8,
+		DamageType = "Chimera",
+	},
+	Ritual = {
+		Key = "G", Name = "Furube Yura Yura (Dabura Karaba)", Kanji = "布瑠部由良由良",
+		Cooldown = 10, HoldSeconds = 1.5, SpawnDistance = 34,
+	},
+	TamedMahoraga = {
+		Key = "H", Name = "Divine General Mahoraga", Kanji = "八握剣異戒神将魔虚羅",
+		Cooldown = 90, Duration = 20, Damage = 380, Interval = 1.6, Range = 60, CurseMultiplier = 2,
+		DamageType = "Extermination",
+		Locked = true, UnlockHint = "Defeat Mahoraga in the ritual to tame it",
+	},
+	Block = { Key = "F", Name = "Guard", Kanji = "防御" },
+}
+
+Config.Boss = {
+	Name = "Eight-Handled Sword Divergent Sila Divine General Mahoraga",
+	ShortName = "Mahoraga",
+	Scale = 1,
+	MaxHealth = 16000,
+	HealthPerExtraPlayer = 0.6, -- +60% max health for every extra player in the server
+	BaseDamageTaken = 0.8, -- takes 80% damage before adaptation
+	WalkSpeed = 22,
+	Phase2WalkSpeed = 30,
+	Phase2Threshold = 0.5,
+	Phase2CooldownMultiplier = 0.65,
+	AggroRange = 400,
+	RespawnSeconds = 60,
+	HitRadius = 6,
+	KnockbackResist = 0.15,
+	OutOfCombatRegen = 0.02, -- fraction per second when nobody is around
+
+	-- Adaptation (the wheel): every HitsPerTurn hits of a type turn the wheel one notch.
+	-- After TurnsToAdapt notches Mahoraga is adapted to that type.
+	HitsPerTurn = 3,
+	TurnsToAdapt = 4,
+	ReductionPerTurn = 0.17,
+	AdaptedMultiplier = 0.05,
+	AdaptHealFraction = 0.06,
+	CounterChance = 0.45,
+	CounterCooldown = 4,
+
+	-- Attacks (damage is before the anti one-shot cap in Config.Player)
+	Attacks = {
+		Combo = { Damage = 30, Hits = 3, Range = 16, Angle = 120, Windup = 0.45, Cooldown = 2.2 },
+		SwordOfExtermination = { Damage = 55, Range = 26, Angle = 70, Windup = 0.8, Cooldown = 3.2 },
+		GroundSlam = { Damage = 45, Radius = 24, Windup = 1.0, Cooldown = 4.5, Knockback = 70 },
+		Rush = { Damage = 35, Distance = 70, Width = 10, Windup = 0.5, Cooldown = 3.5, Knockback = 60 },
+		Counter = { Damage = 40, Range = 14, Windup = 0.35 },
+		WorldSlash = { Damage = 70, Length = 140, Width = 9, Windup = 1.2, Cooldown = 7, MinAdaptations = 1 },
+		WheelResonance = { Damage = 20, Radius = 30, Knockback = 80 },
+	},
+}
+
+Config.Curses = {
+	MaxHealth = 1500,
+	RespawnSeconds = 5,
+	BurstInterval = 4,
+	BurstRadius = 10,
+	BurstDamage = 8,
+	Positions = { Vector3.new(-40, 0, 70), Vector3.new(0, 0, 90), Vector3.new(40, 0, 70) },
+}
+
+Config.Arena = {
+	Center = Vector3.new(0, 0, 0),
+	Radius = 170,
+	PlayerSpawn = Vector3.new(0, 0, 120),
+	BossAltar = Vector3.new(0, 0, -60),
+}
+
+-- Built-in Roblox content only, so the place works with no uploads.
+-- Swap in your own rbxassetid:// sounds for better audio.
+Config.Sounds = {
+	Summon = "rbxasset://sounds/electronicpingshort.wav",
+	Slash = "rbxasset://sounds/swordslash.wav",
+	Lunge = "rbxasset://sounds/swordlunge.wav",
+	Unsheath = "rbxasset://sounds/unsheath.wav",
+	Hit = "rbxasset://sounds/swordslash.wav",
+}
+
+Config.Textures = {
+	Smoke = "rbxasset://textures/particles/smoke_main.dds",
+	Spark = "rbxasset://textures/particles/sparkles_main.dds",
+	Fire = "rbxasset://textures/particles/fire_main.dds",
+}
+
+return Config
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX00000003"><Properties><string name="Name">DamageRules</string><ProtectedString name="Source"><![CDATA[-- Pure damage math (no Roblox APIs) so it can be unit tested outside Studio.
+
+local DamageRules = {}
+
+--[[
+	How much damage a player actually takes from one hit.
+	args = {
+		Health, MaxHealth, Amount, Now,
+		LastHitAt?, IFrameUntil?, Blocking?, Reduction? (0..1),
+		Rules = Config.Player,
+	}
+	Returns damage, reason ("iframe" | "capped" | "laststand" | nil)
+]]
+function DamageRules.PlayerHit(args)
+	local rules = args.Rules
+	local now = args.Now
+
+	if args.IFrameUntil and now < args.IFrameUntil then
+		return 0, "iframe"
+	end
+	if args.LastHitAt and now - args.LastHitAt < rules.IFrameSeconds then
+		return 0, "iframe"
+	end
+
+	local amount = math.max(0, args.Amount)
+	if args.Blocking then
+		amount *= 1 - rules.BlockReduction
+	end
+	if args.Reduction and args.Reduction > 0 then
+		amount *= 1 - math.clamp(args.Reduction, 0, 1)
+	end
+
+	local reason = nil
+	local cap = args.MaxHealth * rules.MaxHitFraction
+	if amount > cap then
+		amount = cap
+		reason = "capped"
+	end
+
+	-- Last stand: from high health, a single hit always leaves you standing.
+	if args.Health > args.MaxHealth * rules.LastStandThreshold and args.Health - amount < 1 then
+		amount = math.max(0, args.Health - 1)
+		reason = "laststand"
+	end
+
+	return math.floor(amount + 0.5), reason
+end
+
+-- Piercing Ox: the longer the charge before impact, the harder it hits.
+function DamageRules.OxDamage(base, perStud, distance, maxDistance)
+	return math.floor(base + perStud * math.clamp(distance, 0, maxDistance) + 0.5)
+end
+
+-- Boss max health scales with the number of players in the server.
+function DamageRules.BossMaxHealth(baseHealth, perExtraPlayer, playerCount)
+	return math.floor(baseHealth * (1 + math.max(0, playerCount - 1) * perExtraPlayer))
+end
+
+return DamageRules
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX00000004"><Properties><string name="Name">ModelData</string><ProtectedString name="Source"><![CDATA[-- AUTO-GENERATED by tools/build.py from assets/models.json. Do not edit by hand;
+-- change tools/models.py and rebuild instead.
+-- Part = {Name, Shape, Size, Pos, RotDegrees, RGB, Material, Group, Transparency}
+return {
+	Mahoraga = {
+		Height = 24.35,
+		HipHeight = 9,
+		Root = { Size = {4, 4, 2}, Pos = {0, 11, 0} },
+		Joints = {
+			Wheel = { Part0 = "Head", Pivot = {0, 22.6, 0} },
+			RightArm = { Part0 = "Torso", Pivot = {4, 16, 0} },
+			LeftArm = { Part0 = "Torso", Pivot = {-4, 16, 0} },
+		},
+		Parts = {
+			{"FootR", "Block", {2.2, 0.8, 3.2}, {1.8, 0.4, -0.4}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"FootL", "Block", {2.2, 0.8, 3.2}, {-1.8, 0.4, -0.4}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"ShinR", "Block", {1.8, 4.2, 1.9}, {1.8, 2.9, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"ShinL", "Block", {1.8, 4.2, 1.9}, {-1.8, 2.9, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"KneeR", "Ball", {2.1, 2.1, 2.1}, {1.8, 5, -0.1}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"KneeL", "Ball", {2.1, 2.1, 2.1}, {-1.8, 5, -0.1}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"ThighR", "Block", {2.4, 4, 2.4}, {1.8, 7, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"ThighL", "Block", {2.4, 4, 2.4}, {-1.8, 7, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Skirt", "Block", {5.8, 3.2, 3.6}, {0, 8.1, 0}, {0, 0, 0}, {26, 24, 32}, "SmoothPlastic", "Body", 0},
+			{"SkirtFlapF", "Block", {2.6, 4.6, 0.3}, {0, 6.9, -1.9}, {-6, 0, 0}, {26, 24, 32}, "SmoothPlastic", "Body", 0},
+			{"SkirtFlapB", "Block", {3.4, 4.2, 0.3}, {0, 7, 1.9}, {6, 0, 0}, {26, 24, 32}, "SmoothPlastic", "Body", 0},
+			{"Rope", "Block", {6, 0.5, 3.8}, {0, 9.5, 0}, {0, 0, 0}, {214, 178, 74}, "Metal", "Body", 0},
+			{"RopeKnot", "Ball", {1, 1, 1}, {0, 9.4, -2}, {0, 0, 0}, {214, 178, 74}, "Metal", "Body", 0},
+			{"Abdomen", "Block", {4.6, 2.6, 2.9}, {0, 11, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Ab0R", "Block", {1.2, 0.7, 0.25}, {0.7, 10.3, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab0L", "Block", {1.2, 0.7, 0.25}, {-0.7, 10.3, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab1R", "Block", {1.2, 0.7, 0.25}, {0.7, 11.15, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab1L", "Block", {1.2, 0.7, 0.25}, {-0.7, 11.15, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab2R", "Block", {1.2, 0.7, 0.25}, {0.7, 12, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab2L", "Block", {1.2, 0.7, 0.25}, {-0.7, 12, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Torso", "Block", {6.2, 4.4, 3.4}, {0, 14.3, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"PecR", "Block", {2.7, 1.9, 0.4}, {1.45, 15, -1.75}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"PecL", "Block", {2.7, 1.9, 0.4}, {-1.45, 15, -1.75}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Spine", "Block", {0.5, 4, 0.3}, {0, 13.6, 1.75}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"TrapR", "Wedge", {1.8, 1.2, 2.6}, {1.9, 17, 0.2}, {0, 180, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"TrapL", "Wedge", {1.8, 1.2, 2.6}, {-1.9, 17, 0.2}, {0, -180, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Neck", "Cylinder", {1.6, 1.8, 1.8}, {0, 17.2, 0}, {0, 0, 90}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {2.3, 2.5, 2.4}, {0, 18.9, -0.1}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Jaw", "Block", {1.9, 0.8, 2}, {0, 17.8, -0.2}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Mouth", "Block", {1.1, 0.12, 0.1}, {0, 18, -1.25}, {0, 0, 0}, {60, 50, 50}, "SmoothPlastic", "Body", 0},
+			{"EyeWingR", "Block", {1.25, 0.8, 0.28}, {0.6, 19.25, -1.42}, {0, -12, -14}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"EyeWingL", "Block", {1.25, 0.8, 0.28}, {-0.6, 19.25, -1.42}, {0, 12, 14}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"EyeWingTipR", "Block", {0.9, 0.5, 0.24}, {1.45, 19.55, -1.25}, {0, -25, -30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"EyeWingTipL", "Block", {0.9, 0.5, 0.24}, {-1.45, 19.55, -1.25}, {0, 25, 30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"WingUpperR", "Block", {0.3, 1.3, 3.8}, {1.3, 20, 0.3}, {-18, 0, -24}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WingUpperL", "Block", {0.3, 1.3, 3.8}, {-1.3, 20, 0.3}, {-18, 0, 24}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WingUpperTipR", "Block", {0.26, 0.9, 1.8}, {1.75, 21, 2}, {-35, 0, -30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"WingUpperTipL", "Block", {0.26, 0.9, 1.8}, {-1.75, 21, 2}, {-35, 0, 30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"WingLowerR", "Block", {0.3, 1.1, 3.2}, {1.3, 18.6, 0.5}, {-4, 0, -12}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WingLowerL", "Block", {0.3, 1.1, 3.2}, {-1.3, 18.6, 0.5}, {-4, 0, 12}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WheelRim0", "Block", {0.55, 0.55, 2.2}, {2.31, 22.6, 0.957}, {0, -22.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim1", "Block", {0.55, 0.55, 2.2}, {0.957, 22.6, 2.31}, {0, -67.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim2", "Block", {0.55, 0.55, 2.2}, {-0.957, 22.6, 2.31}, {0, -112.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim3", "Block", {0.55, 0.55, 2.2}, {-2.31, 22.6, 0.957}, {0, -157.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim4", "Block", {0.55, 0.55, 2.2}, {-2.31, 22.6, -0.957}, {0, -202.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim5", "Block", {0.55, 0.55, 2.2}, {-0.957, 22.6, -2.31}, {0, -247.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim6", "Block", {0.55, 0.55, 2.2}, {0.957, 22.6, -2.31}, {0, -292.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim7", "Block", {0.55, 0.55, 2.2}, {2.31, 22.6, -0.957}, {0, -337.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelHub", "Cylinder", {0.6, 1.2, 1.2}, {0, 22.6, 0}, {0, 0, 90}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelHubCore", "Ball", {0.7, 0.7, 0.7}, {0, 22.95, 0}, {0, 0, 0}, {255, 226, 140}, "Neon", "Wheel", 0},
+			{"WheelSpoke0", "Cylinder", {3.5, 0.36, 0.36}, {1.75, 22.6, 0}, {0, 0, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle0", "Ball", {0.8, 0.8, 0.8}, {3.55, 22.6, 0}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke1", "Cylinder", {3.5, 0.36, 0.36}, {1.237, 22.6, 1.237}, {0, -45, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle1", "Ball", {0.8, 0.8, 0.8}, {2.51, 22.6, 2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke2", "Cylinder", {3.5, 0.36, 0.36}, {0, 22.6, 1.75}, {0, -90, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle2", "Ball", {0.8, 0.8, 0.8}, {0, 22.6, 3.55}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke3", "Cylinder", {3.5, 0.36, 0.36}, {-1.237, 22.6, 1.237}, {0, -135, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle3", "Ball", {0.8, 0.8, 0.8}, {-2.51, 22.6, 2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke4", "Cylinder", {3.5, 0.36, 0.36}, {-1.75, 22.6, 0}, {0, -180, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle4", "Ball", {0.8, 0.8, 0.8}, {-3.55, 22.6, 0}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke5", "Cylinder", {3.5, 0.36, 0.36}, {-1.237, 22.6, -1.237}, {0, -225, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle5", "Ball", {0.8, 0.8, 0.8}, {-2.51, 22.6, -2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke6", "Cylinder", {3.5, 0.36, 0.36}, {0, 22.6, -1.75}, {0, -270, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle6", "Ball", {0.8, 0.8, 0.8}, {0, 22.6, -3.55}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke7", "Cylinder", {3.5, 0.36, 0.36}, {1.237, 22.6, -1.237}, {0, -315, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle7", "Ball", {0.8, 0.8, 0.8}, {2.51, 22.6, -2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelStem", "Cylinder", {1.6, 0.18, 0.18}, {0, 21.3, 0}, {0, 0, 90}, {150, 116, 40}, "Metal", "Wheel", 0.3},
+			{"ShoulderR", "Ball", {2.8, 2.8, 2.8}, {4, 16, 0}, {38, 0, 16}, {236, 233, 225}, "SmoothPlastic", "RightArm", 0},
+			{"UpperArmR", "Block", {2, 4.6, 2}, {5.005, 14.096, -1.488}, {38, 0, 16}, {236, 233, 225}, "SmoothPlastic", "RightArm", 0},
+			{"ElbowR", "Ball", {1.9, 1.9, 1.9}, {5.667, 12.278, -2.908}, {38, 0, 16}, {205, 200, 190}, "SmoothPlastic", "RightArm", 0},
+			{"ForearmR", "Block", {1.9, 4.2, 1.9}, {6.245, 10.749, -4.23}, {38, 0, 16}, {236, 233, 225}, "SmoothPlastic", "RightArm", 0},
+			{"BracerR", "Block", {2.1, 1, 2.1}, {6.659, 9.612, -5.117}, {38, 0, 16}, {214, 178, 74}, "Metal", "RightArm", 0},
+			{"HandR", "Block", {1.6, 1.6, 1.4}, {6.99, 8.703, -5.828}, {38, 0, 16}, {205, 200, 190}, "SmoothPlastic", "RightArm", 0},
+			{"ShoulderL", "Ball", {2.8, 2.8, 2.8}, {-4, 16, 0}, {8, 0, -10}, {236, 233, 225}, "SmoothPlastic", "LeftArm", 0},
+			{"UpperArmL", "Block", {2, 4.6, 2}, {-4.747, 13.516, -0.349}, {8, 0, -10}, {236, 233, 225}, "SmoothPlastic", "LeftArm", 0},
+			{"ElbowL", "Ball", {1.9, 1.9, 1.9}, {-5.164, 11.175, -0.678}, {8, 0, -10}, {205, 200, 190}, "SmoothPlastic", "LeftArm", 0},
+			{"ForearmL", "Block", {1.9, 4.2, 1.9}, {-5.528, 9.141, -1.065}, {8, 0, -10}, {236, 233, 225}, "SmoothPlastic", "LeftArm", 0},
+			{"BracerL", "Block", {2.1, 1, 2.1}, {-5.789, 7.679, -1.27}, {8, 0, -10}, {214, 178, 74}, "Metal", "LeftArm", 0},
+			{"HandL", "Block", {1.6, 1.6, 1.4}, {-5.997, 6.508, -1.435}, {8, 0, -10}, {205, 200, 190}, "SmoothPlastic", "LeftArm", 0},
+			{"SwordGuard", "Block", {2.4, 0.5, 2.4}, {7.265, 7.946, -6.419}, {38, 0, 16}, {214, 178, 74}, "Metal", "RightArm", 0},
+			{"SwordBlade", "Block", {0.35, 7, 1.2}, {8.285, 5.143, -8.609}, {38, 0, 16}, {235, 235, 240}, "Metal", "RightArm", 0},
+			{"SwordEdge", "Block", {0.2, 7, 0.3}, {8.285, 5.574, -9.161}, {38, 0, 16}, {255, 246, 222}, "Neon", "RightArm", 0},
+			{"SwordTip", "Wedge", {0.35, 1.4, 1.2}, {9.443, 1.962, -11.095}, {-142, 0, -16}, {235, 235, 240}, "Metal", "RightArm", 0},
+		},
+	},
+	MahoragaTamed = {
+		Height = 24.35,
+		HipHeight = 9,
+		Root = { Size = {4, 4, 2}, Pos = {0, 11, 0} },
+		Joints = {
+			Wheel = { Part0 = "Head", Pivot = {0, 22.6, 0} },
+			RightArm = { Part0 = "Torso", Pivot = {4, 16, 0} },
+			LeftArm = { Part0 = "Torso", Pivot = {-4, 16, 0} },
+		},
+		Parts = {
+			{"FootR", "Block", {2.2, 0.8, 3.2}, {1.8, 0.4, -0.4}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"FootL", "Block", {2.2, 0.8, 3.2}, {-1.8, 0.4, -0.4}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"ShinR", "Block", {1.8, 4.2, 1.9}, {1.8, 2.9, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"ShinL", "Block", {1.8, 4.2, 1.9}, {-1.8, 2.9, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"KneeR", "Ball", {2.1, 2.1, 2.1}, {1.8, 5, -0.1}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"KneeL", "Ball", {2.1, 2.1, 2.1}, {-1.8, 5, -0.1}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"ThighR", "Block", {2.4, 4, 2.4}, {1.8, 7, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"ThighL", "Block", {2.4, 4, 2.4}, {-1.8, 7, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Skirt", "Block", {5.8, 3.2, 3.6}, {0, 8.1, 0}, {0, 0, 0}, {26, 24, 32}, "SmoothPlastic", "Body", 0},
+			{"SkirtFlapF", "Block", {2.6, 4.6, 0.3}, {0, 6.9, -1.9}, {-6, 0, 0}, {26, 24, 32}, "SmoothPlastic", "Body", 0},
+			{"SkirtFlapB", "Block", {3.4, 4.2, 0.3}, {0, 7, 1.9}, {6, 0, 0}, {26, 24, 32}, "SmoothPlastic", "Body", 0},
+			{"Rope", "Block", {6, 0.5, 3.8}, {0, 9.5, 0}, {0, 0, 0}, {214, 178, 74}, "Metal", "Body", 0},
+			{"RopeKnot", "Ball", {1, 1, 1}, {0, 9.4, -2}, {0, 0, 0}, {214, 178, 74}, "Metal", "Body", 0},
+			{"Abdomen", "Block", {4.6, 2.6, 2.9}, {0, 11, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Ab0R", "Block", {1.2, 0.7, 0.25}, {0.7, 10.3, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab0L", "Block", {1.2, 0.7, 0.25}, {-0.7, 10.3, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab1R", "Block", {1.2, 0.7, 0.25}, {0.7, 11.15, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab1L", "Block", {1.2, 0.7, 0.25}, {-0.7, 11.15, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab2R", "Block", {1.2, 0.7, 0.25}, {0.7, 12, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Ab2L", "Block", {1.2, 0.7, 0.25}, {-0.7, 12, -1.5}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Torso", "Block", {6.2, 4.4, 3.4}, {0, 14.3, 0}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"PecR", "Block", {2.7, 1.9, 0.4}, {1.45, 15, -1.75}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"PecL", "Block", {2.7, 1.9, 0.4}, {-1.45, 15, -1.75}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Spine", "Block", {0.5, 4, 0.3}, {0, 13.6, 1.75}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"TrapR", "Wedge", {1.8, 1.2, 2.6}, {1.9, 17, 0.2}, {0, 180, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"TrapL", "Wedge", {1.8, 1.2, 2.6}, {-1.9, 17, 0.2}, {0, -180, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Neck", "Cylinder", {1.6, 1.8, 1.8}, {0, 17.2, 0}, {0, 0, 90}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {2.3, 2.5, 2.4}, {0, 18.9, -0.1}, {0, 0, 0}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"Jaw", "Block", {1.9, 0.8, 2}, {0, 17.8, -0.2}, {0, 0, 0}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"Mouth", "Block", {1.1, 0.12, 0.1}, {0, 18, -1.25}, {0, 0, 0}, {60, 50, 50}, "SmoothPlastic", "Body", 0},
+			{"EyeWingR", "Block", {1.25, 0.8, 0.28}, {0.6, 19.25, -1.42}, {0, -12, -14}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"EyeWingL", "Block", {1.25, 0.8, 0.28}, {-0.6, 19.25, -1.42}, {0, 12, 14}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"EyeWingTipR", "Block", {0.9, 0.5, 0.24}, {1.45, 19.55, -1.25}, {0, -25, -30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"EyeWingTipL", "Block", {0.9, 0.5, 0.24}, {-1.45, 19.55, -1.25}, {0, 25, 30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"WingUpperR", "Block", {0.3, 1.3, 3.8}, {1.3, 20, 0.3}, {-18, 0, -24}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WingUpperL", "Block", {0.3, 1.3, 3.8}, {-1.3, 20, 0.3}, {-18, 0, 24}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WingUpperTipR", "Block", {0.26, 0.9, 1.8}, {1.75, 21, 2}, {-35, 0, -30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"WingUpperTipL", "Block", {0.26, 0.9, 1.8}, {-1.75, 21, 2}, {-35, 0, 30}, {205, 200, 190}, "SmoothPlastic", "Body", 0},
+			{"WingLowerR", "Block", {0.3, 1.1, 3.2}, {1.3, 18.6, 0.5}, {-4, 0, -12}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WingLowerL", "Block", {0.3, 1.1, 3.2}, {-1.3, 18.6, 0.5}, {-4, 0, 12}, {236, 233, 225}, "SmoothPlastic", "Body", 0},
+			{"WheelRim0", "Block", {0.55, 0.55, 2.2}, {2.31, 22.6, 0.957}, {0, -22.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim1", "Block", {0.55, 0.55, 2.2}, {0.957, 22.6, 2.31}, {0, -67.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim2", "Block", {0.55, 0.55, 2.2}, {-0.957, 22.6, 2.31}, {0, -112.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim3", "Block", {0.55, 0.55, 2.2}, {-2.31, 22.6, 0.957}, {0, -157.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim4", "Block", {0.55, 0.55, 2.2}, {-2.31, 22.6, -0.957}, {0, -202.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim5", "Block", {0.55, 0.55, 2.2}, {-0.957, 22.6, -2.31}, {0, -247.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim6", "Block", {0.55, 0.55, 2.2}, {0.957, 22.6, -2.31}, {0, -292.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelRim7", "Block", {0.55, 0.55, 2.2}, {2.31, 22.6, -0.957}, {0, -337.5, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelHub", "Cylinder", {0.6, 1.2, 1.2}, {0, 22.6, 0}, {0, 0, 90}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelHubCore", "Ball", {0.7, 0.7, 0.7}, {0, 22.95, 0}, {0, 0, 0}, {255, 226, 140}, "Neon", "Wheel", 0},
+			{"WheelSpoke0", "Cylinder", {3.5, 0.36, 0.36}, {1.75, 22.6, 0}, {0, 0, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle0", "Ball", {0.8, 0.8, 0.8}, {3.55, 22.6, 0}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke1", "Cylinder", {3.5, 0.36, 0.36}, {1.237, 22.6, 1.237}, {0, -45, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle1", "Ball", {0.8, 0.8, 0.8}, {2.51, 22.6, 2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke2", "Cylinder", {3.5, 0.36, 0.36}, {0, 22.6, 1.75}, {0, -90, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle2", "Ball", {0.8, 0.8, 0.8}, {0, 22.6, 3.55}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke3", "Cylinder", {3.5, 0.36, 0.36}, {-1.237, 22.6, 1.237}, {0, -135, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle3", "Ball", {0.8, 0.8, 0.8}, {-2.51, 22.6, 2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke4", "Cylinder", {3.5, 0.36, 0.36}, {-1.75, 22.6, 0}, {0, -180, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle4", "Ball", {0.8, 0.8, 0.8}, {-3.55, 22.6, 0}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke5", "Cylinder", {3.5, 0.36, 0.36}, {-1.237, 22.6, -1.237}, {0, -225, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle5", "Ball", {0.8, 0.8, 0.8}, {-2.51, 22.6, -2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke6", "Cylinder", {3.5, 0.36, 0.36}, {0, 22.6, -1.75}, {0, -270, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle6", "Ball", {0.8, 0.8, 0.8}, {0, 22.6, -3.55}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelSpoke7", "Cylinder", {3.5, 0.36, 0.36}, {1.237, 22.6, -1.237}, {0, -315, 0}, {150, 116, 40}, "Metal", "Wheel", 0},
+			{"WheelHandle7", "Ball", {0.8, 0.8, 0.8}, {2.51, 22.6, -2.51}, {0, 0, 0}, {214, 178, 74}, "Metal", "Wheel", 0},
+			{"WheelStem", "Cylinder", {1.6, 0.18, 0.18}, {0, 21.3, 0}, {0, 0, 90}, {150, 116, 40}, "Metal", "Wheel", 0.3},
+			{"ShoulderR", "Ball", {2.8, 2.8, 2.8}, {4, 16, 0}, {38, 0, 16}, {236, 233, 225}, "SmoothPlastic", "RightArm", 0},
+			{"UpperArmR", "Block", {2, 4.6, 2}, {5.005, 14.096, -1.488}, {38, 0, 16}, {236, 233, 225}, "SmoothPlastic", "RightArm", 0},
+			{"ElbowR", "Ball", {1.9, 1.9, 1.9}, {5.667, 12.278, -2.908}, {38, 0, 16}, {205, 200, 190}, "SmoothPlastic", "RightArm", 0},
+			{"ForearmR", "Block", {1.9, 4.2, 1.9}, {6.245, 10.749, -4.23}, {38, 0, 16}, {236, 233, 225}, "SmoothPlastic", "RightArm", 0},
+			{"BracerR", "Block", {2.1, 1, 2.1}, {6.659, 9.612, -5.117}, {38, 0, 16}, {214, 178, 74}, "Metal", "RightArm", 0},
+			{"HandR", "Block", {1.6, 1.6, 1.4}, {6.99, 8.703, -5.828}, {38, 0, 16}, {205, 200, 190}, "SmoothPlastic", "RightArm", 0},
+			{"ShoulderL", "Ball", {2.8, 2.8, 2.8}, {-4, 16, 0}, {8, 0, -10}, {236, 233, 225}, "SmoothPlastic", "LeftArm", 0},
+			{"UpperArmL", "Block", {2, 4.6, 2}, {-4.747, 13.516, -0.349}, {8, 0, -10}, {236, 233, 225}, "SmoothPlastic", "LeftArm", 0},
+			{"ElbowL", "Ball", {1.9, 1.9, 1.9}, {-5.164, 11.175, -0.678}, {8, 0, -10}, {205, 200, 190}, "SmoothPlastic", "LeftArm", 0},
+			{"ForearmL", "Block", {1.9, 4.2, 1.9}, {-5.528, 9.141, -1.065}, {8, 0, -10}, {236, 233, 225}, "SmoothPlastic", "LeftArm", 0},
+			{"BracerL", "Block", {2.1, 1, 2.1}, {-5.789, 7.679, -1.27}, {8, 0, -10}, {214, 178, 74}, "Metal", "LeftArm", 0},
+			{"HandL", "Block", {1.6, 1.6, 1.4}, {-5.997, 6.508, -1.435}, {8, 0, -10}, {205, 200, 190}, "SmoothPlastic", "LeftArm", 0},
+			{"SwordGuard", "Block", {2.4, 0.5, 2.4}, {7.265, 7.946, -6.419}, {38, 0, 16}, {214, 178, 74}, "Metal", "RightArm", 0},
+			{"SwordBlade", "Block", {0.35, 7, 1.2}, {8.285, 5.143, -8.609}, {38, 0, 16}, {235, 235, 240}, "Metal", "RightArm", 0},
+			{"SwordEdge", "Block", {0.2, 7, 0.3}, {8.285, 5.574, -9.161}, {38, 0, 16}, {255, 246, 222}, "Neon", "RightArm", 0},
+			{"SwordTip", "Wedge", {0.35, 1.4, 1.2}, {9.443, 1.962, -11.095}, {-142, 0, -16}, {235, 235, 240}, "Metal", "RightArm", 0},
+			{"TamedSash", "Block", {6.4, 0.6, 3.6}, {0, 16.4, 0}, {0, 0, 28}, {120, 70, 200}, "Neon", "Body", 0},
+		},
+	},
+	DivineDogWhite = {
+		Height = 5.15,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {1.6, 1.6, 3.2}, {0, 2.3, 0.3}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Chest", "Block", {1.9, 1.9, 1.5}, {0, 2.5, -1.1}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Ruff", "Block", {2.2, 1.2, 0.8}, {0, 2.9, -1.6}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Neck", "Block", {1.1, 1.3, 1}, {0, 3.2, -1.9}, {-30, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {1.35, 1.25, 1.35}, {0, 3.7, -2.4}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Snout", "Block", {0.85, 0.65, 1.1}, {0, 3.45, -3.3}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Nose", "Ball", {0.38, 0.38, 0.38}, {0, 3.62, -3.85}, {0, 0, 0}, {20, 20, 22}, "SmoothPlastic", "Body", 0},
+			{"Mask", "Block", {1.38, 0.3, 0.2}, {0, 3.95, -3.06}, {0, 0, 0}, {60, 60, 66}, "SmoothPlastic", "Body", 0},
+			{"EarR", "Wedge", {0.35, 0.9, 0.55}, {0.45, 4.7, -2.3}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"EarL", "Wedge", {0.35, 0.9, 0.55}, {-0.45, 4.7, -2.3}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.3, 0.2, 0.1}, {0.36, 3.8, -3.12}, {0, 0, 0}, {255, 214, 90}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.3, 0.2, 0.1}, {-0.36, 3.8, -3.12}, {0, 0, 0}, {255, 214, 90}, "Neon", "Body", 0},
+			{"Leg0R", "Block", {0.5, 1.8, 0.5}, {0.58, 0.95, -1.1}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Leg0L", "Block", {0.5, 1.8, 0.5}, {-0.58, 0.95, -1.1}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Paw0R", "Block", {0.6, 0.3, 0.75}, {0.58, 0.15, -1.2}, {0, 0, 0}, {60, 60, 66}, "SmoothPlastic", "Body", 0},
+			{"Paw0L", "Block", {0.6, 0.3, 0.75}, {-0.58, 0.15, -1.2}, {0, 0, 0}, {60, 60, 66}, "SmoothPlastic", "Body", 0},
+			{"Leg1R", "Block", {0.5, 1.8, 0.5}, {0.58, 0.95, 1.4}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Leg1L", "Block", {0.5, 1.8, 0.5}, {-0.58, 0.95, 1.4}, {0, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Paw1R", "Block", {0.6, 0.3, 0.75}, {0.58, 0.15, 1.3}, {0, 0, 0}, {60, 60, 66}, "SmoothPlastic", "Body", 0},
+			{"Paw1L", "Block", {0.6, 0.3, 0.75}, {-0.58, 0.15, 1.3}, {0, 0, 0}, {60, 60, 66}, "SmoothPlastic", "Body", 0},
+			{"Tail", "Block", {0.38, 0.38, 1.5}, {0, 2.9, 2.4}, {35, 0, 0}, {242, 242, 240}, "SmoothPlastic", "Body", 0},
+			{"Stripe", "Block", {1.62, 0.2, 2.6}, {0, 3.12, 0.4}, {0, 0, 0}, {60, 60, 66}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	DivineDogBlack = {
+		Height = 5.15,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {1.6, 1.6, 3.2}, {0, 2.3, 0.3}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Chest", "Block", {1.9, 1.9, 1.5}, {0, 2.5, -1.1}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Ruff", "Block", {2.2, 1.2, 0.8}, {0, 2.9, -1.6}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Neck", "Block", {1.1, 1.3, 1}, {0, 3.2, -1.9}, {-30, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {1.35, 1.25, 1.35}, {0, 3.7, -2.4}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Snout", "Block", {0.85, 0.65, 1.1}, {0, 3.45, -3.3}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Nose", "Ball", {0.38, 0.38, 0.38}, {0, 3.62, -3.85}, {0, 0, 0}, {20, 20, 22}, "SmoothPlastic", "Body", 0},
+			{"Mask", "Block", {1.38, 0.3, 0.2}, {0, 3.95, -3.06}, {0, 0, 0}, {200, 200, 205}, "SmoothPlastic", "Body", 0},
+			{"EarR", "Wedge", {0.35, 0.9, 0.55}, {0.45, 4.7, -2.3}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"EarL", "Wedge", {0.35, 0.9, 0.55}, {-0.45, 4.7, -2.3}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.3, 0.2, 0.1}, {0.36, 3.8, -3.12}, {0, 0, 0}, {255, 214, 90}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.3, 0.2, 0.1}, {-0.36, 3.8, -3.12}, {0, 0, 0}, {255, 214, 90}, "Neon", "Body", 0},
+			{"Leg0R", "Block", {0.5, 1.8, 0.5}, {0.58, 0.95, -1.1}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Leg0L", "Block", {0.5, 1.8, 0.5}, {-0.58, 0.95, -1.1}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Paw0R", "Block", {0.6, 0.3, 0.75}, {0.58, 0.15, -1.2}, {0, 0, 0}, {200, 200, 205}, "SmoothPlastic", "Body", 0},
+			{"Paw0L", "Block", {0.6, 0.3, 0.75}, {-0.58, 0.15, -1.2}, {0, 0, 0}, {200, 200, 205}, "SmoothPlastic", "Body", 0},
+			{"Leg1R", "Block", {0.5, 1.8, 0.5}, {0.58, 0.95, 1.4}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Leg1L", "Block", {0.5, 1.8, 0.5}, {-0.58, 0.95, 1.4}, {0, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Paw1R", "Block", {0.6, 0.3, 0.75}, {0.58, 0.15, 1.3}, {0, 0, 0}, {200, 200, 205}, "SmoothPlastic", "Body", 0},
+			{"Paw1L", "Block", {0.6, 0.3, 0.75}, {-0.58, 0.15, 1.3}, {0, 0, 0}, {200, 200, 205}, "SmoothPlastic", "Body", 0},
+			{"Tail", "Block", {0.38, 0.38, 1.5}, {0, 2.9, 2.4}, {35, 0, 0}, {30, 30, 34}, "SmoothPlastic", "Body", 0},
+			{"Stripe", "Block", {1.62, 0.2, 2.6}, {0, 3.12, 0.4}, {0, 0, 0}, {200, 200, 205}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	DivineDogTotality = {
+		Height = 13.39,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {4.16, 4.16, 8.32}, {0, 5.98, 0.78}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Chest", "Block", {4.94, 4.94, 3.9}, {0, 6.5, -2.86}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Ruff", "Block", {5.72, 3.12, 2.08}, {0, 7.54, -4.16}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"Neck", "Block", {2.86, 3.38, 2.6}, {0, 8.32, -4.94}, {-30, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {3.51, 3.25, 3.51}, {0, 9.62, -6.24}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Snout", "Block", {2.21, 1.69, 2.86}, {0, 8.97, -8.58}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Nose", "Ball", {0.988, 0.988, 0.988}, {0, 9.412, -10.01}, {0, 0, 0}, {20, 20, 22}, "SmoothPlastic", "Body", 0},
+			{"Mask", "Block", {3.588, 0.78, 0.52}, {0, 10.27, -7.956}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"EarR", "Wedge", {0.91, 2.34, 1.43}, {1.17, 12.22, -5.98}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"EarL", "Wedge", {0.91, 2.34, 1.43}, {-1.17, 12.22, -5.98}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.78, 0.52, 0.26}, {0.936, 9.88, -8.112}, {0, 0, 0}, {190, 120, 255}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.78, 0.52, 0.26}, {-0.936, 9.88, -8.112}, {0, 0, 0}, {190, 120, 255}, "Neon", "Body", 0},
+			{"Leg0R", "Block", {1.3, 4.68, 1.3}, {1.508, 2.47, -2.86}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Leg0L", "Block", {1.3, 4.68, 1.3}, {-1.508, 2.47, -2.86}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Paw0R", "Block", {1.56, 0.78, 1.95}, {1.508, 0.39, -3.12}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"Paw0L", "Block", {1.56, 0.78, 1.95}, {-1.508, 0.39, -3.12}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"Leg1R", "Block", {1.3, 4.68, 1.3}, {1.508, 2.47, 3.64}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Leg1L", "Block", {1.3, 4.68, 1.3}, {-1.508, 2.47, 3.64}, {0, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Paw1R", "Block", {1.56, 0.78, 1.95}, {1.508, 0.39, 3.38}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"Paw1L", "Block", {1.56, 0.78, 1.95}, {-1.508, 0.39, 3.38}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"Tail", "Block", {0.988, 0.988, 3.9}, {0, 7.54, 6.24}, {35, 0, 0}, {34, 32, 40}, "SmoothPlastic", "Body", 0},
+			{"Stripe", "Block", {4.212, 0.52, 6.76}, {0, 8.112, 1.04}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"ClawR", "Wedge", {0.52, 0.78, 1.82}, {1.872, 0.39, -4.68}, {0, 0, 0}, {200, 180, 255}, "Neon", "Body", 0},
+			{"ClawL", "Wedge", {0.52, 0.78, 1.82}, {-1.872, 0.39, -4.68}, {0, 0, 0}, {200, 180, 255}, "Neon", "Body", 0},
+			{"Spine", "Block", {0.78, 1.3, 7.8}, {0, 8.58, 1.04}, {0, 0, 0}, {232, 230, 236}, "SmoothPlastic", "Body", 0},
+			{"FangR", "Wedge", {0.312, 0.91, 0.364}, {0.65, 7.852, -9.75}, {180, 0, 0}, {250, 250, 250}, "SmoothPlastic", "Body", 0},
+			{"FangL", "Wedge", {0.312, 0.91, 0.364}, {-0.65, 7.852, -9.75}, {180, 0, 0}, {250, 250, 250}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	Nue = {
+		Height = 7.5,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Ball", {2.8, 2.8, 2.8}, {0, 4.2, 0}, {0, 0, 0}, {46, 38, 46}, "SmoothPlastic", "Body", 0},
+			{"Belly", "Block", {1.9, 2, 0.6}, {0, 3.9, -1.2}, {0, 0, 0}, {90, 80, 86}, "SmoothPlastic", "Body", 0},
+			{"Head", "Ball", {2, 2, 2}, {0, 6, -0.5}, {0, 0, 0}, {46, 38, 46}, "SmoothPlastic", "Body", 0},
+			{"Mask", "Block", {1.6, 1.4, 0.25}, {0, 6, -1.45}, {0, 0, 0}, {232, 228, 214}, "SmoothPlastic", "Body", 0},
+			{"EyeHoleR", "Block", {0.42, 0.26, 0.1}, {0.38, 6.15, -1.6}, {0, 0, 0}, {255, 220, 90}, "Neon", "Body", 0},
+			{"EyeHoleL", "Block", {0.42, 0.26, 0.1}, {-0.38, 6.15, -1.6}, {0, 0, 0}, {255, 220, 90}, "Neon", "Body", 0},
+			{"Beak", "Wedge", {0.45, 0.6, 0.6}, {0, 5.6, -1.8}, {180, 0, 0}, {200, 170, 90}, "SmoothPlastic", "Body", 0},
+			{"TuftR", "Wedge", {0.3, 0.8, 0.5}, {0.7, 7.1, -0.5}, {0, 0, 0}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"TuftL", "Wedge", {0.3, 0.8, 0.5}, {-0.7, 7.1, -0.5}, {0, 0, 0}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"Wing0R", "Block", {3.6, 0.25, 2}, {2.9, 4.8, 0.1}, {0, 0, 14}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"Wing0L", "Block", {3.6, 0.25, 2}, {-2.9, 4.8, 0.1}, {0, 0, -14}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"Wing1R", "Block", {3.4, 0.22, 1.6}, {6.1, 5.7, 0.3}, {0, 0, 20}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"Wing1L", "Block", {3.4, 0.22, 1.6}, {-6.1, 5.7, 0.3}, {0, 0, -20}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"Wing2R", "Block", {2.4, 0.2, 1.1}, {8.8, 6.6, 0.5}, {0, -12, 26}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"Wing2L", "Block", {2.4, 0.2, 1.1}, {-8.8, 6.6, 0.5}, {0, 12, -26}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"WingBoltR", "Block", {6.6, 0.1, 0.18}, {4.6, 5.2, -0.8}, {0, 0, 17}, {150, 205, 255}, "Neon", "Body", 0},
+			{"WingBoltL", "Block", {6.6, 0.1, 0.18}, {-4.6, 5.2, -0.8}, {0, 0, -17}, {150, 205, 255}, "Neon", "Body", 0},
+			{"Tail", "Block", {1.4, 0.2, 2.4}, {0, 3.6, 2}, {-22, 0, 0}, {30, 26, 34}, "SmoothPlastic", "Body", 0},
+			{"LegR", "Block", {0.3, 1.4, 0.3}, {0.55, 2.2, -0.2}, {0, 0, 0}, {200, 170, 90}, "SmoothPlastic", "Body", 0},
+			{"LegL", "Block", {0.3, 1.4, 0.3}, {-0.55, 2.2, -0.2}, {0, 0, 0}, {200, 170, 90}, "SmoothPlastic", "Body", 0},
+			{"TalonR", "Wedge", {0.5, 0.4, 0.8}, {0.55, 1.4, -0.5}, {180, 0, 0}, {60, 60, 60}, "SmoothPlastic", "Body", 0},
+			{"TalonL", "Wedge", {0.5, 0.4, 0.8}, {-0.55, 1.4, -0.5}, {180, 0, 0}, {60, 60, 60}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	Toad = {
+		Height = 5.25,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Ball", {4.6, 4.6, 4.6}, {0, 2.5, 0.6}, {0, 0, 0}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {4.2, 1.7, 3.2}, {0, 3.4, -1.7}, {0, 0, 0}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"Lip", "Block", {4, 0.25, 3}, {0, 2.6, -1.8}, {0, 0, 0}, {120, 60, 70}, "SmoothPlastic", "Body", 0},
+			{"Belly", "Block", {3.2, 1.6, 0.6}, {0, 1.9, -1.6}, {0, 0, 0}, {150, 150, 120}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Ball", {1.3, 1.3, 1.3}, {1.3, 4.5, -2.3}, {0, 0, 0}, {230, 200, 70}, "SmoothPlastic", "Body", 0},
+			{"EyeL", "Ball", {1.3, 1.3, 1.3}, {-1.3, 4.5, -2.3}, {0, 0, 0}, {230, 200, 70}, "SmoothPlastic", "Body", 0},
+			{"PupilR", "Block", {0.8, 0.25, 0.2}, {1.3, 4.55, -2.95}, {0, 0, 0}, {15, 15, 15}, "SmoothPlastic", "Body", 0},
+			{"PupilL", "Block", {0.8, 0.25, 0.2}, {-1.3, 4.55, -2.95}, {0, 0, 0}, {15, 15, 15}, "SmoothPlastic", "Body", 0},
+			{"Spot0R", "Ball", {0.9, 0.9, 0.9}, {1.5, 3.8, 1.3}, {0, 0, 0}, {40, 48, 38}, "SmoothPlastic", "Body", 0},
+			{"Spot0L", "Ball", {0.9, 0.9, 0.9}, {-1.5, 3.8, 1.3}, {0, 0, 0}, {40, 48, 38}, "SmoothPlastic", "Body", 0},
+			{"Spot1", "Ball", {1.1, 1.1, 1.1}, {0, 4.7, 1}, {0, 0, 0}, {40, 48, 38}, "SmoothPlastic", "Body", 0},
+			{"FrontLegR", "Block", {0.7, 1.8, 0.7}, {1.6, 0.9, -2}, {0, 0, -12}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"FrontLegL", "Block", {0.7, 1.8, 0.7}, {-1.6, 0.9, -2}, {0, 0, 12}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"BackLegR", "Block", {1.4, 1.2, 2.8}, {2.2, 0.6, 1.2}, {0, 0, 0}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"BackLegL", "Block", {1.4, 1.2, 2.8}, {-2.2, 0.6, 1.2}, {0, 0, 0}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"FootR", "Block", {1.2, 0.3, 1.2}, {1.8, 0.15, -2.4}, {0, 0, 0}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"FootL", "Block", {1.2, 0.3, 1.2}, {-1.8, 0.15, -2.4}, {0, 0, 0}, {70, 84, 66}, "SmoothPlastic", "Body", 0},
+			{"Rune", "Block", {1.6, 0.1, 0.6}, {0, 4.28, -1.6}, {0, 0, 0}, {160, 110, 230}, "Neon", "Body", 0},
+		},
+	},
+	GreatSerpent = {
+		Height = 23.1,
+		Joints = {
+		},
+		Parts = {
+			{"Segment0", "Cylinder", {3.3, 3.8, 3.8}, {0, 1.8, 0}, {0, 0, 90}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Belly0", "Block", {2.2, 2.6, 0.5}, {0, 1.8, -1.75}, {0, 0, 0}, {170, 160, 140}, "SmoothPlastic", "Body", 0},
+			{"Segment1", "Cylinder", {3.3, 3.72, 3.72}, {0, 4.9, 0.313}, {0, 0, 90}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Belly1", "Block", {2.2, 2.6, 0.5}, {0, 4.9, -1.437}, {0, 0, 0}, {170, 160, 140}, "SmoothPlastic", "Body", 0},
+			{"Segment2", "Cylinder", {3.3, 3.64, 3.64}, {0, 8, 0.39}, {0, 0, 90}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Belly2", "Block", {2.2, 2.6, 0.5}, {0, 8, -1.36}, {0, 0, 0}, {170, 160, 140}, "SmoothPlastic", "Body", 0},
+			{"Segment3", "Cylinder", {3.3, 3.56, 3.56}, {0, 11.1, 0.171}, {0, 0, 90}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Belly3", "Block", {2.2, 2.6, 0.5}, {0, 11.1, -1.579}, {0, 0, 0}, {170, 160, 140}, "SmoothPlastic", "Body", 0},
+			{"Segment4", "Cylinder", {3.3, 3.48, 3.48}, {0, 14.2, -0.177}, {0, 0, 90}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Belly4", "Block", {2.2, 2.6, 0.5}, {0, 14.2, -1.927}, {0, 0, 0}, {170, 160, 140}, "SmoothPlastic", "Body", 0},
+			{"Segment5", "Cylinder", {3.3, 3.4, 3.4}, {0, 17.3, -0.391}, {0, 0, 90}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Belly5", "Block", {2.2, 2.6, 0.5}, {0, 17.3, -2.141}, {0, 0, 0}, {170, 160, 140}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {4.2, 2.6, 6.2}, {0, 21, -2}, {-12, 0, 0}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Snout", "Block", {3.4, 1.8, 2}, {0, 20.5, -5.6}, {-12, 0, 0}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"Jaw", "Block", {3.8, 1, 5.6}, {0, 18.6, -2.8}, {18, 0, 0}, {170, 160, 140}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.3, 0.6, 1.2}, {2.12, 21.4, -3.2}, {-12, 0, 0}, {255, 206, 80}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.3, 0.6, 1.2}, {-2.12, 21.4, -3.2}, {-12, 0, 0}, {255, 206, 80}, "Neon", "Body", 0},
+			{"BrowR", "Wedge", {0.6, 0.8, 1.8}, {1.7, 22.5, -2.6}, {-12, 0, 0}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"BrowL", "Wedge", {0.6, 0.8, 1.8}, {-1.7, 22.5, -2.6}, {-12, 0, 0}, {38, 42, 52}, "SmoothPlastic", "Body", 0},
+			{"FangR", "Wedge", {0.3, 1.2, 0.4}, {1.2, 19.3, -5.8}, {180, 0, 0}, {245, 245, 240}, "SmoothPlastic", "Body", 0},
+			{"FangL", "Wedge", {0.3, 1.2, 0.4}, {-1.2, 19.3, -5.8}, {180, 0, 0}, {245, 245, 240}, "SmoothPlastic", "Body", 0},
+			{"Fang2R", "Wedge", {0.25, 0.9, 0.35}, {0.6, 19.4, -6}, {180, 0, 0}, {245, 245, 240}, "SmoothPlastic", "Body", 0},
+			{"Fang2L", "Wedge", {0.25, 0.9, 0.35}, {-0.6, 19.4, -6}, {180, 0, 0}, {245, 245, 240}, "SmoothPlastic", "Body", 0},
+			{"Crest", "Block", {0.3, 1, 4.4}, {0, 22.6, -0.6}, {-12, 0, 0}, {140, 90, 220}, "Neon", "Body", 0},
+		},
+	},
+	MaxElephant = {
+		Height = 16.8,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {9, 8, 13}, {0, 11, 0.5}, {0, 0, 0}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Back", "Block", {7.6, 2, 11}, {0, 15.6, 0.8}, {0, 0, 0}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {7, 7, 5}, {0, 13.2, -7.8}, {0, 0, 0}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Brow", "Block", {7.2, 1.2, 1.2}, {0, 16.2, -9.6}, {0, 0, 0}, {70, 80, 98}, "SmoothPlastic", "Body", 0},
+			{"EarR", "Block", {0.6, 6.4, 5.6}, {4.4, 13.4, -6.2}, {0, 22, 8}, {70, 80, 98}, "SmoothPlastic", "Body", 0},
+			{"EarL", "Block", {0.6, 6.4, 5.6}, {-4.4, 13.4, -6.2}, {0, -22, -8}, {70, 80, 98}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.8, 0.5, 0.2}, {2.4, 14.3, -10.35}, {0, 0, 0}, {240, 230, 160}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.8, 0.5, 0.2}, {-2.4, 14.3, -10.35}, {0, 0, 0}, {240, 230, 160}, "Neon", "Body", 0},
+			{"Trunk0", "Cylinder", {2.2, 2.6, 2.6}, {0, 10.8, -10.6}, {0, 0, 90}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Trunk1", "Cylinder", {2.2, 2.3, 2.3}, {0, 8.9, -11.15}, {0, 0, 84}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Trunk2", "Cylinder", {2.2, 2, 2}, {0, 7, -11.7}, {0, 0, 78}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Trunk3", "Cylinder", {2.2, 1.7, 1.7}, {0, 5.1, -12.25}, {0, 0, 72}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Trunk4", "Cylinder", {2.2, 1.4, 1.4}, {0, 3.2, -12.8}, {0, 0, 66}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"TrunkTip", "Ball", {1.4, 1.4, 1.4}, {0, 1.3, -13.4}, {0, 0, 0}, {70, 80, 98}, "SmoothPlastic", "Body", 0},
+			{"TuskR", "Cylinder", {5, 0.9, 0.9}, {2, 9.6, -11.8}, {0, 70, -30}, {238, 234, 220}, "SmoothPlastic", "Body", 0},
+			{"TuskL", "Cylinder", {5, 0.9, 0.9}, {-2, 9.6, -11.8}, {0, -70, 30}, {238, 234, 220}, "SmoothPlastic", "Body", 0},
+			{"Leg0R", "Cylinder", {7.2, 3.6, 3.6}, {3.1, 3.6, -4.2}, {0, 0, 90}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Leg0L", "Cylinder", {7.2, 3.6, 3.6}, {-3.1, 3.6, -4.2}, {0, 0, -90}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Toe0R", "Block", {3.2, 0.6, 1}, {3.1, 0.3, -5.8}, {0, 0, 0}, {238, 234, 220}, "SmoothPlastic", "Body", 0},
+			{"Toe0L", "Block", {3.2, 0.6, 1}, {-3.1, 0.3, -5.8}, {0, 0, 0}, {238, 234, 220}, "SmoothPlastic", "Body", 0},
+			{"Leg1R", "Cylinder", {7.2, 3.6, 3.6}, {3.1, 3.6, 5}, {0, 0, 90}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Leg1L", "Cylinder", {7.2, 3.6, 3.6}, {-3.1, 3.6, 5}, {0, 0, -90}, {104, 116, 136}, "SmoothPlastic", "Body", 0},
+			{"Toe1R", "Block", {3.2, 0.6, 1}, {3.1, 0.3, 3.4}, {0, 0, 0}, {238, 234, 220}, "SmoothPlastic", "Body", 0},
+			{"Toe1L", "Block", {3.2, 0.6, 1}, {-3.1, 0.3, 3.4}, {0, 0, 0}, {238, 234, 220}, "SmoothPlastic", "Body", 0},
+			{"Tail", "Block", {0.5, 4, 0.5}, {0, 11, 7.3}, {20, 0, 0}, {70, 80, 98}, "SmoothPlastic", "Body", 0},
+			{"WaterMark", "Block", {5, 0.2, 9}, {0, 16.65, 0.8}, {0, 0, 0}, {90, 180, 255}, "Neon", "Body", 0},
+			{"SideMarkR", "Block", {0.2, 3, 8}, {4.52, 11, 0.5}, {0, 0, 0}, {90, 180, 255}, "Neon", "Body", 0},
+			{"SideMarkL", "Block", {0.2, 3, 8}, {-4.52, 11, 0.5}, {0, 0, 0}, {90, 180, 255}, "Neon", "Body", 0},
+		},
+	},
+	Rabbit = {
+		Height = 1.925,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {0.8, 0.75, 1.1}, {0, 0.55, 0.1}, {0, 0, 0}, {246, 246, 246}, "SmoothPlastic", "Body", 0},
+			{"Head", "Ball", {0.65, 0.65, 0.65}, {0, 0.95, -0.45}, {0, 0, 0}, {246, 246, 246}, "SmoothPlastic", "Body", 0},
+			{"EarR", "Block", {0.14, 0.75, 0.26}, {0.16, 1.55, -0.35}, {10, 0, -8}, {246, 246, 246}, "SmoothPlastic", "Body", 0},
+			{"EarL", "Block", {0.14, 0.75, 0.26}, {-0.16, 1.55, -0.35}, {10, 0, 8}, {246, 246, 246}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.1, 0.12, 0.05}, {0.18, 1.02, -0.77}, {0, 0, 0}, {230, 40, 60}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.1, 0.12, 0.05}, {-0.18, 1.02, -0.77}, {0, 0, 0}, {230, 40, 60}, "Neon", "Body", 0},
+			{"Tail", "Ball", {0.35, 0.35, 0.35}, {0, 0.65, 0.7}, {0, 0, 0}, {225, 225, 225}, "SmoothPlastic", "Body", 0},
+			{"FootR", "Block", {0.22, 0.18, 0.6}, {0.25, 0.09, 0.2}, {0, 0, 0}, {246, 246, 246}, "SmoothPlastic", "Body", 0},
+			{"FootL", "Block", {0.22, 0.18, 0.6}, {-0.25, 0.09, 0.2}, {0, 0, 0}, {246, 246, 246}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	RoundDeer = {
+		Height = 9.8,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {1.9, 1.9, 4.2}, {0, 4.4, 0.2}, {0, 0, 0}, {224, 218, 204}, "SmoothPlastic", "Body", 0},
+			{"Neck", "Block", {1, 2.4, 1}, {0, 5.8, -1.9}, {-25, 0, 0}, {224, 218, 204}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {1.2, 1.1, 1.6}, {0, 7, -2.6}, {0, 0, 0}, {224, 218, 204}, "SmoothPlastic", "Body", 0},
+			{"Muzzle", "Block", {0.8, 0.7, 0.9}, {0, 6.7, -3.6}, {0, 0, 0}, {200, 192, 178}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.1, 0.2, 0.3}, {0.61, 7.2, -2.9}, {0, 0, 0}, {60, 40, 30}, "SmoothPlastic", "Body", 0},
+			{"EyeL", "Block", {0.1, 0.2, 0.3}, {-0.61, 7.2, -2.9}, {0, 0, 0}, {60, 40, 30}, "SmoothPlastic", "Body", 0},
+			{"Leg0R", "Block", {0.35, 3.6, 0.35}, {0.65, 1.8, -1.5}, {0, 0, 0}, {224, 218, 204}, "SmoothPlastic", "Body", 0},
+			{"Leg0L", "Block", {0.35, 3.6, 0.35}, {-0.65, 1.8, -1.5}, {0, 0, 0}, {224, 218, 204}, "SmoothPlastic", "Body", 0},
+			{"Leg1R", "Block", {0.35, 3.6, 0.35}, {0.65, 1.8, 1.8}, {0, 0, 0}, {224, 218, 204}, "SmoothPlastic", "Body", 0},
+			{"Leg1L", "Block", {0.35, 3.6, 0.35}, {-0.65, 1.8, 1.8}, {0, 0, 0}, {224, 218, 204}, "SmoothPlastic", "Body", 0},
+			{"Antler0R", "Block", {0.2, 1.8, 0.2}, {0.45, 8.3, -2.4}, {0, 0, -22}, {240, 230, 200}, "SmoothPlastic", "Body", 0},
+			{"Antler0L", "Block", {0.2, 1.8, 0.2}, {-0.45, 8.3, -2.4}, {0, 0, 22}, {240, 230, 200}, "SmoothPlastic", "Body", 0},
+			{"Antler1R", "Block", {0.16, 1.1, 0.16}, {0.95, 9, -2.2}, {0, 0, -60}, {240, 230, 200}, "SmoothPlastic", "Body", 0},
+			{"Antler1L", "Block", {0.16, 1.1, 0.16}, {-0.95, 9, -2.2}, {0, 0, 60}, {240, 230, 200}, "SmoothPlastic", "Body", 0},
+			{"Antler2R", "Block", {0.16, 1, 0.16}, {0.55, 9.3, -2.6}, {0, 0, 10}, {240, 230, 200}, "SmoothPlastic", "Body", 0},
+			{"Antler2L", "Block", {0.16, 1, 0.16}, {-0.55, 9.3, -2.6}, {0, 0, -10}, {240, 230, 200}, "SmoothPlastic", "Body", 0},
+			{"Halo0", "Block", {1.25, 0.3, 0.3}, {3.1, 5.2, 1.6}, {0, 0, 90}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo1", "Block", {1.25, 0.3, 0.3}, {2.864, 6.386, 1.6}, {0, 0, 112.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo2", "Block", {1.25, 0.3, 0.3}, {2.192, 7.392, 1.6}, {0, 0, 135}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo3", "Block", {1.25, 0.3, 0.3}, {1.186, 8.064, 1.6}, {0, 0, 157.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo4", "Block", {1.25, 0.3, 0.3}, {0, 8.3, 1.6}, {0, 0, 180}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo5", "Block", {1.25, 0.3, 0.3}, {-1.186, 8.064, 1.6}, {0, 0, 202.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo6", "Block", {1.25, 0.3, 0.3}, {-2.192, 7.392, 1.6}, {0, 0, 225}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo7", "Block", {1.25, 0.3, 0.3}, {-2.864, 6.386, 1.6}, {0, 0, 247.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo8", "Block", {1.25, 0.3, 0.3}, {-3.1, 5.2, 1.6}, {0, 0, 270}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo9", "Block", {1.25, 0.3, 0.3}, {-2.864, 4.014, 1.6}, {0, 0, 292.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo10", "Block", {1.25, 0.3, 0.3}, {-2.192, 3.008, 1.6}, {0, 0, 315}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo11", "Block", {1.25, 0.3, 0.3}, {-1.186, 2.336, 1.6}, {0, 0, 337.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo12", "Block", {1.25, 0.3, 0.3}, {0, 2.1, 1.6}, {0, 0, 360}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo13", "Block", {1.25, 0.3, 0.3}, {1.186, 2.336, 1.6}, {0, 0, 382.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo14", "Block", {1.25, 0.3, 0.3}, {2.192, 3.008, 1.6}, {0, 0, 405}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo15", "Block", {1.25, 0.3, 0.3}, {2.864, 4.014, 1.6}, {0, 0, 427.5}, {255, 226, 150}, "Neon", "Body", 0},
+			{"HaloCore", "Ball", {0.9, 0.9, 0.9}, {0, 5.2, 1.6}, {0, 0, 0}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Spots", "Block", {1.92, 0.15, 3}, {0, 5.36, 0.3}, {0, 0, 0}, {190, 170, 140}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	PiercingOx = {
+		Height = 7.6,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {4.2, 3.8, 6.6}, {0, 4.4, 0.4}, {0, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Hump", "Block", {3.6, 1.6, 3}, {0, 6.8, -1.2}, {8, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {2.6, 2.4, 2.6}, {0, 4, -3.8}, {18, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Snout", "Block", {1.8, 1.2, 1}, {0, 3.2, -5}, {18, 0, 0}, {80, 70, 66}, "SmoothPlastic", "Body", 0},
+			{"NoseRing", "Cylinder", {0.2, 0.9, 0.9}, {0, 2.7, -5.5}, {0, 90, 0}, {214, 178, 74}, "Metal", "Body", 0},
+			{"HornBaseR", "Cylinder", {1.8, 0.8, 0.8}, {1.8, 4.9, -4.4}, {0, 30, 10}, {232, 222, 196}, "SmoothPlastic", "Body", 0},
+			{"HornBaseL", "Cylinder", {1.8, 0.8, 0.8}, {-1.8, 4.9, -4.4}, {0, -30, -10}, {232, 222, 196}, "SmoothPlastic", "Body", 0},
+			{"HornR", "Cylinder", {3, 0.55, 0.55}, {2.4, 5.1, -6.4}, {0, 80, 8}, {232, 222, 196}, "SmoothPlastic", "Body", 0},
+			{"HornL", "Cylinder", {3, 0.55, 0.55}, {-2.4, 5.1, -6.4}, {0, -80, -8}, {232, 222, 196}, "SmoothPlastic", "Body", 0},
+			{"HornTipR", "Wedge", {0.4, 0.5, 1.2}, {2.55, 5.25, -8.4}, {0, 0, 0}, {232, 222, 196}, "SmoothPlastic", "Body", 0},
+			{"HornTipL", "Wedge", {0.4, 0.5, 1.2}, {-2.55, 5.25, -8.4}, {0, 0, 0}, {232, 222, 196}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.2, 0.3, 0.5}, {1.32, 4.5, -4.3}, {0, 0, 0}, {255, 70, 60}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.2, 0.3, 0.5}, {-1.32, 4.5, -4.3}, {0, 0, 0}, {255, 70, 60}, "Neon", "Body", 0},
+			{"Leg0R", "Block", {1, 2.8, 1}, {1.4, 1.4, -2}, {0, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Leg0L", "Block", {1, 2.8, 1}, {-1.4, 1.4, -2}, {0, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Hoof0R", "Block", {1.1, 0.4, 1.2}, {1.4, 0.2, -2.1}, {0, 0, 0}, {30, 28, 26}, "SmoothPlastic", "Body", 0},
+			{"Hoof0L", "Block", {1.1, 0.4, 1.2}, {-1.4, 0.2, -2.1}, {0, 0, 0}, {30, 28, 26}, "SmoothPlastic", "Body", 0},
+			{"Leg1R", "Block", {1, 2.8, 1}, {1.4, 1.4, 2.6}, {0, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Leg1L", "Block", {1, 2.8, 1}, {-1.4, 1.4, 2.6}, {0, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Hoof1R", "Block", {1.1, 0.4, 1.2}, {1.4, 0.2, 2.5}, {0, 0, 0}, {30, 28, 26}, "SmoothPlastic", "Body", 0},
+			{"Hoof1L", "Block", {1.1, 0.4, 1.2}, {-1.4, 0.2, 2.5}, {0, 0, 0}, {30, 28, 26}, "SmoothPlastic", "Body", 0},
+			{"Tail", "Block", {0.3, 2.2, 0.3}, {0, 5, 3.8}, {25, 0, 0}, {48, 42, 40}, "SmoothPlastic", "Body", 0},
+			{"Rune", "Block", {0.2, 0.2, 5}, {0, 6.35, 0.8}, {0, 0, 0}, {255, 110, 70}, "Neon", "Body", 0},
+		},
+	},
+	TigerFuneral = {
+		Height = 5.7,
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Block", {2.5, 2.3, 6.2}, {0, 3.3, 0.3}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"Shoulders", "Block", {2.8, 2.6, 1.8}, {0, 3.5, -2.3}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"Head", "Block", {2.3, 2.1, 2.2}, {0, 4, -3.8}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"Muzzle", "Block", {1.5, 1, 1.1}, {0, 3.4, -5.1}, {0, 0, 0}, {236, 232, 226}, "SmoothPlastic", "Body", 0},
+			{"Nose", "Block", {0.5, 0.35, 0.2}, {0, 3.85, -5.65}, {0, 0, 0}, {60, 40, 50}, "SmoothPlastic", "Body", 0},
+			{"EarR", "Wedge", {0.5, 0.7, 0.5}, {0.8, 5.35, -3.6}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"EarL", "Wedge", {0.5, 0.7, 0.5}, {-0.8, 5.35, -3.6}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.4, 0.2, 0.1}, {0.55, 4.4, -4.91}, {0, 0, 0}, {190, 120, 255}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.4, 0.2, 0.1}, {-0.55, 4.4, -4.91}, {0, 0, 0}, {190, 120, 255}, "Neon", "Body", 0},
+			{"Stripe0", "Block", {2.55, 0.35, 0.3}, {0, 3.9, -1.8}, {0, 0, 0}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe0R", "Block", {0.1, 1.4, 0.3}, {1.27, 3.3, -1.5}, {0, 0, 15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe0L", "Block", {0.1, 1.4, 0.3}, {-1.27, 3.3, -1.5}, {0, 0, -15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"Stripe1", "Block", {2.55, 0.35, 0.3}, {0, 3.9, -0.7}, {0, 0, 0}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe1R", "Block", {0.1, 1.4, 0.3}, {1.27, 3.3, -0.4}, {0, 0, 15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe1L", "Block", {0.1, 1.4, 0.3}, {-1.27, 3.3, -0.4}, {0, 0, -15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"Stripe2", "Block", {2.55, 0.35, 0.3}, {0, 3.9, 0.4}, {0, 0, 0}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe2R", "Block", {0.1, 1.4, 0.3}, {1.27, 3.3, 0.7}, {0, 0, 15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe2L", "Block", {0.1, 1.4, 0.3}, {-1.27, 3.3, 0.7}, {0, 0, -15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"Stripe3", "Block", {2.55, 0.35, 0.3}, {0, 3.9, 1.5}, {0, 0, 0}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe3R", "Block", {0.1, 1.4, 0.3}, {1.27, 3.3, 1.8}, {0, 0, 15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe3L", "Block", {0.1, 1.4, 0.3}, {-1.27, 3.3, 1.8}, {0, 0, -15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"Stripe4", "Block", {2.55, 0.35, 0.3}, {0, 3.9, 2.6}, {0, 0, 0}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe4R", "Block", {0.1, 1.4, 0.3}, {1.27, 3.3, 2.9}, {0, 0, 15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"SideStripe4L", "Block", {0.1, 1.4, 0.3}, {-1.27, 3.3, 2.9}, {0, 0, -15}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+			{"Leg0R", "Block", {0.8, 2.4, 0.8}, {0.9, 1.2, -2.4}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"Leg0L", "Block", {0.8, 2.4, 0.8}, {-0.9, 1.2, -2.4}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"Claw0R", "Wedge", {0.8, 0.3, 0.5}, {0.9, 0.15, -3}, {0, 0, 0}, {40, 40, 44}, "SmoothPlastic", "Body", 0},
+			{"Claw0L", "Wedge", {0.8, 0.3, 0.5}, {-0.9, 0.15, -3}, {0, 0, 0}, {40, 40, 44}, "SmoothPlastic", "Body", 0},
+			{"Leg1R", "Block", {0.8, 2.4, 0.8}, {0.9, 1.2, 2.3}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"Leg1L", "Block", {0.8, 2.4, 0.8}, {-0.9, 1.2, 2.3}, {0, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"Claw1R", "Wedge", {0.8, 0.3, 0.5}, {0.9, 0.15, 1.7}, {0, 0, 0}, {40, 40, 44}, "SmoothPlastic", "Body", 0},
+			{"Claw1L", "Wedge", {0.8, 0.3, 0.5}, {-0.9, 0.15, 1.7}, {0, 0, 0}, {40, 40, 44}, "SmoothPlastic", "Body", 0},
+			{"Tail", "Block", {0.4, 0.4, 3.6}, {0, 4, 4.6}, {-25, 0, 0}, {214, 210, 206}, "SmoothPlastic", "Body", 0},
+			{"TailTip", "Block", {0.42, 0.42, 0.8}, {0, 4.9, 6.2}, {-25, 0, 0}, {24, 22, 26}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	Agito = {
+		Height = 15.2,
+		Joints = {
+		},
+		Parts = {
+			{"LegR", "Block", {1.4, 5, 1.6}, {1.4, 2.5, 0.3}, {0, 0, 0}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"LegL", "Block", {1.4, 5, 1.6}, {-1.4, 2.5, 0.3}, {0, 0, 0}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"ClawR", "Wedge", {1.6, 0.6, 1.4}, {1.4, 0.3, -0.8}, {0, 0, 0}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"ClawL", "Wedge", {1.6, 0.6, 1.4}, {-1.4, 0.3, -0.8}, {0, 0, 0}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"Tail", "Cylinder", {6, 1.4, 1.4}, {0, 3, 3.8}, {0, 90, 30}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"Hips", "Block", {4, 2, 2.4}, {0, 5.8, 0.2}, {0, 0, 0}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"Torso", "Block", {4.8, 4.6, 2.8}, {0, 8.8, 0}, {0, 0, 0}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"Ribs", "Block", {3.4, 3, 0.3}, {0, 8.8, -1.5}, {0, 0, 0}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"ArmR", "Block", {1.2, 4.6, 1.2}, {3, 7.9, -0.4}, {-15, 0, -10}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"ArmL", "Block", {1.2, 4.6, 1.2}, {-3, 7.9, -0.4}, {-15, 0, 10}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"TigerClawR", "Wedge", {1.1, 1.4, 1.2}, {3.3, 5.3, -1.2}, {180, 0, 0}, {190, 120, 255}, "Neon", "Body", 0},
+			{"TigerClawL", "Wedge", {1.1, 1.4, 1.2}, {-3.3, 5.3, -1.2}, {180, 0, 0}, {190, 120, 255}, "Neon", "Body", 0},
+			{"Head", "Block", {2.2, 2.2, 2.6}, {0, 12.2, -0.6}, {0, 0, 0}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"Maw", "Block", {1.8, 0.9, 2.2}, {0, 11.2, -1.3}, {0, 0, 0}, {40, 36, 46}, "SmoothPlastic", "Body", 0},
+			{"EyeR", "Block", {0.5, 0.25, 0.1}, {0.55, 12.5, -1.95}, {0, 0, 0}, {255, 206, 80}, "Neon", "Body", 0},
+			{"EyeL", "Block", {0.5, 0.25, 0.1}, {-0.55, 12.5, -1.95}, {0, 0, 0}, {255, 206, 80}, "Neon", "Body", 0},
+			{"AntlerR", "Block", {0.25, 2.4, 0.25}, {1, 14, -0.4}, {0, 0, -30}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"AntlerL", "Block", {0.25, 2.4, 0.25}, {-1, 14, -0.4}, {0, 0, 30}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"AntlerTineR", "Block", {0.2, 1.2, 0.2}, {1.9, 14.6, -0.4}, {0, 0, -70}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"AntlerTineL", "Block", {0.2, 1.2, 0.2}, {-1.9, 14.6, -0.4}, {0, 0, 70}, {226, 220, 206}, "SmoothPlastic", "Body", 0},
+			{"Wing0R", "Block", {4.6, 0.3, 2.4}, {4.6, 11.2, 1.4}, {0, -10, 30}, {24, 22, 30}, "SmoothPlastic", "Body", 0},
+			{"Wing0L", "Block", {4.6, 0.3, 2.4}, {-4.6, 11.2, 1.4}, {0, 10, -30}, {24, 22, 30}, "SmoothPlastic", "Body", 0},
+			{"Wing1R", "Wedge", {0.3, 2, 3.2}, {7.8, 13.3, 1.8}, {0, 90, 30}, {24, 22, 30}, "SmoothPlastic", "Body", 0},
+			{"Wing1L", "Wedge", {0.3, 2, 3.2}, {-7.8, 13.3, 1.8}, {0, -90, -30}, {24, 22, 30}, "SmoothPlastic", "Body", 0},
+			{"Halo0", "Block", {1.2, 0.22, 0.22}, {2.2, 12.2, 1.6}, {0, 0, 90}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo1", "Block", {1.2, 0.22, 0.22}, {1.905, 13.3, 1.6}, {0, 0, 120}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo2", "Block", {1.2, 0.22, 0.22}, {1.1, 14.105, 1.6}, {0, 0, 150}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo3", "Block", {1.2, 0.22, 0.22}, {0, 14.4, 1.6}, {0, 0, 180}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo4", "Block", {1.2, 0.22, 0.22}, {-1.1, 14.105, 1.6}, {0, 0, 210}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo5", "Block", {1.2, 0.22, 0.22}, {-1.905, 13.3, 1.6}, {0, 0, 240}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo6", "Block", {1.2, 0.22, 0.22}, {-2.2, 12.2, 1.6}, {0, 0, 270}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo7", "Block", {1.2, 0.22, 0.22}, {-1.905, 11.1, 1.6}, {0, 0, 300}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo8", "Block", {1.2, 0.22, 0.22}, {-1.1, 10.295, 1.6}, {0, 0, 330}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo9", "Block", {1.2, 0.22, 0.22}, {0, 10, 1.6}, {0, 0, 360}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo10", "Block", {1.2, 0.22, 0.22}, {1.1, 10.295, 1.6}, {0, 0, 390}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Halo11", "Block", {1.2, 0.22, 0.22}, {1.905, 11.1, 1.6}, {0, 0, 420}, {255, 226, 150}, "Neon", "Body", 0},
+			{"Serpent", "Cylinder", {3, 1, 1}, {0, 9.4, 1.9}, {0, 90, -40}, {60, 64, 76}, "SmoothPlastic", "Body", 0},
+		},
+	},
+	CursedSpirit = {
+		Height = 6.95,
+		HipHeight = 2,
+		Root = { Size = {3, 3, 2}, Pos = {0, 3.5, 0} },
+		Joints = {
+		},
+		Parts = {
+			{"Body", "Ball", {5, 5, 5}, {0, 4.2, 0}, {0, 0, 0}, {96, 76, 110}, "SmoothPlastic", "Body", 0},
+			{"Belly", "Ball", {3.6, 3.6, 3.6}, {0, 3.6, -1.1}, {0, 0, 0}, {54, 40, 66}, "SmoothPlastic", "Body", 0},
+			{"Mouth", "Block", {2.6, 0.5, 0.4}, {0, 3.4, -2.8}, {0, 0, 0}, {20, 10, 20}, "SmoothPlastic", "Body", 0},
+			{"Eye0", "Ball", {0.7, 0.7, 0.7}, {-1.2, 5.6, -2.1}, {0, 0, 0}, {250, 245, 230}, "SmoothPlastic", "Body", 0},
+			{"Pupil0", "Ball", {0.32, 0.32, 0.32}, {-1.2, 5.6, -2.42}, {0, 0, 0}, {255, 80, 80}, "Neon", "Body", 0},
+			{"Eye1", "Ball", {0.7, 0.7, 0.7}, {0.2, 6.2, -2.1}, {0, 0, 0}, {250, 245, 230}, "SmoothPlastic", "Body", 0},
+			{"Pupil1", "Ball", {0.32, 0.32, 0.32}, {0.2, 6.2, -2.42}, {0, 0, 0}, {255, 80, 80}, "Neon", "Body", 0},
+			{"Eye2", "Ball", {0.7, 0.7, 0.7}, {1.3, 5.2, -2.1}, {0, 0, 0}, {250, 245, 230}, "SmoothPlastic", "Body", 0},
+			{"Pupil2", "Ball", {0.32, 0.32, 0.32}, {1.3, 5.2, -2.42}, {0, 0, 0}, {255, 80, 80}, "Neon", "Body", 0},
+			{"Eye3", "Ball", {0.7, 0.7, 0.7}, {-0.4, 4.9, -2.1}, {0, 0, 0}, {250, 245, 230}, "SmoothPlastic", "Body", 0},
+			{"Pupil3", "Ball", {0.32, 0.32, 0.32}, {-0.4, 4.9, -2.42}, {0, 0, 0}, {255, 80, 80}, "Neon", "Body", 0},
+			{"Eye4", "Ball", {0.7, 0.7, 0.7}, {0.9, 6.6, -2.1}, {0, 0, 0}, {250, 245, 230}, "SmoothPlastic", "Body", 0},
+			{"Pupil4", "Ball", {0.32, 0.32, 0.32}, {0.9, 6.6, -2.42}, {0, 0, 0}, {255, 80, 80}, "Neon", "Body", 0},
+			{"ArmR", "Block", {0.9, 4, 0.9}, {2.8, 3, -0.4}, {10, 0, -20}, {96, 76, 110}, "SmoothPlastic", "Body", 0},
+			{"ArmL", "Block", {0.9, 4, 0.9}, {-2.8, 3, -0.4}, {10, 0, 20}, {96, 76, 110}, "SmoothPlastic", "Body", 0},
+			{"LegR", "Block", {1.1, 2, 1.1}, {1.2, 1, 0}, {0, 0, 0}, {54, 40, 66}, "SmoothPlastic", "Body", 0},
+			{"LegL", "Block", {1.1, 2, 1.1}, {-1.2, 1, 0}, {0, 0, 0}, {54, 40, 66}, "SmoothPlastic", "Body", 0},
+		},
+	},
+}
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX00000005"><Properties><string name="Name">ModelFactory</string><ProtectedString name="Source"><![CDATA[-- Builds shikigami / Mahoraga models out of Parts from ModelData (generated from assets/models.json).
+--
+-- ModelFactory.Build(name, {
+--     CFrame = CFrame,      -- where the model's feet go (ground point), facing its LookVector
+--     Scale = number,       -- default 1
+--     Anchored = bool,      -- default true (client FX models). false = welded physics rig
+--     Humanoid = bool,      -- adds a Humanoid + HumanoidRootPart (bosses / dummies)
+--     Parent = Instance,
+-- })
+-- Unanchored rigs get Motor6D joints named after ModelData joints (Wheel, RightArm, LeftArm)
+-- so the server can animate them by changing Motor6D.C0.
+
+local ModelData = require(script.Parent.ModelData)
+
+local ModelFactory = {}
+
+local function vec(t, scale)
+	return Vector3.new(t[1] * scale, t[2] * scale, t[3] * scale)
+end
+
+local function makePart(def, scale)
+	local name, shape, size, pos, rot, color, material, _group, transparency = table.unpack(def)
+	local part
+	if shape == "Wedge" then
+		part = Instance.new("WedgePart")
+	else
+		part = Instance.new("Part")
+		part.Shape = Enum.PartType[shape]
+	end
+	part.Name = name
+	part.Size = vec(size, scale)
+	part.CFrame = CFrame.new(vec(pos, scale)) * CFrame.Angles(math.rad(rot[1]), math.rad(rot[2]), math.rad(rot[3]))
+	part.Color = Color3.fromRGB(color[1], color[2], color[3])
+	part.Material = Enum.Material[material]
+	part.Transparency = transparency
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.CanCollide = false
+	part.CanTouch = false
+	part.CanQuery = false
+	part.CastShadow = material ~= "Neon"
+	part.Massless = true
+	return part
+end
+
+function ModelFactory.Exists(name)
+	return ModelData[name] ~= nil
+end
+
+function ModelFactory.Build(name, opts)
+	opts = opts or {}
+	local data = ModelData[name]
+	assert(data, "ModelFactory: unknown model " .. tostring(name))
+
+	local scale = opts.Scale or 1
+	local anchored = opts.Anchored ~= false
+	local model = Instance.new("Model")
+	model.Name = opts.Name or name
+
+	local root = Instance.new("Part")
+	root.Name = opts.Humanoid and "HumanoidRootPart" or "Root"
+	root.Transparency = 1
+	root.Anchored = anchored
+	root.CanCollide = opts.Humanoid == true
+	root.CanQuery = opts.Humanoid == true
+	root.CanTouch = false
+	local rootOffset = Vector3.zero
+	if data.Root then
+		root.Size = vec(data.Root.Size, scale)
+		rootOffset = vec(data.Root.Pos, scale)
+	else
+		root.Size = Vector3.new(1, 1, 1)
+	end
+	root.CFrame = CFrame.new(rootOffset)
+	root.Parent = model
+	model.PrimaryPart = root
+
+	local pivots = {}
+	for jointName, joint in pairs(data.Joints) do
+		local pivot = Instance.new("Part")
+		pivot.Name = jointName .. "Pivot"
+		pivot.Size = Vector3.new(0.2, 0.2, 0.2)
+		pivot.Transparency = 1
+		pivot.CanCollide = false
+		pivot.CanQuery = false
+		pivot.CanTouch = false
+		pivot.Massless = true
+		pivot.Anchored = anchored
+		pivot.CFrame = CFrame.new(vec(joint.Pivot, scale))
+		pivot.Parent = model
+		pivots[jointName] = pivot
+	end
+
+	local parts = {}
+	for _, def in ipairs(data.Parts) do
+		local part = makePart(def, scale)
+		part.Anchored = anchored
+		part.Parent = model
+		parts[part.Name] = part
+		if not anchored then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = pivots[def[8]] or root
+			weld.Part1 = part
+			weld.Parent = part
+		end
+	end
+
+	if not anchored then
+		root.Massless = false
+		for jointName, joint in pairs(data.Joints) do
+			local part0 = parts[joint.Part0] or root
+			local pivot = pivots[jointName]
+			local motor = Instance.new("Motor6D")
+			motor.Name = jointName
+			motor.Part0 = part0
+			motor.Part1 = pivot
+			motor.C0 = part0.CFrame:ToObjectSpace(pivot.CFrame)
+			motor.C1 = CFrame.new()
+			motor.Parent = part0
+		end
+	end
+
+	if opts.Humanoid then
+		local humanoid = Instance.new("Humanoid")
+		humanoid.HipHeight = (data.HipHeight or 2) * scale
+		humanoid.BreakJointsOnDeath = false
+		humanoid.RequiresNeck = false -- custom rigs have no Neck joint
+		humanoid.AutomaticScalingEnabled = false
+		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+		humanoid.Parent = model
+	end
+
+	local ground = opts.CFrame or CFrame.new()
+	model:PivotTo(ground * CFrame.new(rootOffset))
+	if opts.Parent then
+		model.Parent = opts.Parent
+	end
+	return model
+end
+
+-- Height of the model at scale 1 (for emerge / sink animations).
+function ModelFactory.Height(name)
+	local data = ModelData[name]
+	return data and data.Height or 5
+end
+
+return ModelFactory
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX00000006"><Properties><string name="Name">VFX</string><ProtectedString name="Source"><![CDATA[-- Client-side visual effects. The server fires FX("<Effect>", params) and every client runs
+-- VFX.Effects[<Effect>](params) locally, so tweens and particles are smooth and never cost
+-- server bandwidth. Damage and timing stay on the server.
+
+local Debris = game:GetService("Debris")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local Config = require(script.Parent.Config)
+local ModelFactory = require(script.Parent.ModelFactory)
+
+local VFX = {}
+VFX.Effects = {}
+
+local TEX = Config.Textures
+local UP = Vector3.new(0, 1, 0)
+local SHADOW = Color3.fromRGB(14, 12, 20)
+local SHADOW_RIM = Color3.fromRGB(120, 70, 200)
+local GOLD = Color3.fromRGB(255, 214, 120)
+local BLADE = Color3.fromRGB(255, 246, 222)
+local RED = Color3.fromRGB(255, 60, 60)
+
+---------------------------------------------------------------- helpers
+
+local fxFolder
+local function folder()
+	if not fxFolder or not fxFolder.Parent then
+		fxFolder = Instance.new("Folder")
+		fxFolder.Name = "TenShadowsFX"
+		fxFolder.Parent = workspace
+	end
+	return fxFolder
+end
+
+local function tween(inst, t, props, style, dir)
+	local tw = TweenService:Create(inst, TweenInfo.new(t, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props)
+	tw:Play()
+	return tw
+end
+
+local function newPart(props)
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Material = Enum.Material.Neon
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	for k, v in pairs(props) do
+		p[k] = v
+	end
+	p.Parent = folder()
+	return p
+end
+
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function dirTo(a, b)
+	local d = flat(b - a)
+	if d.Magnitude < 0.01 then
+		return Vector3.new(0, 0, -1)
+	end
+	return d.Unit
+end
+
+-- A flat disc lying on the ground (Roblox cylinders run along X, so turn it up).
+local function discCFrame(pos)
+	return CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90))
+end
+
+local function sound(id, pos, volume, speed)
+	if not id then
+		return
+	end
+	local holder = newPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, CFrame = CFrame.new(pos) })
+	local s = Instance.new("Sound")
+	s.SoundId = id
+	s.Volume = volume or 0.8
+	s.PlaybackSpeed = speed or 1
+	s.RollOffMaxDistance = 300
+	s.Parent = holder
+	s:Play()
+	Debris:AddItem(holder, 4)
+end
+VFX.Sound = sound
+
+-- One-shot particle burst at a position.
+local function burst(pos, opts)
+	local holder = newPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, CFrame = opts.CFrame or CFrame.new(pos) })
+	local att = Instance.new("Attachment")
+	att.Parent = holder
+	local pe = Instance.new("ParticleEmitter")
+	pe.Texture = opts.Texture or TEX.Spark
+	pe.Color = ColorSequence.new(opts.Color or Color3.new(1, 1, 1), opts.Color2 or opts.Color or Color3.new(1, 1, 1))
+	pe.LightEmission = opts.LightEmission or 1
+	pe.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, opts.Size or 1),
+		NumberSequenceKeypoint.new(1, opts.EndSize or 0),
+	})
+	pe.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, opts.Transparency or 0),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	pe.Lifetime = NumberRange.new(opts.Lifetime or 0.4, (opts.Lifetime or 0.4) * 1.6)
+	pe.Speed = NumberRange.new(opts.Speed or 20, (opts.Speed or 20) * 1.8)
+	pe.SpreadAngle = Vector2.new(opts.Spread or 180, opts.Spread or 180)
+	pe.Acceleration = opts.Acceleration or Vector3.zero
+	pe.Drag = opts.Drag or 3
+	pe.Rotation = NumberRange.new(0, 360)
+	pe.RotSpeed = NumberRange.new(-180, 180)
+	pe.EmissionDirection = opts.Direction or Enum.NormalId.Top
+	pe.Rate = 0
+	pe.Parent = att
+	pe:Emit(opts.Count or 20)
+	Debris:AddItem(holder, (opts.Lifetime or 0.4) * 2 + 0.5)
+	return pe
+end
+VFX.Burst = burst
+
+local function smoke(pos, color, count, size, speed)
+	return burst(pos, {
+		Texture = TEX.Smoke, Color = color or SHADOW, Count = count or 16, Size = size or 4, EndSize = (size or 4) * 1.8,
+		Lifetime = 0.9, Speed = speed or 6, LightEmission = 0, Transparency = 0.15,
+		Acceleration = Vector3.new(0, 4, 0),
+	})
+end
+
+local function sparks(pos, color, count, speed)
+	return burst(pos, { Texture = TEX.Spark, Color = color, Count = count or 24, Size = 0.9, Lifetime = 0.35, Speed = speed or 40 })
+end
+
+local function flashSphere(pos, color, size, t)
+	local p = newPart({ Shape = Enum.PartType.Ball, Size = Vector3.one, CFrame = CFrame.new(pos), Color = color, Transparency = 0.1 })
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = size * 2
+	light.Brightness = 4
+	light.Parent = p
+	tween(p, t or 0.35, { Size = Vector3.one * size, Transparency = 1 })
+	tween(light, t or 0.35, { Brightness = 0 })
+	Debris:AddItem(p, (t or 0.35) + 0.1)
+end
+VFX.Flash = flashSphere
+
+-- Ring of shards flying outward: reads as a shockwave from any camera angle.
+local function shockRing(pos, radius, color, t, segments, height)
+	segments = segments or 28
+	t = t or 0.5
+	for i = 1, segments do
+		local a = (i / segments) * math.pi * 2
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		local startCF = CFrame.lookAt(pos + dir * 1.5 + UP * 0.4, pos + dir * 3 + UP * 0.4)
+		local p = newPart({
+			Size = Vector3.new(radius * 0.18, height or 0.6, 0.6), CFrame = startCF, Color = color, Transparency = 0.05,
+		})
+		tween(p, t, { CFrame = startCF + dir * radius, Transparency = 1, Size = Vector3.new(radius * 0.12, 0.15, 0.3) })
+		Debris:AddItem(p, t + 0.1)
+	end
+	local disc = newPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.15, 2, 2), CFrame = discCFrame(pos + UP * 0.1), Color = color, Transparency = 0.45 })
+	tween(disc, t, { Size = Vector3.new(0.15, radius * 2, radius * 2), Transparency = 1 })
+	Debris:AddItem(disc, t + 0.1)
+end
+VFX.ShockRing = shockRing
+
+local function rocks(pos, count, spread, color)
+	for _ = 1, count do
+		local s = math.random(6, 16) / 10
+		local p = newPart({
+			Size = Vector3.new(s, s, s), CFrame = CFrame.new(pos) * CFrame.Angles(math.random() * 6, math.random() * 6, 0),
+			Color = color or Color3.fromRGB(58, 54, 66), Material = Enum.Material.Slate,
+		})
+		local out = Vector3.new(math.random(-100, 100), 0, math.random(-100, 100)).Unit * (spread * (0.4 + math.random() * 0.6))
+		local peak = pos + out * 0.5 + UP * math.random(6, 14)
+		tween(p, 0.3, { CFrame = CFrame.new(peak) * CFrame.Angles(math.random() * 6, 0, math.random() * 6) }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		task.delay(0.3, function()
+			tween(p, 0.35, { CFrame = CFrame.new(pos + out - UP * 0.2), Transparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		end)
+		Debris:AddItem(p, 0.8)
+	end
+end
+
+-- Jagged lightning bolt between two points.
+local function bolt(p0, p1, color, width, t)
+	local segments = math.max(4, math.floor((p1 - p0).Magnitude / 5))
+	local last = p0
+	for i = 1, segments do
+		local alpha = i / segments
+		local target = p0:Lerp(p1, alpha)
+		if i < segments then
+			target += Vector3.new(math.random(-20, 20) / 10, math.random(-20, 20) / 10, math.random(-20, 20) / 10)
+		end
+		local len = (target - last).Magnitude
+		local p = newPart({
+			Size = Vector3.new(width, width, len), CFrame = CFrame.lookAt((last + target) / 2, target), Color = color, Transparency = 0,
+		})
+		tween(p, t or 0.25, { Transparency = 1, Size = Vector3.new(width * 0.2, width * 0.2, len) })
+		Debris:AddItem(p, (t or 0.25) + 0.1)
+		last = target
+	end
+end
+VFX.Bolt = bolt
+
+-- Crescent slash arc. cf = center + facing; the arc sweeps across cf's X axis.
+local function slashArc(cf, radius, color, span, t, thickness, tilt)
+	span = span or 150
+	t = t or 0.25
+	local pieces = 14
+	local base = cf * CFrame.Angles(0, 0, math.rad(tilt or 0))
+	for i = 0, pieces do
+		local a = math.rad(-span / 2 + span * (i / pieces))
+		local mid = 1 - math.abs(i / pieces - 0.5) * 2 -- thick in the middle, thin at the tips
+		local pos = (base * CFrame.new(math.sin(a) * radius, 0, -math.cos(a) * radius)).Position
+		local tangent = (base * CFrame.new(math.sin(a + 0.1) * radius, 0, -math.cos(a + 0.1) * radius)).Position
+		local seg = (2 * math.pi * radius) * (span / 360) / pieces * 1.25
+		local p = newPart({
+			Size = Vector3.new((thickness or 0.5) * (0.3 + mid), 0.12 + mid * 0.5, seg),
+			CFrame = CFrame.lookAt(pos, tangent, base.UpVector),
+			Color = color, Transparency = 1,
+		})
+		task.delay(t * 0.35 * (i / pieces), function()
+			p.Transparency = 0
+			tween(p, t, { Transparency = 1, CFrame = p.CFrame + (pos - base.Position).Unit * radius * 0.15 })
+		end)
+		Debris:AddItem(p, t * 1.5 + 0.2)
+	end
+end
+VFX.SlashArc = slashArc
+
+-- Smoothly moves an anchored model. Returns the tween.
+local function moveModel(model, toCF, t, style, dir)
+	local value = Instance.new("CFrameValue")
+	value.Value = model:GetPivot()
+	value.Changed:Connect(function(cf)
+		if model.Parent then
+			model:PivotTo(cf)
+		end
+	end)
+	local tw = tween(value, t, { Value = toCF }, style, dir)
+	tw.Completed:Connect(function()
+		value:Destroy()
+	end)
+	return tw
+end
+VFX.MoveModel = moveModel
+
+local function fadeModel(model, t)
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			tween(d, t, { Transparency = 1 })
+		end
+	end
+	Debris:AddItem(model, t + 0.1)
+end
+
+-- Shadow puddle: every shikigami enters and leaves the world through Megumi's shadow.
+local function puddle(pos, radius, life)
+	life = life or 1.2
+	local ground = pos * Vector3.new(1, 0, 1) + Vector3.new(0, pos.Y + 0.08, 0)
+	local rim = newPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.12, 0.5, 0.5), CFrame = discCFrame(ground), Color = SHADOW_RIM, Transparency = 0.35 })
+	local disc = newPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.16, 0.4, 0.4), CFrame = discCFrame(ground + UP * 0.02), Color = SHADOW, Material = Enum.Material.SmoothPlastic, Reflectance = 0.2 })
+	tween(rim, 0.25, { Size = Vector3.new(0.12, radius * 2 + 1.2, radius * 2 + 1.2) }, Enum.EasingStyle.Back)
+	tween(disc, 0.25, { Size = Vector3.new(0.16, radius * 2, radius * 2) }, Enum.EasingStyle.Back)
+	burst(ground, {
+		Texture = TEX.Smoke, Color = SHADOW, Color2 = SHADOW_RIM, Count = 10, Size = radius * 0.7, EndSize = radius * 1.2,
+		Lifetime = 0.8, Speed = 4, LightEmission = 0, Transparency = 0.2, Acceleration = Vector3.new(0, 6, 0), Spread = 30,
+	})
+	task.delay(life, function()
+		tween(rim, 0.3, { Size = Vector3.new(0.12, 0.1, 0.1), Transparency = 1 })
+		tween(disc, 0.3, { Size = Vector3.new(0.16, 0.1, 0.1), Transparency = 1 })
+		Debris:AddItem(rim, 0.4)
+		Debris:AddItem(disc, 0.4)
+	end)
+end
+VFX.Puddle = puddle
+
+-- Spawns a model under the ground and rises it out of a shadow puddle.
+local function emerge(name, groundCF, opts)
+	opts = opts or {}
+	local scale = opts.Scale or 1
+	local height = ModelFactory.Height(name) * scale
+	local model = ModelFactory.Build(name, { CFrame = groundCF - UP * (height + 0.5), Scale = scale, Parent = folder() })
+	puddle(groundCF.Position, opts.PuddleRadius or math.max(3, height * 0.45), opts.PuddleLife or 1)
+	moveModel(model, groundCF, opts.Time or 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	return model, height
+end
+
+local function sink(model, height, t)
+	if not model.Parent then
+		return
+	end
+	t = t or 0.35
+	local cf = model:GetPivot()
+	puddle(cf.Position * Vector3.new(1, 0, 1) + Vector3.new(0, cf.Position.Y, 0), math.max(3, height * 0.45), t + 0.1)
+	moveModel(model, cf - UP * (height + 1), t, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	Debris:AddItem(model, t + 0.05)
+end
+
+-- Hop along an arc (for dogs, tiger, etc).
+local function leap(model, toCF, t, height)
+	local fromCF = model:GetPivot()
+	local value = Instance.new("NumberValue")
+	value.Changed:Connect(function(a)
+		if model.Parent then
+			local cf = fromCF:Lerp(toCF, a)
+			model:PivotTo(cf + UP * (math.sin(a * math.pi) * height))
+		end
+	end)
+	local tw = tween(value, t, { Value = 1 }, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+	tw.Completed:Connect(function()
+		value:Destroy()
+	end)
+	return tw
+end
+
+local function ground(pos)
+	return Vector3.new(pos.X, 0, pos.Z)
+end
+
+---------------------------------------------------------------- camera shake / screen flash
+
+local shakes = {}
+function VFX.Shake(intensity, duration, pos)
+	if pos then
+		local cam = workspace.CurrentCamera
+		local dist = cam and (cam.CFrame.Position - pos).Magnitude or 0
+		intensity *= math.clamp(1 - dist / 220, 0, 1)
+	end
+	if intensity > 0.02 then
+		table.insert(shakes, { I = intensity, T = duration, Start = time() })
+	end
+end
+
+local colorCorrection
+function VFX.ScreenFlash(color, strength, t)
+	if not colorCorrection or not colorCorrection.Parent then
+		colorCorrection = Instance.new("ColorCorrectionEffect")
+		colorCorrection.Name = "TenShadowsFlash"
+		colorCorrection.Parent = Lighting
+	end
+	colorCorrection.TintColor = color
+	colorCorrection.Brightness = strength or 0.3
+	tween(colorCorrection, t or 0.4, { TintColor = Color3.new(1, 1, 1), Brightness = 0 })
+end
+
+local started = false
+function VFX.Init()
+	if started or not RunService:IsClient() then
+		return
+	end
+	started = true
+	RunService:BindToRenderStep("TenShadowsShake", Enum.RenderPriority.Camera.Value + 1, function()
+		local cam = workspace.CurrentCamera
+		if not cam or #shakes == 0 then
+			return
+		end
+		local now = time()
+		local total = 0
+		for i = #shakes, 1, -1 do
+			local s = shakes[i]
+			local a = (now - s.Start) / s.T
+			if a >= 1 then
+				table.remove(shakes, i)
+			else
+				total += s.I * (1 - a)
+			end
+		end
+		if total > 0 then
+			total = math.min(total, 3)
+			cam.CFrame *= CFrame.new(
+				(math.random() - 0.5) * total, (math.random() - 0.5) * total, 0
+			) * CFrame.Angles(0, 0, (math.random() - 0.5) * total * 0.02)
+		end
+	end)
+end
+
+---------------------------------------------------------------- generic effects
+
+local E = VFX.Effects
+
+function E.Summon(p)
+	puddle(p.Pos, p.Radius or 4, p.Life or 1)
+	sound(Config.Sounds.Summon, p.Pos, 0.4, 0.6)
+end
+
+function E.Hit(p)
+	local color = p.Color or Color3.new(1, 1, 1)
+	sparks(p.Pos, color, p.Big and 40 or 18, p.Big and 60 or 35)
+	flashSphere(p.Pos, color, p.Big and 9 or 4, 0.2)
+	if p.Big then
+		VFX.Shake(0.5, 0.25, p.Pos)
+	end
+end
+
+function E.DamageNumber(p)
+	local holder = newPart({ Size = Vector3.new(0.2, 0.2, 0.2), Transparency = 1, CFrame = CFrame.new(p.Pos + Vector3.new(math.random(-15, 15) / 10, 1, 0)) })
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.fromOffset(160, 50)
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.MaxDistance = 250
+	gui.Parent = holder
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.GothamBlack
+	label.TextScaled = true
+	label.TextColor3 = p.Color or Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 0.2
+	label.Text = (p.Amount and tostring(p.Amount) or "") .. (p.Note and (" " .. p.Note) or "")
+	label.Parent = gui
+	tween(holder, 0.9, { CFrame = holder.CFrame + UP * 5 })
+	tween(label, 0.9, { TextTransparency = 1, TextStrokeTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	Debris:AddItem(holder, 1)
+end
+
+function E.Heal(p)
+	burst(p.Pos, { Color = Color3.fromRGB(150, 255, 170), Color2 = GOLD, Count = 30, Size = 0.8, Lifetime = 0.9, Speed = 8, Acceleration = Vector3.new(0, 12, 0) })
+end
+
+function E.Blade(p)
+	local cf = p.CFrame
+	local finisher = p.Combo == 4
+	local tilt = ({ -20, 20, -60, 0 })[p.Combo] or 0
+	slashArc(cf * CFrame.new(0, 0, -1), finisher and 8 or 6, Color3.fromRGB(205, 190, 255), finisher and 200 or 140, 0.22, finisher and 0.9 or 0.5, tilt)
+	sound(Config.Sounds.Slash, cf.Position, 0.5, 0.9 + p.Combo * 0.08)
+	if finisher then
+		smoke(cf.Position + cf.LookVector * 5, SHADOW, 8, 3, 10)
+	end
+end
+
+function E.ShadowStep(p)
+	puddle(p.From, 4, 0.6)
+	smoke(p.From + UP * 2, SHADOW, 20, 3.5, 10)
+	task.delay(0.18, function()
+		puddle(p.To, 4, 0.6)
+		smoke(p.To + UP * 2, SHADOW, 16, 3, 8)
+		burst(p.To + UP, { Color = SHADOW_RIM, Count = 18, Size = 0.6, Speed = 25, Lifetime = 0.3 })
+	end)
+end
+
+function E.Chant(p)
+	-- dark spiral climbing around the summoner while they chant
+	for i = 1, 16 do
+		task.delay(i * 0.06, function()
+			local a = i * 0.8
+			local pos = p.Pos + Vector3.new(math.cos(a) * 4, i * 0.5, math.sin(a) * 4)
+			burst(pos, { Texture = TEX.Smoke, Color = SHADOW, Color2 = SHADOW_RIM, Count = 3, Size = 2, EndSize = 3, Lifetime = 0.7, Speed = 2, LightEmission = 0.2 })
+		end)
+	end
+	puddle(p.Pos, 7, 1.4)
+end
+
+---------------------------------------------------------------- shikigami
+
+local activeDogs = {}
+
+function E.DivineDogs(p)
+	local look = dirTo(p.Origin, p.Target)
+	local right = look:Cross(UP)
+	local dogs = {
+		{ Name = "DivineDogWhite", Side = -1, Id = p.WhiteId },
+		{ Name = "DivineDogBlack", Side = 1, Id = p.BlackId },
+	}
+	for i, d in ipairs(dogs) do
+		if d.Id then
+			task.spawn(function()
+				local start = ground(p.Origin) + right * d.Side * 4
+				local dog, h = emerge(d.Name, CFrame.lookAt(start, start + look), { Time = 0.25 })
+				activeDogs[d.Id] = { Model = dog, Height = h }
+				task.wait(0.28 + i * 0.05)
+				local land = ground(p.Target) - look * 3 + right * d.Side * 2
+				leap(dog, CFrame.lookAt(land, land + look), 0.32, 4)
+				task.wait(0.32)
+				for bite = 1, p.Bites or 2 do
+					slashArc(CFrame.lookAt(land + UP * 3, p.Target + UP * 3), 3, d.Side < 0 and Color3.new(1, 1, 1) or SHADOW_RIM, 120, 0.18, 0.4, d.Side * 40)
+					sparks(p.Target + UP * 2, Color3.new(1, 1, 1), 12, 30)
+					sound(Config.Sounds.Hit, p.Target, 0.4, 1.3)
+					if bite == 1 then
+						moveModel(dog, dog:GetPivot() * CFrame.new(0, 0, 1.2), 0.12)
+					end
+					task.wait(0.2)
+				end
+				-- guard: stay beside the target until the guard time ends or the dog is destroyed
+				task.wait(p.Guard or 6)
+				if activeDogs[d.Id] and activeDogs[d.Id].Model == dog then
+					activeDogs[d.Id] = nil
+					sink(dog, h)
+				end
+			end)
+		end
+	end
+end
+
+function E.DogDestroyed(p)
+	local entry = activeDogs[p.Id]
+	local pos = p.Pos
+	if entry then
+		activeDogs[p.Id] = nil
+		pos = entry.Model:GetPivot().Position
+		for _, part in ipairs(entry.Model:GetDescendants()) do
+			if part:IsA("BasePart") and part.Transparency < 1 then
+				part.Anchored = true
+				local out = (part.Position - pos + Vector3.new(0, 1, 0)).Unit
+				tween(part, 0.6, { CFrame = part.CFrame + out * math.random(4, 9), Transparency = 1 })
+			end
+		end
+		Debris:AddItem(entry.Model, 0.7)
+	end
+	smoke(pos + UP * 2, Color3.fromRGB(230, 230, 235), 18, 3, 10)
+	sparks(pos + UP * 2, Color3.new(1, 1, 1), 30, 40)
+end
+
+function E.Nue(p)
+	local look = dirTo(p.Origin, p.Target)
+	local start = ground(p.Origin) - look * 3
+	local nue = emerge("Nue", CFrame.lookAt(start, start + look), { Time = 0.25 })
+	task.wait(0.25)
+	local high = p.Target + UP * 28 - look * 10
+	moveModel(nue, CFrame.lookAt(high, high + look), 0.45, Enum.EasingStyle.Sine)
+	for _ = 1, 3 do
+		bolt(p.Origin + UP * 4, high + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)), Config.DamageTypes.Lightning.Color, 0.25, 0.3)
+	end
+	task.wait(0.45)
+	local dive = p.Target + UP * 3
+	moveModel(nue, CFrame.lookAt(dive, dive + look) * CFrame.Angles(math.rad(-35), 0, 0), 0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	task.wait(0.18)
+	local c = Config.DamageTypes.Lightning.Color
+	for _ = 1, 6 do
+		bolt(p.Target + Vector3.new(math.random(-12, 12), 70, math.random(-12, 12)), p.Target, c, 0.6, 0.35)
+	end
+	for i = 1, 8 do
+		local a = i / 8 * math.pi * 2
+		bolt(p.Target + UP, p.Target + Vector3.new(math.cos(a), 0.2, math.sin(a)) * (p.Radius or 12), c, 0.35, 0.3)
+	end
+	flashSphere(p.Target + UP * 2, c, (p.Radius or 12) * 1.6, 0.35)
+	shockRing(p.Target, (p.Radius or 12) * 1.3, c, 0.45)
+	sparks(p.Target + UP * 2, c, 50, 70)
+	VFX.ScreenFlash(Color3.fromRGB(200, 230, 255), 0.35, 0.35)
+	VFX.Shake(0.9, 0.35, p.Target)
+	sound(Config.Sounds.Summon, p.Target, 1, 0.35)
+	task.wait(0.15)
+	local away = p.Target + UP * 40 + look * 30
+	moveModel(nue, CFrame.lookAt(away, away + look), 0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	fadeModel(nue, 0.6)
+end
+
+function E.Toad(p)
+	local look = dirTo(p.Origin, p.Target)
+	local spot = ground(p.Origin) + look * 5
+	local toadModel, h = emerge("Toad", CFrame.lookAt(spot, spot + look), { Time = 0.22 })
+	task.wait(0.25)
+	local mouth = spot + look * 3.4 + UP * 2.8
+	local tongue = newPart({ Size = Vector3.new(0.8, 0.8, 0.2), Color = Color3.fromRGB(220, 110, 140), Material = Enum.Material.SmoothPlastic })
+	local function place(tip)
+		local len = (tip - mouth).Magnitude
+		tongue.Size = Vector3.new(0.8, 0.8, math.max(0.2, len))
+		tongue.CFrame = CFrame.lookAt((mouth + tip) / 2, tip)
+	end
+	local value = Instance.new("Vector3Value")
+	value.Value = mouth
+	value.Changed:Connect(place)
+	tween(value, 0.14, { Value = p.Target + UP * 2 }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	task.wait(0.16)
+	sparks(p.Target + UP * 2, Color3.fromRGB(220, 110, 140), 16, 25)
+	sound(Config.Sounds.Lunge, p.Target, 0.6, 0.8)
+	task.wait(0.08)
+	tween(value, 0.35, { Value = mouth }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	task.wait(0.36)
+	tongue:Destroy()
+	value:Destroy()
+	task.wait(0.3)
+	sink(toadModel, h)
+end
+
+function E.GreatSerpent(p)
+	local target = ground(p.Target)
+	puddle(target, (p.Radius or 8) + 1, 1.6)
+	VFX.Shake(0.35, 0.4, target)
+	for i = 1, 6 do
+		local a = i / 6 * math.pi * 2
+		bolt(target, target + Vector3.new(math.cos(a), 0.1, math.sin(a)) * (p.Radius or 8) * 1.2, SHADOW_RIM, 0.3, 0.5)
+	end
+	task.wait(0.35)
+	local look = p.Look or Vector3.new(0, 0, -1)
+	local serpent = ModelFactory.Build("GreatSerpent", { CFrame = CFrame.lookAt(target + look * 3 - UP * 26, target + look * 3 - UP * 26 - look), Parent = folder() })
+	local topCF = CFrame.lookAt(target + look * 3 - UP * 3, target + look * 3 - UP * 3 - look)
+	moveModel(serpent, topCF, 0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	rocks(target, 14, p.Radius or 8)
+	smoke(target + UP, Color3.fromRGB(70, 62, 80), 22, 5, 14)
+	task.wait(0.2)
+	sparks(target + UP * 10, Config.DamageTypes.Bite.Color, 40, 50)
+	flashSphere(target + UP * 8, Config.DamageTypes.Bite.Color, 14, 0.25)
+	VFX.Shake(1.0, 0.4, target)
+	sound(Config.Sounds.Hit, target, 1, 0.6)
+	task.wait(0.8)
+	moveModel(serpent, topCF - UP * 26, 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	puddle(target, (p.Radius or 8) + 1, 0.5)
+	Debris:AddItem(serpent, 0.6)
+end
+
+function E.MaxElephant(p)
+	local look = flat(p.Dir).Unit
+	local drop = ground(p.Origin) + look * 16
+	local elephant = ModelFactory.Build("MaxElephant", { CFrame = CFrame.lookAt(drop + UP * 60, drop + UP * 60 + look), Parent = folder() })
+	puddle(drop + UP * 60, 10, 0.6)
+	moveModel(elephant, CFrame.lookAt(drop, drop + look), 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	task.wait(0.5)
+	VFX.Shake(1.4, 0.6, drop)
+	shockRing(drop, 26, Color3.fromRGB(150, 200, 255), 0.5)
+	rocks(drop, 16, 16)
+	sound(Config.Sounds.Hit, drop, 1, 0.4)
+	-- the flood: a cone of water that races forward
+	local water = Config.DamageTypes.Water.Color
+	local range = p.Range or 60
+	local half = math.rad((p.Angle or 70) / 2)
+	for wave = 0, 2 do
+		task.delay(wave * 0.12, function()
+			for i = -6, 6 do
+				local a = half * (i / 6)
+				local dir = CFrame.fromAxisAngle(UP, a):VectorToWorldSpace(look)
+				local start = drop + look * 8 + UP * 2
+				local block = newPart({
+					Size = Vector3.new(7, 5, 5), CFrame = CFrame.lookAt(start, start + dir),
+					Color = water, Material = Enum.Material.Glass, Transparency = 0.25,
+				})
+				tween(block, 0.75, {
+					CFrame = CFrame.lookAt(start + dir * range, start + dir * (range + 1)) + UP * (math.random(-10, 10) / 10),
+					Size = Vector3.new(12, 1, 8), Transparency = 1,
+				}, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				Debris:AddItem(block, 0.8)
+			end
+			local spray = drop + look * 10 + UP * 3
+			burst(spray, {
+				Texture = TEX.Smoke, Color = Color3.fromRGB(200, 230, 255), Count = 30, Size = 4, EndSize = 7,
+				Lifetime = 0.8, Speed = 60, LightEmission = 0.3, Transparency = 0.3, Spread = 35, Direction = Enum.NormalId.Front,
+				CFrame = CFrame.lookAt(spray, spray + look),
+			})
+		end)
+	end
+	sparks(drop + UP * 8, water, 60, 60)
+	task.wait(1.4)
+	sink(elephant, ModelFactory.Height("MaxElephant"), 0.6)
+end
+
+function E.RabbitEscape(p)
+	local center = ground(p.Origin)
+	puddle(center, 6, 0.8)
+	smoke(center + UP * 2, Color3.fromRGB(240, 240, 240), 25, 3, 18)
+	local radius = p.Radius or 18
+	for _ = 1, 36 do
+		task.spawn(function()
+			local a = math.random() * math.pi * 2
+			local start = center + Vector3.new(math.cos(a), 0, math.sin(a)) * math.random(1, 3)
+			local rabbitModel = ModelFactory.Build("Rabbit", { CFrame = CFrame.new(start) * CFrame.Angles(0, -a, 0), Scale = 1.2, Parent = folder() })
+			local stop = time() + (p.Duration or 5)
+			while time() < stop and rabbitModel.Parent do
+				local b = math.random() * math.pi * 2
+				local dest = center + Vector3.new(math.cos(b), 0, math.sin(b)) * math.random(2, radius)
+				local from = rabbitModel:GetPivot().Position
+				local d = dirTo(from, dest)
+				local step = from + d * math.min(6, (dest - from).Magnitude)
+				local t = 0.22 + math.random() * 0.1
+				leap(rabbitModel, CFrame.lookAt(step, step + d), t, 1.5)
+				task.wait(t + math.random() * 0.15)
+			end
+			smoke(rabbitModel:GetPivot().Position + UP, Color3.fromRGB(240, 240, 240), 3, 1.5, 4)
+			rabbitModel:Destroy()
+		end)
+	end
+end
+
+function E.RoundDeer(p)
+	local look = flat(p.Look or Vector3.new(0, 0, -1)).Unit
+	local spot = ground(p.Origin) - look * 6
+	local deer, h = emerge("RoundDeer", CFrame.lookAt(spot, spot + look), { Time = 0.35 })
+	flashSphere(spot + UP * 5.2 - look * 1.6, GOLD, 10, 0.6)
+	local duration = p.Duration or 3
+	local character = p.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if root then
+		local att = Instance.new("Attachment")
+		att.Parent = root
+		local pe = Instance.new("ParticleEmitter")
+		pe.Texture = TEX.Spark
+		pe.Color = ColorSequence.new(Color3.fromRGB(160, 255, 180), GOLD)
+		pe.LightEmission = 1
+		pe.Size = NumberSequence.new(0.6, 0)
+		pe.Lifetime = NumberRange.new(0.8, 1.2)
+		pe.Speed = NumberRange.new(2, 5)
+		pe.Acceleration = Vector3.new(0, 8, 0)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Rate = 45
+		pe.Parent = att
+		local light = Instance.new("PointLight")
+		light.Color = GOLD
+		light.Range = 12
+		light.Brightness = 2
+		light.Parent = root
+		task.delay(duration, function()
+			pe.Enabled = false
+			light:Destroy()
+			Debris:AddItem(att, 1.5)
+		end)
+	end
+	for i = 1, math.floor(duration / 0.5) do
+		task.delay(i * 0.5, function()
+			shockRing(spot + UP * 0.2, 8, GOLD, 0.6, 16, 0.3)
+		end)
+	end
+	task.wait(duration)
+	sink(deer, h, 0.5)
+end
+
+function E.PiercingOx(p)
+	local look = dirTo(p.From, p.To)
+	local start = ground(p.From) - look * 4
+	local ox, h = emerge("PiercingOx", CFrame.lookAt(start, start + look), { Time = 0.22 })
+	task.wait(0.28)
+	local stop = ground(p.To)
+	local dist = (stop - start).Magnitude
+	local t = math.max(0.15, dist / (p.Speed or 150))
+	moveModel(ox, CFrame.lookAt(stop, stop + look), t, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	-- dust trail + speed lines while charging
+	local steps = math.floor(t / 0.04)
+	for i = 1, steps do
+		task.delay(i * 0.04, function()
+			local pos = start:Lerp(stop, (i / steps) ^ 2)
+			smoke(pos + UP, Color3.fromRGB(90, 80, 70), 3, 3, 4)
+			local line = newPart({ Size = Vector3.new(0.2, 0.2, 10), CFrame = CFrame.lookAt(pos + UP * math.random(2, 7) + look:Cross(UP) * math.random(-4, 4), pos + look * 20 + UP * 4), Color = Color3.new(1, 1, 1), Transparency = 0.3 })
+			tween(line, 0.25, { Transparency = 1, Size = Vector3.new(0.05, 0.05, 20) })
+			Debris:AddItem(line, 0.3)
+		end)
+	end
+	task.wait(t)
+	local c = Config.DamageTypes.Pierce.Color
+	flashSphere(stop + UP * 4, c, 16, 0.3)
+	shockRing(stop, 18, c, 0.4)
+	rocks(stop, 12, 10)
+	sparks(stop + UP * 3, c, 45, 60)
+	VFX.Shake(1.1, 0.4, stop)
+	sound(Config.Sounds.Hit, stop, 1, 0.5)
+	task.wait(0.4)
+	sink(ox, h)
+end
+
+local function clawCombo(model, height, target, hits, color, interval, size)
+	for i = 1, hits do
+		local side = (i % 2 == 0) and 1 or -1
+		for k = -1, 1 do
+			slashArc(CFrame.lookAt(target + UP * (3 + k * 0.9), target + UP * 3 + model:GetPivot().LookVector * 2), size, color, 70, 0.2, 0.35, side * 55)
+		end
+		sparks(target + UP * 2, color, 20, 40)
+		sound(Config.Sounds.Slash, target, 0.6, 0.8 + i * 0.05)
+		VFX.Shake(0.25, 0.15, target)
+		task.wait(interval)
+	end
+end
+
+function E.TigerFuneral(p)
+	local look = dirTo(p.Origin, p.Target)
+	local start = ground(p.Origin) + look * 3
+	local tiger, h = emerge("TigerFuneral", CFrame.lookAt(start, start + look), { Time = 0.22 })
+	task.wait(0.25)
+	local land = ground(p.Target) - look * 4
+	leap(tiger, CFrame.lookAt(land, land + look), 0.3, 7)
+	task.wait(0.3)
+	clawCombo(tiger, h, p.Target, p.Hits or 3, Config.DamageTypes.Rend.Color, 0.14, 5)
+	task.wait(0.3)
+	sink(tiger, h)
+end
+
+function E.Totality(p)
+	local look = dirTo(p.Origin, p.Target)
+	local start = ground(p.Origin) - look * 2
+	local dog, h = emerge("DivineDogTotality", CFrame.lookAt(start, start + look), { Time = 0.35 })
+	smoke(start + UP * 4, SHADOW, 30, 6, 12)
+	VFX.Shake(0.6, 0.5, start)
+	sound(Config.Sounds.Summon, start, 1, 0.3)
+	task.wait(0.4)
+	local land = ground(p.Target) - look * 7
+	leap(dog, CFrame.lookAt(land, land + look), 0.32, 8)
+	task.wait(0.32)
+	shockRing(land, 14, SHADOW_RIM, 0.4)
+	clawCombo(dog, h, p.Target, p.Hits or 5, Color3.fromRGB(210, 190, 255), 0.13, 8)
+	flashSphere(p.Target + UP * 3, Color3.fromRGB(210, 190, 255), 14, 0.3)
+	task.wait(0.3)
+	sink(dog, h, 0.5)
+end
+
+-- Short-lived strikers used by the domain, Agito and tamed Mahoraga: rise next to the target,
+-- strike once, sink again.
+local function strikeFromShadow(name, pos, target, scale, color, arcRadius, big)
+	local look = dirTo(pos, target)
+	local model, h = emerge(name, CFrame.lookAt(ground(pos), ground(pos) + look), { Time = 0.18, Scale = scale })
+	task.wait(0.2)
+	local tilt = math.random(-50, 50)
+	slashArc(CFrame.lookAt(target + UP * 3, target + UP * 3 + look), arcRadius, color, big and 190 or 130, 0.25, big and 1.2 or 0.5, tilt)
+	sparks(target + UP * 2, color, big and 50 or 20, big and 60 or 35)
+	if big then
+		flashSphere(target + UP * 4, color, 18, 0.3)
+		shockRing(ground(target), 20, color, 0.45)
+		VFX.Shake(0.9, 0.35, target)
+		VFX.ScreenFlash(Color3.fromRGB(255, 250, 230), 0.2, 0.3)
+	end
+	sound(Config.Sounds.Slash, target, big and 1 or 0.5, big and 0.6 or 1.1)
+	task.wait(big and 0.45 or 0.25)
+	sink(model, h, 0.3)
+end
+
+function E.DomainClone(p)
+	strikeFromShadow("DivineDogBlack", p.Pos, p.Target, 0.9, SHADOW_RIM, 3.5, false)
+end
+
+function E.Agito(p)
+	strikeFromShadow("Agito", p.Pos, p.Target, 1, Config.DamageTypes.Chimera.Color, 6, false)
+	if p.CasterPos then
+		E.Heal({ Pos = p.CasterPos })
+	end
+end
+
+function E.TamedMahoraga(p)
+	strikeFromShadow("MahoragaTamed", p.Pos, p.Target, 1, BLADE, 14, true)
+end
+
+local domainParts = {}
+function E.Domain(p)
+	local center = ground(p.Center)
+	local radius = p.Radius or 60
+	local duration = p.Duration or 15
+	-- 1) the barrier snaps shut
+	local shell = newPart({ Shape = Enum.PartType.Ball, Size = Vector3.one * 4, CFrame = CFrame.new(center), Color = SHADOW, Material = Enum.Material.SmoothPlastic, Transparency = 0.05 })
+	tween(shell, 0.5, { Size = Vector3.one * radius * 2.2, Transparency = 1 }, Enum.EasingStyle.Quart)
+	Debris:AddItem(shell, 0.6)
+	VFX.ScreenFlash(Color3.fromRGB(90, 60, 140), 0.1, 1.2)
+	VFX.Shake(1.2, 0.6, center)
+	-- 2) the floor turns into liquid shadow
+	local floor = newPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, 2, 2), CFrame = discCFrame(center + UP * 0.12), Color = Color3.fromRGB(8, 6, 14), Material = Enum.Material.Glass, Reflectance = 0.35, Transparency = 0.05 })
+	local rim = newPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.15, 2, 2), CFrame = discCFrame(center + UP * 0.1), Color = SHADOW_RIM, Transparency = 0.2 })
+	tween(floor, 0.8, { Size = Vector3.new(0.2, radius * 2, radius * 2) }, Enum.EasingStyle.Quart)
+	tween(rim, 0.8, { Size = Vector3.new(0.15, radius * 2 + 3, radius * 2 + 3) }, Enum.EasingStyle.Quart)
+	local parts = { floor, rim }
+	-- 3) shadow spires and bubbling smoke across the garden
+	for i = 1, 22 do
+		local a = math.random() * math.pi * 2
+		local r = math.sqrt(math.random()) * radius * 0.95
+		local pos = center + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		local height = math.random(4, 14)
+		local spire = newPart({ Size = Vector3.new(1.2, 0.2, 1.2), CFrame = CFrame.new(pos) * CFrame.Angles(0, math.random() * 6, math.rad(math.random(-15, 15))), Color = SHADOW, Material = Enum.Material.SmoothPlastic, Transparency = 0 })
+		tween(spire, 0.6 + math.random() * 0.4, { Size = Vector3.new(0.7, height, 0.7), CFrame = spire.CFrame + UP * height / 2 }, Enum.EasingStyle.Back)
+		table.insert(parts, spire)
+	end
+	local holder = newPart({ Size = Vector3.new(radius * 1.6, 0.2, radius * 1.6), CFrame = CFrame.new(center + UP * 0.3), Transparency = 1 })
+	local pe = Instance.new("ParticleEmitter")
+	pe.Texture = TEX.Smoke
+	pe.Color = ColorSequence.new(SHADOW, SHADOW_RIM)
+	pe.Size = NumberSequence.new(3, 6)
+	pe.Transparency = NumberSequence.new(0.4, 1)
+	pe.Lifetime = NumberRange.new(1.5, 2.5)
+	pe.Speed = NumberRange.new(1, 3)
+	pe.Acceleration = Vector3.new(0, 3, 0)
+	pe.Rate = 60
+	pe.LightEmission = 0.1
+	pe.Parent = holder
+	table.insert(parts, holder)
+	local id = p.Id or tostring(time())
+	domainParts[id] = parts
+	task.delay(duration, function()
+		pe.Enabled = false
+		for _, part in ipairs(parts) do
+			tween(part, 0.8, { Transparency = 1 })
+			Debris:AddItem(part, 2.6)
+		end
+		domainParts[id] = nil
+	end)
+end
+
+---------------------------------------------------------------- Mahoraga
+
+function E.TelegraphCircle(p)
+	local pos = ground(p.Pos) + UP * 0.15
+	local d = p.Radius * 2
+	local outer = newPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.1, d, d), CFrame = discCFrame(pos), Color = RED, Transparency = 0.7 })
+	local inner = newPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.12, 0.5, 0.5), CFrame = discCFrame(pos + UP * 0.02), Color = RED, Transparency = 0.45 })
+	tween(inner, p.Duration, { Size = Vector3.new(0.12, d, d) }, Enum.EasingStyle.Linear)
+	Debris:AddItem(outer, p.Duration + 0.05)
+	Debris:AddItem(inner, p.Duration + 0.05)
+end
+
+function E.TelegraphLine(p)
+	local a, b = ground(p.From) + UP * 0.15, ground(p.To) + UP * 0.15
+	local len = (b - a).Magnitude
+	local outer = newPart({ Size = Vector3.new(p.Width, 0.1, len), CFrame = CFrame.lookAt((a + b) / 2, b), Color = RED, Transparency = 0.7 })
+	local inner = newPart({ Size = Vector3.new(p.Width, 0.12, 0.2), CFrame = CFrame.lookAt(a, b) * CFrame.new(0, 0.02, -0.1), Color = RED, Transparency = 0.45 })
+	local value = Instance.new("NumberValue")
+	value.Changed:Connect(function(v)
+		local l = math.max(0.2, len * v)
+		inner.Size = Vector3.new(p.Width, 0.12, l)
+		inner.CFrame = CFrame.lookAt(a, b) * CFrame.new(0, 0.02, -l / 2)
+	end)
+	tween(value, p.Duration, { Value = 1 }, Enum.EasingStyle.Linear)
+	Debris:AddItem(outer, p.Duration + 0.05)
+	Debris:AddItem(inner, p.Duration + 0.05)
+	Debris:AddItem(value, p.Duration + 0.05)
+end
+
+function E.TelegraphCone(p)
+	-- cone drawn as a fan of thin lines
+	local origin = ground(p.Origin) + UP * 0.15
+	local look = flat(p.Dir).Unit
+	for i = -4, 4 do
+		local a = math.rad(p.Angle / 2) * (i / 4)
+		local dir = CFrame.fromAxisAngle(UP, a):VectorToWorldSpace(look)
+		local b = origin + dir * p.Range
+		local line = newPart({ Size = Vector3.new(i == 0 and 1.2 or 0.6, 0.1, p.Range), CFrame = CFrame.lookAt((origin + b) / 2, b), Color = RED, Transparency = 0.55 })
+		tween(line, p.Duration, { Transparency = 0.2 }, Enum.EasingStyle.Linear)
+		Debris:AddItem(line, p.Duration + 0.05)
+	end
+end
+
+function E.BossSlash(p)
+	local cf = p.CFrame
+	local radius = p.Radius or 24
+	for k = 0, 2 do
+		slashArc(cf * CFrame.new(0, k * 1.2 - 1, 0), radius * (0.7 + k * 0.15), k == 1 and BLADE or GOLD, p.Span or 120, 0.35, 1.4 - k * 0.3, p.Tilt or -25)
+	end
+	sparks(cf.Position + cf.LookVector * radius * 0.6, BLADE, 50, 70)
+	VFX.Shake(0.9, 0.3, cf.Position)
+	sound(Config.Sounds.Slash, cf.Position, 1, 0.55)
+end
+
+function E.BossSlam(p)
+	local pos = ground(p.Pos)
+	flashSphere(pos + UP * 2, GOLD, p.Radius * 1.2, 0.3)
+	shockRing(pos, p.Radius * 1.2, Color3.fromRGB(255, 230, 200), 0.5, 36, 1)
+	shockRing(pos, p.Radius * 0.7, GOLD, 0.35)
+	rocks(pos, 24, p.Radius * 0.8)
+	smoke(pos + UP * 2, Color3.fromRGB(80, 74, 84), 30, 6, 20)
+	VFX.Shake(1.8, 0.6, pos)
+	sound(Config.Sounds.Hit, pos, 1, 0.35)
+end
+
+function E.BossDash(p)
+	local a, b = p.From, p.To
+	local dir = dirTo(a, b)
+	for i = 0, 8 do
+		local pos = a:Lerp(b, i / 8)
+		local ghost = newPart({ Size = Vector3.new(6, 16, 3), CFrame = CFrame.lookAt(pos, pos + dir), Color = Color3.fromRGB(236, 233, 225), Transparency = 0.5 + i * 0.04, Material = Enum.Material.SmoothPlastic })
+		tween(ghost, 0.4, { Transparency = 1, Size = Vector3.new(2, 14, 1) })
+		Debris:AddItem(ghost, 0.45)
+	end
+	smoke(ground(a) + UP, Color3.fromRGB(90, 84, 96), 16, 4, 16)
+	sound(Config.Sounds.Lunge, a, 1, 0.5)
+end
+
+function E.WorldSlash(p)
+	local a, b = p.From, p.To
+	local dir = dirTo(a, b)
+	local len = (ground(b) - ground(a)).Magnitude
+	local mid = (ground(a) + ground(b)) / 2 + UP * 12
+	-- space itself splits: a white line, then the black cut
+	local white = newPart({ Size = Vector3.new(0.3, 40, len), CFrame = CFrame.lookAt(mid, mid + dir), Color = Color3.new(1, 1, 1), Transparency = 0 })
+	local black = newPart({ Size = Vector3.new(0.6, 40, len), CFrame = CFrame.lookAt(mid, mid + dir), Color = Color3.new(0, 0, 0), Material = Enum.Material.SmoothPlastic, Transparency = 1 })
+	VFX.ScreenFlash(Color3.fromRGB(255, 255, 255), 0.5, 0.25)
+	task.delay(0.08, function()
+		white.Transparency = 1
+		black.Transparency = 0
+		tween(black, 0.6, { Size = Vector3.new(0.05, 40, len), Transparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	end)
+	Debris:AddItem(white, 0.2)
+	Debris:AddItem(black, 0.8)
+	for i = 0, 10 do
+		local pos = ground(a):Lerp(ground(b), i / 10)
+		task.delay(i * 0.02, function()
+			sparks(pos + UP * 2, BLADE, 14, 50)
+			smoke(pos + UP, Color3.fromRGB(70, 66, 76), 5, 4, 12)
+		end)
+	end
+	VFX.Shake(2.2, 0.8, mid)
+	sound(Config.Sounds.Slash, mid, 1, 0.3)
+end
+
+function E.WheelTurn(p)
+	local pos = p.Pos
+	shockRing(pos, p.Completed and 16 or 7, GOLD, 0.45, 20, 0.3)
+	flashSphere(pos, GOLD, p.Completed and 14 or 6, 0.3)
+	sparks(pos, GOLD, p.Completed and 60 or 20, p.Completed and 60 or 25)
+	sound(Config.Sounds.Unsheath, pos, 1, p.Completed and 0.5 or 0.8)
+	if p.Completed then
+		VFX.ScreenFlash(Color3.fromRGB(255, 236, 170), 0.25, 0.5)
+		VFX.Shake(0.8, 0.4, pos)
+	end
+end
+
+function E.BossSpawn(p)
+	local pos = ground(p.Pos)
+	puddle(pos, 16, 2.4)
+	for i = 1, 5 do
+		task.delay(i * 0.18, function()
+			smoke(pos + UP * (i * 4), SHADOW, 24, 8, 12)
+		end)
+	end
+	shockRing(pos, 40, SHADOW_RIM, 0.7, 36, 1)
+	VFX.Shake(1.6, 1.2, pos)
+	VFX.ScreenFlash(Color3.fromRGB(120, 90, 180), 0.2, 1)
+	sound(Config.Sounds.Summon, pos, 1, 0.25)
+	task.delay(1.1, function()
+		flashSphere(pos + UP * 22, GOLD, 26, 0.6)
+		shockRing(pos, 55, GOLD, 0.8, 40, 1)
+	end)
+end
+
+function E.BossRoar(p)
+	shockRing(ground(p.Pos), 45, Color3.fromRGB(255, 240, 220), 0.6, 36, 2)
+	shockRing(ground(p.Pos), 30, GOLD, 0.45)
+	VFX.Shake(1.4, 0.7, p.Pos)
+end
+
+function E.BossDefeated(p)
+	local pos = p.Pos
+	for i = 0, 4 do
+		task.delay(i * 0.15, function()
+			flashSphere(pos + UP * (4 + i * 3), GOLD, 20 + i * 6, 0.5)
+			sparks(pos + UP * (4 + i * 3), BLADE, 40, 80)
+		end)
+	end
+	shockRing(ground(pos), 70, GOLD, 1, 48, 1.5)
+	smoke(pos + UP * 6, SHADOW, 40, 10, 16)
+	VFX.ScreenFlash(Color3.fromRGB(255, 240, 200), 0.5, 1.2)
+	VFX.Shake(2, 1, pos)
+end
+
+function E.CurseBurst(p)
+	local pos = ground(p.Pos)
+	shockRing(pos, p.Radius, Color3.fromRGB(200, 60, 120), 0.4, 18, 0.4)
+	smoke(pos + UP * 2, Color3.fromRGB(80, 30, 70), 10, 4, 10)
+end
+
+return VFX
+]]></ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX00000010"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Folder" referent="RBX0000000F"><Properties><string name="Name">TenShadows</string></Properties><Item class="ModuleScript" referent="RBX00000009"><Properties><string name="Name">Abilities</string><ProtectedString name="Source"><![CDATA[-- Server side of the Ten Shadows Technique. Clients only send "I pressed X, aiming at Y";
+-- cooldowns, locks, targeting and damage are all decided here.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("TenShadows")
+local Config = require(Shared.Config)
+local DamageRules = require(Shared.DamageRules)
+local Combat = require(script.Parent.Combat)
+local Mahoraga = require(script.Parent.Mahoraga)
+
+local A = Config.Abilities
+local UP = Vector3.new(0, 1, 0)
+local flat = Combat.Flat
+
+local Abilities = {}
+
+local playerState = {} -- [player] = state
+local guards = {} -- dogs standing guard: { Id, Owner, Pos, Until }
+local nextDogId = 0
+
+local function getState(player)
+	local st = playerState[player]
+	if not st then
+		st = {
+			Cooldowns = {},
+			Unlocked = {},
+			DogsDestroyed = false,
+			Combo = 0,
+			LastSwing = 0,
+			ChantStart = nil,
+			Domain = nil,
+		}
+		playerState[player] = st
+	end
+	return st
+end
+
+local function sendState(player)
+	local st = getState(player)
+	Combat.FXTo(player, "UI_State", { Unlocked = st.Unlocked, DogsDestroyed = st.DogsDestroyed })
+end
+
+function Abilities.Unlock(player, abilityName, message)
+	local st = getState(player)
+	if st.Unlocked[abilityName] then
+		return
+	end
+	st.Unlocked[abilityName] = true
+	Combat.FXTo(player, "UI_Unlock", { Ability = abilityName })
+	if message then
+		Combat.Notice(message, Color3.fromRGB(255, 226, 150), player)
+	end
+	sendState(player)
+end
+
+local function incantation(player, name, toEveryone)
+	local cfg = A[name]
+	local params = { Title = cfg.Name, Sub = cfg.Kanji }
+	if toEveryone then
+		Combat.FX("UI_Incantation", params)
+	else
+		Combat.FXTo(player, "UI_Incantation", params)
+	end
+end
+
+local function alive(model)
+	return model ~= nil and Combat.IsAlive(model)
+end
+
+local function inOwnDomain(st, pos)
+	local d = st.Domain
+	return d ~= nil and time() < d.Until and flat(pos - d.Center).Magnitude <= d.Radius
+end
+
+local function flatDir(from, to, fallback)
+	local d = flat(to - from)
+	if d.Magnitude < 0.1 then
+		return fallback
+	end
+	return d.Unit
+end
+
+---------------------------------------------------------------- handlers
+-- Each handler receives ctx = { Player, Character, Root, Humanoid, Aim, State } and returns true
+-- if the technique was used (starts the cooldown).
+
+local H = {}
+
+function H.ShadowBlade(ctx)
+	local cfg = A.ShadowBlade
+	local st = ctx.State
+	local now = time()
+	if now - st.LastSwing > cfg.ComboReset or st.Combo >= 4 then
+		st.Combo = 0
+	end
+	st.Combo += 1
+	st.LastSwing = now
+	local root = ctx.Root
+	local look = flatDir(root.Position, ctx.Aim, flat(root.CFrame.LookVector).Unit)
+	Combat.FX("Blade", { CFrame = CFrame.lookAt(root.Position, root.Position + look), Combo = st.Combo })
+	local finisher = st.Combo == 4
+	local targets = Combat.GetTargets(ctx.Character, "Player", { Type = "Cone", Origin = root.Position, Dir = look, Range = cfg.Range, Angle = cfg.Angle })
+	for _, t in ipairs(targets) do
+		Combat.Damage(t, finisher and cfg.FinisherDamage or cfg.Damage, cfg.DamageType, {
+			Source = ctx.Player, Knockback = finisher and (look * 45 + UP * 20) or nil,
+		})
+	end
+	return true
+end
+
+function H.DivineDogs(ctx)
+	local cfg = A.DivineDogs
+	local st = ctx.State
+	if st.DogsDestroyed then
+		Combat.Notice("Your Divine Dog was destroyed. Its power lives on in Divine Dog: Totality (0).", nil, ctx.Player)
+		return false
+	end
+	local target, pos = Combat.ResolveTarget(ctx.Character, ctx.Aim, cfg.Range)
+	local look = flatDir(ctx.Root.Position, pos, flat(ctx.Root.CFrame.LookVector).Unit)
+	local right = look:Cross(UP)
+	nextDogId += 2
+	local whiteId, blackId = "dog" .. nextDogId - 1, "dog" .. nextDogId
+	incantation(ctx.Player, "DivineDogs")
+	Combat.FX("DivineDogs", { Origin = ctx.Root.Position, Target = pos, WhiteId = whiteId, BlackId = blackId, Bites = cfg.Bites, Guard = cfg.GuardSeconds })
+
+	local guardUntil = time() + 1 + cfg.Bites * 0.2 + cfg.GuardSeconds
+	local base = flat(pos) - look * 3
+	table.insert(guards, { Id = whiteId, White = true, Owner = ctx.Player, Pos = base - right * 2 + UP * pos.Y, Until = guardUntil })
+	table.insert(guards, { Id = blackId, White = false, Owner = ctx.Player, Pos = base + right * 2 + UP * pos.Y, Until = guardUntil })
+
+	task.delay(0.7, function()
+		for _ = 1, cfg.Bites do
+			if alive(target) then
+				Combat.Damage(target, cfg.Damage, cfg.DamageType, { Source = ctx.Player })
+				Combat.Damage(target, cfg.Damage, cfg.DamageType, { Source = ctx.Player, Silent = true })
+			end
+			task.wait(0.2)
+		end
+	end)
+	return true
+end
+
+function H.Nue(ctx)
+	local cfg = A.Nue
+	local _, pos = Combat.ResolveTarget(ctx.Character, ctx.Aim, cfg.Range)
+	incantation(ctx.Player, "Nue")
+	Combat.FX("Nue", { Origin = ctx.Root.Position, Target = pos, Radius = cfg.Radius })
+	task.delay(0.9, function()
+		for _, t in ipairs(Combat.GetTargets(ctx.Character, "Player", { Type = "Circle", Pos = pos, Radius = cfg.Radius })) do
+			Combat.Damage(t, cfg.Damage, cfg.DamageType, { Source = ctx.Player, Stun = cfg.Stun })
+		end
+	end)
+	return true
+end
+
+function H.Toad(ctx)
+	local cfg = A.Toad
+	local target, pos = Combat.ResolveTarget(ctx.Character, ctx.Aim, cfg.Range)
+	incantation(ctx.Player, "Toad")
+	Combat.FX("Toad", { Origin = ctx.Root.Position, Target = pos })
+	if not target then
+		return true
+	end
+	task.delay(0.42, function()
+		if not alive(target) or not ctx.Root.Parent then
+			return
+		end
+		Combat.Damage(target, cfg.Damage, cfg.DamageType, { Source = ctx.Player, Stun = cfg.Stun })
+		local troot = Combat.GetRoot(target)
+		local dest = ctx.Root.Position + flatDir(ctx.Root.Position, troot.Position, ctx.Root.CFrame.LookVector) * 7
+		if Players:GetPlayerFromCharacter(target) then
+			Combat.Knockback(target, (dest - troot.Position) * 3 + UP * 20)
+		elseif not target:GetAttribute("IsBoss") then
+			-- the tongue drags small curses in; Mahoraga is too heavy and is only staggered
+			local start = target:GetPivot()
+			local goal = CFrame.new(Vector3.new(dest.X, start.Position.Y, dest.Z)) * start.Rotation
+			for i = 1, 8 do
+				if not target.Parent then
+					break
+				end
+				target:PivotTo(start:Lerp(goal, i / 8))
+				task.wait(0.04)
+			end
+		end
+	end)
+	return true
+end
+
+function H.GreatSerpent(ctx)
+	local cfg = A.GreatSerpent
+	local _, pos = Combat.ResolveTarget(ctx.Character, ctx.Aim, cfg.Range)
+	local look = flatDir(ctx.Root.Position, pos, flat(ctx.Root.CFrame.LookVector).Unit)
+	incantation(ctx.Player, "GreatSerpent")
+	Combat.FX("GreatSerpent", { Target = pos, Radius = cfg.Radius, Look = look })
+	task.delay(0.55, function()
+		for _, t in ipairs(Combat.GetTargets(ctx.Character, "Player", { Type = "Circle", Pos = pos, Radius = cfg.Radius })) do
+			local launch = not t:GetAttribute("IsBoss") and UP * 90 or nil
+			Combat.Damage(t, cfg.Damage, cfg.DamageType, { Source = ctx.Player, Stun = cfg.Stun, Knockback = launch })
+		end
+	end)
+	return true
+end
+
+function H.MaxElephant(ctx)
+	local cfg = A.MaxElephant
+	local root = ctx.Root
+	local look = flatDir(root.Position, ctx.Aim, flat(root.CFrame.LookVector).Unit)
+	incantation(ctx.Player, "MaxElephant")
+	Combat.FX("MaxElephant", { Origin = root.Position, Dir = look, Range = cfg.Range, Angle = cfg.Angle })
+	local origin = root.Position + look * 16
+	task.delay(0.6, function()
+		for _, t in ipairs(Combat.GetTargets(ctx.Character, "Player", { Type = "Cone", Origin = origin, Dir = look, Range = cfg.Range + 8, Angle = cfg.Angle })) do
+			Combat.Damage(t, cfg.Damage, cfg.DamageType, { Source = ctx.Player, Knockback = look * cfg.Knockback + UP * 25, Stun = 0.5 })
+		end
+		-- the landing itself also crushes anything standing under the elephant
+		for _, t in ipairs(Combat.GetTargets(ctx.Character, "Player", { Type = "Circle", Pos = origin, Radius = 10 })) do
+			Combat.Damage(t, cfg.Damage * 0.3, cfg.DamageType, { Source = ctx.Player })
+		end
+	end)
+	return true
+end
+
+function H.RabbitEscape(ctx)
+	local cfg = A.RabbitEscape
+	incantation(ctx.Player, "RabbitEscape")
+	Combat.FX("RabbitEscape", { Origin = ctx.Root.Position, Duration = cfg.Duration, Radius = cfg.Radius })
+	table.insert(Combat.Decoys, { Pos = ctx.Root.Position, Owner = ctx.Player, Until = time() + cfg.Duration })
+	ctx.Character:SetAttribute("IFrameUntil", time() + 0.6)
+	return true
+end
+
+function H.RoundDeer(ctx)
+	local cfg = A.RoundDeer
+	local char, humanoid = ctx.Character, ctx.Humanoid
+	incantation(ctx.Player, "RoundDeer")
+	Combat.FX("RoundDeer", { Origin = ctx.Root.Position, Look = ctx.Root.CFrame.LookVector, Duration = cfg.Duration, Character = char })
+	char:SetAttribute("Reduction", cfg.DamageReduction)
+	char:SetAttribute("ReductionUntil", time() + cfg.Duration)
+	task.spawn(function()
+		local ticks = 10
+		for _ = 1, ticks do
+			if humanoid.Health <= 0 then
+				return
+			end
+			humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + humanoid.MaxHealth * cfg.HealFraction / ticks)
+			task.wait(cfg.Duration / ticks)
+		end
+	end)
+	return true
+end
+
+function H.PiercingOx(ctx)
+	local cfg = A.PiercingOx
+	local root = ctx.Root
+	local look = flatDir(root.Position, ctx.Aim, flat(root.CFrame.LookVector).Unit)
+	local from = root.Position - look * 4
+	local to = root.Position + look * cfg.MaxDistance
+	incantation(ctx.Player, "PiercingOx")
+	Combat.FX("PiercingOx", { From = from, To = to, Speed = cfg.Speed })
+	local total = (to - from).Magnitude
+	local chargeTime = math.max(0.15, total / cfg.Speed)
+	for _, t in ipairs(Combat.GetTargets(ctx.Character, "Player", { Type = "Line", From = from, To = to, Width = cfg.Width })) do
+		local _, along = Combat.SegmentDistance(Combat.GetRoot(t).Position, from, to)
+		local dist = along * total
+		-- the ox accelerates (ease-in), so it reaches distance d at T * sqrt(d / total)
+		task.delay(0.28 + chargeTime * math.sqrt(along), function()
+			if alive(t) then
+				Combat.Damage(t, DamageRules.OxDamage(cfg.BaseDamage, cfg.DamagePerStud, dist, cfg.MaxDistance), cfg.DamageType, {
+					Source = ctx.Player, Knockback = look * 70 + UP * 30,
+				})
+			end
+		end)
+	end
+	return true
+end
+
+function H.TigerFuneral(ctx)
+	local cfg = A.TigerFuneral
+	local target, pos = Combat.ResolveTarget(ctx.Character, ctx.Aim, cfg.Range)
+	incantation(ctx.Player, "TigerFuneral")
+	Combat.FX("TigerFuneral", { Origin = ctx.Root.Position, Target = pos, Hits = cfg.Hits })
+	task.delay(0.55, function()
+		for _ = 1, cfg.Hits do
+			if alive(target) then
+				Combat.Damage(target, cfg.Damage, cfg.DamageType, { Source = ctx.Player })
+			end
+			task.wait(0.14)
+		end
+	end)
+	return true
+end
+
+function H.Totality(ctx)
+	local cfg = A.Totality
+	local target, pos = Combat.ResolveTarget(ctx.Character, ctx.Aim, cfg.Range)
+	incantation(ctx.Player, "Totality")
+	Combat.FX("Totality", { Origin = ctx.Root.Position, Target = pos, Hits = cfg.Hits })
+	task.delay(0.75, function()
+		for i = 1, cfg.Hits do
+			if alive(target) then
+				local kb = i == cfg.Hits and not target:GetAttribute("IsBoss") and (flatDir(ctx.Root.Position, pos, UP) * 60 + UP * 30) or nil
+				Combat.Damage(target, cfg.Damage, cfg.DamageType, { Source = ctx.Player, Knockback = kb })
+			end
+			task.wait(0.13)
+		end
+	end)
+	return true
+end
+
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+function H.ShadowStep(ctx)
+	local cfg = A.ShadowStep
+	local root = ctx.Root
+	local offset = flat(ctx.Aim - root.Position)
+	if offset.Magnitude > cfg.Range then
+		offset = offset.Unit * cfg.Range
+	end
+	local dest = root.Position + offset
+	local exclude = { ctx.Character }
+	local fx = workspace:FindFirstChild("TenShadowsFX")
+	if fx then
+		table.insert(exclude, fx)
+	end
+	for _, model in ipairs(Combat.AllCombatants()) do
+		table.insert(exclude, model)
+	end
+	rayParams.FilterDescendantsInstances = exclude
+	local hit = workspace:Raycast(dest + UP * 40, -UP * 120, rayParams)
+	if not hit then
+		return false
+	end
+	local groundPos = hit.Position
+	local look = offset.Magnitude > 0.1 and offset.Unit or flat(root.CFrame.LookVector).Unit
+	ctx.Character:SetAttribute("IFrameUntil", time() + cfg.IFrames)
+	Combat.FX("ShadowStep", { From = root.Position - UP * 3, To = groundPos })
+	task.delay(0.18, function()
+		if ctx.Character.Parent then
+			ctx.Character:PivotTo(CFrame.lookAt(groundPos + UP * 3.2, groundPos + UP * 3.2 + look))
+		end
+	end)
+	return true
+end
+
+function H.ChimeraShadowGarden(ctx)
+	local cfg = A.ChimeraShadowGarden
+	local st = ctx.State
+	local center = ctx.Root.Position - UP * 3
+	local untilTime = time() + cfg.Duration
+	st.Domain = { Center = center, Radius = cfg.Radius, Until = untilTime }
+	table.insert(Combat.SlowZones, { Center = center, Radius = cfg.Radius, Factor = cfg.EnemySlow, Until = untilTime, Owner = ctx.Player })
+	incantation(ctx.Player, "ChimeraShadowGarden", true)
+	Combat.FX("Domain", { Center = center, Radius = cfg.Radius, Duration = cfg.Duration, Id = tostring(ctx.Player.UserId) .. tostring(untilTime) })
+	task.spawn(function()
+		task.wait(0.9)
+		while time() < untilTime and ctx.Player.Parent and alive(ctx.Character) do
+			for _, t in ipairs(Combat.GetTargets(ctx.Character, "Player", { Type = "Circle", Pos = center, Radius = cfg.Radius })) do
+				local tpos = Combat.GetRoot(t).Position
+				local a = math.random() * math.pi * 2
+				local r = (t:GetAttribute("HitRadius") or 2) + 4
+				local spawnPos = Vector3.new(tpos.X + math.cos(a) * r, center.Y, tpos.Z + math.sin(a) * r)
+				Combat.FX("DomainClone", { Pos = spawnPos, Target = tpos })
+				task.delay(0.22, function()
+					if alive(t) then
+						Combat.Damage(t, cfg.CloneDamage, cfg.DamageType, { Source = ctx.Player })
+					end
+				end)
+			end
+			task.wait(cfg.CloneInterval)
+		end
+		st.Domain = nil
+	end)
+	return true
+end
+
+local function nearestEnemy(ctx, range)
+	local best, bestDist = nil, range
+	for _, model in ipairs(Combat.AllCombatants()) do
+		if Combat.IsEnemy("Player", ctx.Character, model) then
+			local d = flat(Combat.GetRoot(model).Position - ctx.Root.Position).Magnitude
+			if d < bestDist then
+				best, bestDist = model, d
+			end
+		end
+	end
+	return best
+end
+
+-- Shared loop for summons that fight on their own for a while (Agito, tamed Mahoraga).
+local function autoSummon(ctx, cfg, fxName, offset, extra)
+	local untilTime = time() + cfg.Duration
+	task.spawn(function()
+		while time() < untilTime and ctx.Player.Parent and alive(ctx.Character) do
+			local target = nearestEnemy(ctx, cfg.Range)
+			if target then
+				local tpos = Combat.GetRoot(target).Position
+				local dir = flatDir(ctx.Root.Position, tpos, flat(ctx.Root.CFrame.LookVector).Unit)
+				local spawnPos = Vector3.new(tpos.X, ctx.Root.Position.Y - 3, tpos.Z) - dir * (offset + (target:GetAttribute("HitRadius") or 2))
+				Combat.FX(fxName, { Pos = spawnPos, Target = tpos, CasterPos = extra and extra.HealFX and ctx.Root.Position or nil })
+				task.delay(0.22, function()
+					if alive(target) then
+						Combat.Damage(target, cfg.Damage, cfg.DamageType, { Source = ctx.Player, CurseMultiplier = cfg.CurseMultiplier })
+					end
+					if cfg.HealPerStrike and ctx.Humanoid.Health > 0 then
+						ctx.Humanoid.Health = math.min(ctx.Humanoid.MaxHealth, ctx.Humanoid.Health + cfg.HealPerStrike)
+					end
+				end)
+			end
+			task.wait(cfg.Interval)
+		end
+	end)
+end
+
+function H.Agito(ctx)
+	incantation(ctx.Player, "Agito")
+	autoSummon(ctx, A.Agito, "Agito", 6, { HealFX = true })
+	return true
+end
+
+function H.TamedMahoraga(ctx)
+	incantation(ctx.Player, "TamedMahoraga", true)
+	autoSummon(ctx, A.TamedMahoraga, "TamedMahoraga", 10)
+	return true
+end
+
+function H.Ritual(ctx)
+	local cfg = A.Ritual
+	local st = ctx.State
+	local started = st.ChantStart
+	st.ChantStart = nil
+	if not started or time() - started < cfg.HoldSeconds - 0.25 then
+		return false
+	end
+	if Mahoraga.IsAlive() then
+		Combat.Notice("Mahoraga is already manifested.", nil, ctx.Player)
+		return false
+	end
+	local look = flat(ctx.Root.CFrame.LookVector).Unit
+	local spawnAt = ctx.Root.Position + look * cfg.SpawnDistance
+	Combat.FX("UI_Incantation", { Title = "With this treasure, I summon...", Sub = "布瑠部由良由良", Color = Color3.fromRGB(190, 150, 255) })
+	Combat.Notice(ctx.Player.DisplayName .. " began the exorcism ritual. Mahoraga attacks EVERYONE, summoner included.", Color3.fromRGB(255, 120, 120))
+	task.spawn(Mahoraga.Spawn, Vector3.new(spawnAt.X, 0, spawnAt.Z), ctx.Player)
+	return true
+end
+
+---------------------------------------------------------------- special inputs (not cooldown abilities)
+
+local function onRitualStart(ctx)
+	local st = ctx.State
+	if (st.Cooldowns.Ritual or 0) > time() then
+		return
+	end
+	st.ChantStart = time()
+	Combat.FX("Chant", { Pos = ctx.Root.Position - UP * 3 })
+	Combat.FX("UI_Incantation", { Title = "Furube Yura Yura", Sub = "布瑠部由良由良", Color = Color3.fromRGB(190, 150, 255) })
+end
+
+local function onBlock(ctx, on)
+	ctx.Character:SetAttribute("Blocking", on == true)
+	ctx.Humanoid.WalkSpeed = on and Config.Player.BlockWalkSpeed or Config.Player.WalkSpeed
+end
+
+---------------------------------------------------------------- dispatch
+
+local function isLocked(st, name)
+	return A[name] and A[name].Locked and not st.Unlocked[name]
+end
+
+local function handle(player, name, aim, extra)
+	if typeof(name) ~= "string" then
+		return
+	end
+	if name == "RequestState" then
+		sendState(player)
+		return
+	end
+	local char = player.Character
+	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root or humanoid.Health <= 0 then
+		return
+	end
+	if typeof(aim) ~= "Vector3" then
+		aim = root.Position + root.CFrame.LookVector * 20
+	end
+	local st = getState(player)
+	local ctx = { Player = player, Character = char, Root = root, Humanoid = humanoid, Aim = aim, State = st }
+
+	if name == "Block" then
+		onBlock(ctx, extra == true)
+		return
+	elseif name == "RitualStart" then
+		onRitualStart(ctx)
+		return
+	elseif name == "RitualCancel" then
+		st.ChantStart = nil
+		return
+	end
+
+	local handler = H[name]
+	local cfg = A[name]
+	if not handler or not cfg then
+		return
+	end
+	local isDomain = name == "ChimeraShadowGarden"
+	local canUseWhileBlocking = name == "ShadowStep"
+	if char:GetAttribute("Blocking") and not canUseWhileBlocking then
+		return
+	end
+	if isLocked(st, name) then
+		Combat.Notice(cfg.Name .. " is locked. " .. (cfg.UnlockHint or ""), nil, player)
+		return
+	end
+	local now = time()
+	if (st.Cooldowns[name] or 0) > now then
+		return
+	end
+	-- claim the cooldown before running so spam clicks can't double cast
+	st.Cooldowns[name] = now + 999
+	local ok, used = pcall(handler, ctx)
+	if not ok then
+		warn("[TenShadows] " .. name .. " failed: " .. tostring(used))
+		used = false
+	end
+	if used then
+		local cd = cfg.Cooldown or 0
+		if not isDomain and inOwnDomain(st, root.Position) then
+			cd *= A.ChimeraShadowGarden.CooldownMultiplier
+		end
+		st.Cooldowns[name] = now + cd
+		if cd >= 1 then
+			Combat.FXTo(player, "UI_Cooldown", { Ability = name, Duration = cd })
+		end
+	else
+		st.Cooldowns[name] = 0
+	end
+end
+
+function Abilities.Init()
+	Combat.AbilityRemote.OnServerEvent:Connect(handle)
+	Players.PlayerRemoving:Connect(function(player)
+		playerState[player] = nil
+	end)
+
+	-- Enemy attacks that cover a guarding Divine Dog destroy it (canon: a destroyed shikigami is
+	-- gone for good, and its power passes on - the surviving dog becomes Divine Dog: Totality).
+	table.insert(Combat.AreaHitHooks, function(shape)
+		local now = time()
+		for i = #guards, 1, -1 do
+			local g = guards[i]
+			if now > g.Until or not g.Owner.Parent then
+				table.remove(guards, i)
+			elseif Combat.InShape(g.Pos, shape, 1.5) then
+				table.remove(guards, i)
+				Combat.FX("DogDestroyed", { Id = g.Id, Pos = g.Pos })
+				local st = getState(g.Owner)
+				if not st.DogsDestroyed then
+					st.DogsDestroyed = true
+					local which = g.White and "White" or "Black"
+					local other = g.White and "Black" or "White"
+					Abilities.Unlock(g.Owner, "Totality", "The " .. which .. " Divine Dog was destroyed. Its power passes to the " .. other .. " Dog: DIVINE DOG: TOTALITY unlocked (0).")
+				end
+			end
+		end
+	end)
+end
+
+function Abilities.ResetCooldowns(player)
+	getState(player).Cooldowns = {}
+end
+
+return Abilities
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX0000000A"><Properties><string name="Name">Arena</string><ProtectedString name="Source"><![CDATA[-- Builds the ritual arena at runtime (so the place file needs no pre-made parts):
+-- a dark stone plaza, Mahoraga's altar with a torii gate, lantern pillars, walls and lighting.
+
+local Lighting = game:GetService("Lighting")
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage:WaitForChild("TenShadows").Config)
+
+local Arena = {}
+
+local function part(props, parent)
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	for k, v in pairs(props) do
+		p[k] = v
+	end
+	p.Parent = parent
+	return p
+end
+
+local function lighting()
+	Lighting.ClockTime = 18.6
+	Lighting.Brightness = 2
+	Lighting.Ambient = Color3.fromRGB(40, 34, 60)
+	Lighting.OutdoorAmbient = Color3.fromRGB(70, 60, 95)
+	Lighting.EnvironmentDiffuseScale = 0.6
+	Lighting.EnvironmentSpecularScale = 0.8
+	pcall(function()
+		Lighting.Technology = Enum.Technology.Future
+	end)
+	local function effect(class, props)
+		local e = Lighting:FindFirstChild("TS_" .. class) or Instance.new(class)
+		e.Name = "TS_" .. class
+		for k, v in pairs(props) do
+			e[k] = v
+		end
+		e.Parent = Lighting
+	end
+	effect("Atmosphere", { Density = 0.38, Offset = 0.1, Color = Color3.fromRGB(150, 130, 190), Decay = Color3.fromRGB(60, 40, 90), Glare = 0.4, Haze = 1.6 })
+	effect("BloomEffect", { Intensity = 0.9, Size = 28, Threshold = 1.4 })
+	effect("ColorCorrectionEffect", { Contrast = 0.12, Saturation = -0.08, TintColor = Color3.fromRGB(240, 232, 255) })
+	effect("SunRaysEffect", { Intensity = 0.06, Spread = 0.6 })
+end
+
+function Arena.Build()
+	if workspace:FindFirstChild("TenShadowsArena") then
+		return
+	end
+	local arena = Instance.new("Model")
+	arena.Name = "TenShadowsArena"
+	local C = Config.Arena
+	local R = C.Radius
+
+	-- floor: outer stone disc + inner marble ritual circle
+	part({ Name = "Floor", Shape = Enum.PartType.Cylinder, Size = Vector3.new(4, R * 2, R * 2), CFrame = CFrame.new(C.Center - Vector3.new(0, 2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(38, 36, 46), Material = Enum.Material.Slate }, arena)
+	part({ Name = "RitualCircle", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, 150, 150), CFrame = CFrame.new(C.Center + Vector3.new(0, 0.05, -20)) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(58, 54, 70), Material = Enum.Material.Marble, CanCollide = false }, arena)
+	-- glowing ring segments around the ritual circle
+	for i = 0, 47 do
+		local a = i / 48 * math.pi * 2
+		local pos = C.Center + Vector3.new(math.cos(a) * 74, 0.12, -20 + math.sin(a) * 74)
+		part({ Name = "Rune", Size = Vector3.new(0.6, 0.1, 8.6), CFrame = CFrame.lookAt(pos, pos + Vector3.new(-math.sin(a), 0, math.cos(a))), Color = Color3.fromRGB(120, 70, 200), Material = Enum.Material.Neon, CanCollide = false, CastShadow = false }, arena)
+	end
+	-- eight spokes, echoing Mahoraga's wheel
+	for i = 0, 7 do
+		local a = i / 8 * math.pi * 2
+		local pos = C.Center + Vector3.new(math.cos(a) * 37, 0.12, -20 + math.sin(a) * 37)
+		part({ Name = "Spoke", Size = Vector3.new(0.5, 0.1, 70), CFrame = CFrame.lookAt(pos, pos + Vector3.new(math.cos(a), 0, math.sin(a))), Color = Color3.fromRGB(214, 178, 74), Material = Enum.Material.Neon, Transparency = 0.35, CanCollide = false, CastShadow = false }, arena)
+	end
+
+	-- altar + torii gate behind it
+	local altar = C.BossAltar
+	part({ Name = "Altar", Size = Vector3.new(26, 1.2, 26), CFrame = CFrame.new(altar + Vector3.new(0, 0.6, 0)), Color = Color3.fromRGB(28, 26, 34), Material = Enum.Material.Basalt }, arena)
+	local gateZ = altar.Z - 30
+	local red = Color3.fromRGB(150, 28, 36)
+	for _, x in ipairs({ -16, 16 }) do
+		part({ Name = "ToriiPillar", Shape = Enum.PartType.Cylinder, Size = Vector3.new(40, 3, 3), CFrame = CFrame.new(x, 20, gateZ) * CFrame.Angles(0, 0, math.rad(90)), Color = red, Material = Enum.Material.WoodPlanks }, arena)
+	end
+	part({ Name = "ToriiKasagi", Size = Vector3.new(46, 2.4, 4), CFrame = CFrame.new(0, 41, gateZ), Color = Color3.fromRGB(24, 20, 24), Material = Enum.Material.Wood }, arena)
+	part({ Name = "ToriiNuki", Size = Vector3.new(38, 1.6, 2.4), CFrame = CFrame.new(0, 34, gateZ), Color = red, Material = Enum.Material.WoodPlanks }, arena)
+	part({ Name = "ToriiPlaque", Size = Vector3.new(4, 5, 0.6), CFrame = CFrame.new(0, 37.5, gateZ - 1.3), Color = Color3.fromRGB(214, 178, 74), Material = Enum.Material.Metal }, arena)
+
+	-- lantern pillars around the edge
+	for i = 0, 15 do
+		local a = i / 16 * math.pi * 2
+		local pos = C.Center + Vector3.new(math.cos(a) * (R - 12), 0, math.sin(a) * (R - 12))
+		part({ Name = "Pillar", Size = Vector3.new(4, 18, 4), CFrame = CFrame.new(pos + Vector3.new(0, 9, 0)), Color = Color3.fromRGB(50, 48, 58), Material = Enum.Material.Cobblestone }, arena)
+		local lantern = part({ Name = "Lantern", Size = Vector3.new(3, 3, 3), CFrame = CFrame.new(pos + Vector3.new(0, 19.5, 0)), Color = Color3.fromRGB(150, 110, 255), Material = Enum.Material.Neon, CastShadow = false }, arena)
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(150, 110, 255)
+		light.Range = 36
+		light.Brightness = 2
+		light.Shadows = true
+		light.Parent = lantern
+	end
+
+	-- invisible boundary
+	for i = 0, 35 do
+		local a = i / 36 * math.pi * 2
+		local pos = C.Center + Vector3.new(math.cos(a) * R, 40, math.sin(a) * R)
+		part({ Name = "Wall", Size = Vector3.new(2, 80, 2 * math.pi * R / 36 + 2), CFrame = CFrame.lookAt(pos, pos + Vector3.new(-math.sin(a), 0, math.cos(a))) * CFrame.Angles(0, math.rad(90), 0), Transparency = 1, CanQuery = false }, arena)
+	end
+
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "SpawnLocation"
+	spawn.Anchored = true
+	spawn.Size = Vector3.new(12, 1, 12)
+	spawn.CFrame = CFrame.new(C.PlayerSpawn + Vector3.new(0, 0.5, 0))
+	spawn.Color = Color3.fromRGB(60, 50, 80)
+	spawn.Material = Enum.Material.Slate
+	spawn.Duration = 0
+	spawn.Parent = arena
+
+	arena.Parent = workspace
+	lighting()
+	return arena
+end
+
+return Arena
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX0000000B"><Properties><string name="Name">Combat</string><ProtectedString name="Source"><![CDATA[-- Server combat core: remotes, targeting shapes, damage (with the anti one-shot rules),
+-- knockback, stuns and FX broadcasting.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("TenShadows")
+local Config = require(Shared.Config)
+local DamageRules = require(Shared.DamageRules)
+
+local Combat = {}
+
+Combat.Handlers = {} -- [model] = function(amount, damageType, info) -> dealt  (custom damage, e.g. Mahoraga)
+Combat.AreaHitHooks = {} -- functions(shape, attackerFaction) called when an enemy attack covers an area
+Combat.Decoys = {} -- { Pos, Owner, Until } rabbits that Mahoraga chases instead of players
+Combat.SlowZones = {} -- { Center, Radius, Factor, Until, Owner }
+Combat.Npcs = {} -- [model] = true, registered non-player combatants
+
+---------------------------------------------------------------- remotes
+
+local remotes = ReplicatedStorage:FindFirstChild("TenShadowsRemotes") or Instance.new("Folder")
+remotes.Name = "TenShadowsRemotes"
+remotes.Parent = ReplicatedStorage
+
+local function remote(name)
+	local r = remotes:FindFirstChild(name) or Instance.new("RemoteEvent")
+	r.Name = name
+	r.Parent = remotes
+	return r
+end
+
+Combat.AbilityRemote = remote("Ability") -- client -> server: (abilityName, aimPosition, extra)
+Combat.FXRemote = remote("FX") -- server -> client: (effectName, params)
+
+function Combat.FX(name, params)
+	Combat.FXRemote:FireAllClients(name, params)
+end
+
+function Combat.FXTo(player, name, params)
+	Combat.FXRemote:FireClient(player, name, params)
+end
+
+function Combat.Notice(text, color, player)
+	local params = { Text = text, Color = color }
+	if player then
+		Combat.FXTo(player, "UI_Notice", params)
+	else
+		Combat.FX("UI_Notice", params)
+	end
+end
+
+---------------------------------------------------------------- combatants
+
+function Combat.Register(model)
+	Combat.Npcs[model] = true
+	model.AncestryChanged:Connect(function(_, parent)
+		if not parent then
+			Combat.Npcs[model] = nil
+			Combat.Handlers[model] = nil
+		end
+	end)
+end
+
+function Combat.GetRoot(model)
+	return model and (model.PrimaryPart or model:FindFirstChild("HumanoidRootPart"))
+end
+
+function Combat.IsAlive(model)
+	local hum = model and model:FindFirstChildOfClass("Humanoid")
+	return hum ~= nil and hum.Health > 0 and model.Parent ~= nil
+end
+
+function Combat.AllCombatants()
+	local list = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		local char = player.Character
+		if char and Combat.IsAlive(char) and Combat.GetRoot(char) then
+			table.insert(list, char)
+		end
+	end
+	for model in pairs(Combat.Npcs) do
+		if Combat.IsAlive(model) and Combat.GetRoot(model) then
+			table.insert(list, model)
+		end
+	end
+	return list
+end
+
+function Combat.IsEnemy(attackerFaction, attackerModel, target)
+	if target == attackerModel then
+		return false
+	end
+	local faction = target:GetAttribute("Faction")
+	if attackerFaction == "Player" then
+		return faction == "Curse" or (Config.PvP and faction == "Player")
+	elseif attackerFaction == "Curse" then
+		return faction == "Player"
+	end
+	return false
+end
+
+---------------------------------------------------------------- shapes
+
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+Combat.Flat = flat
+
+local function segmentDistance(p, a, b)
+	local ab = flat(b - a)
+	local ap = flat(p - a)
+	local len2 = ab:Dot(ab)
+	local t = len2 > 0 and math.clamp(ap:Dot(ab) / len2, 0, 1) or 0
+	return (ap - ab * t).Magnitude, t
+end
+Combat.SegmentDistance = segmentDistance
+
+-- shape = { Type = "Circle", Pos, Radius } | { Type = "Cone", Origin, Dir, Range, Angle }
+--       | { Type = "Line", From, To, Width }
+function Combat.InShape(pos, shape, pad)
+	pad = pad or 0
+	if shape.Type == "Circle" then
+		return flat(pos - shape.Pos).Magnitude <= shape.Radius + pad and math.abs(pos.Y - shape.Pos.Y) < shape.Radius + 12
+	elseif shape.Type == "Cone" then
+		local offset = flat(pos - shape.Origin)
+		local dist = offset.Magnitude
+		if dist > shape.Range + pad then
+			return false
+		end
+		if dist < 3 + pad then
+			return true
+		end
+		local dir = flat(shape.Dir)
+		if dir.Magnitude < 0.01 then
+			return true
+		end
+		local angle = math.deg(math.acos(math.clamp(offset.Unit:Dot(dir.Unit), -1, 1)))
+		return angle <= shape.Angle / 2 + math.deg(math.atan2(pad, math.max(dist, 1)))
+	elseif shape.Type == "Line" then
+		local d = segmentDistance(pos, shape.From, shape.To)
+		return d <= shape.Width / 2 + pad
+	end
+	return false
+end
+
+-- Returns every enemy model whose root is inside the shape.
+function Combat.GetTargets(attackerModel, attackerFaction, shape)
+	local found = {}
+	for _, model in ipairs(Combat.AllCombatants()) do
+		if Combat.IsEnemy(attackerFaction, attackerModel, model) then
+			local root = Combat.GetRoot(model)
+			local pad = model:GetAttribute("HitRadius") or 2
+			if Combat.InShape(root.Position, shape, pad) then
+				table.insert(found, model)
+			end
+		end
+	end
+	if attackerFaction == "Curse" then
+		for _, hook in ipairs(Combat.AreaHitHooks) do
+			hook(shape)
+		end
+	end
+	return found
+end
+
+-- Picks the enemy the player most likely meant: close to the mouse, else nearest in front.
+function Combat.ResolveTarget(character, aimPos, range)
+	local root = Combat.GetRoot(character)
+	if not root then
+		return nil, aimPos
+	end
+	local best, bestScore = nil, math.huge
+	for _, model in ipairs(Combat.AllCombatants()) do
+		if Combat.IsEnemy("Player", character, model) then
+			local pos = Combat.GetRoot(model).Position
+			local fromMe = flat(pos - root.Position).Magnitude
+			if fromMe <= range then
+				local fromAim = flat(pos - aimPos).Magnitude
+				local score = fromAim < 14 and fromAim or 1000 + fromMe
+				if score < bestScore then
+					best, bestScore = model, score
+				end
+			end
+		end
+	end
+	if best then
+		return best, Combat.GetRoot(best).Position
+	end
+	local offset = flat(aimPos - root.Position)
+	if offset.Magnitude > range then
+		offset = offset.Unit * range
+	end
+	return nil, Vector3.new(root.Position.X + offset.X, root.Position.Y - 3, root.Position.Z + offset.Z)
+end
+
+---------------------------------------------------------------- effects on targets
+
+function Combat.IsStunned(model)
+	return (model:GetAttribute("StunnedUntil") or 0) > time()
+end
+
+function Combat.Stun(model, seconds)
+	local untilTime = time() + seconds
+	if (model:GetAttribute("StunnedUntil") or 0) < untilTime then
+		model:SetAttribute("StunnedUntil", untilTime)
+	end
+end
+
+function Combat.Knockback(model, velocity)
+	local player = Players:GetPlayerFromCharacter(model)
+	if player then
+		Combat.FXTo(player, "Knockback", { Velocity = velocity })
+		return
+	end
+	local root = Combat.GetRoot(model)
+	if root and not root.Anchored then
+		local resist = model:GetAttribute("KnockbackResist") or 1
+		root.AssemblyLinearVelocity += velocity * resist
+	end
+end
+
+function Combat.GetSlowFactor(pos, victimFaction)
+	local factor = 1
+	local now = time()
+	for i = #Combat.SlowZones, 1, -1 do
+		local z = Combat.SlowZones[i]
+		if now > z.Until then
+			table.remove(Combat.SlowZones, i)
+		elseif victimFaction == "Curse" and flat(pos - z.Center).Magnitude <= z.Radius then
+			factor = math.min(factor, z.Factor)
+		end
+	end
+	return factor
+end
+
+---------------------------------------------------------------- damage
+
+-- info = { Source = Player?, SourceModel = Model?, Knockback = Vector3?, Stun = number?, Silent = bool? }
+function Combat.Damage(target, amount, damageType, info)
+	info = info or {}
+	local humanoid = target and target:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return 0
+	end
+	local root = Combat.GetRoot(target)
+	local now = time()
+	local dealt
+	local note = nil
+
+	local handler = Combat.Handlers[target]
+	if handler then
+		dealt, note = handler(amount, damageType, info)
+	elseif Players:GetPlayerFromCharacter(target) then
+		local reduction = 0
+		if (target:GetAttribute("ReductionUntil") or 0) > now then
+			reduction = target:GetAttribute("Reduction") or 0
+		end
+		local reason
+		dealt, reason = DamageRules.PlayerHit({
+			Health = humanoid.Health,
+			MaxHealth = humanoid.MaxHealth,
+			Amount = amount,
+			Now = now,
+			LastHitAt = target:GetAttribute("LastHitAt"),
+			IFrameUntil = target:GetAttribute("IFrameUntil"),
+			Blocking = target:GetAttribute("Blocking") == true,
+			Reduction = reduction,
+			Rules = Config.Player,
+		})
+		if reason == "iframe" then
+			return 0
+		end
+		target:SetAttribute("LastHitAt", now)
+		if target:GetAttribute("Blocking") then
+			note = "BLOCK"
+		elseif reason == "laststand" then
+			note = "ENDURE"
+		end
+		humanoid.Health = math.max(0, humanoid.Health - dealt)
+	else
+		if target:GetAttribute("IsCurse") and info.CurseMultiplier then
+			amount *= info.CurseMultiplier
+		end
+		dealt = math.floor(amount + 0.5)
+		humanoid.Health = math.max(0, humanoid.Health - dealt)
+	end
+
+	if dealt and dealt > 0 then
+		if info.Source then
+			target:SetAttribute("LastAttacker", info.Source.UserId)
+		end
+		if info.Knockback then
+			Combat.Knockback(target, info.Knockback)
+		end
+		if info.Stun then
+			Combat.Stun(target, info.Stun)
+		end
+	end
+
+	if root and not info.Silent then
+		local typeInfo = Config.DamageTypes[damageType] or Config.DamageTypes.Boss
+		Combat.FX("DamageNumber", { Pos = root.Position + Vector3.new(0, 4, 0), Amount = dealt, Color = typeInfo.Color, Note = note })
+		if dealt and dealt > 0 then
+			Combat.FX("Hit", { Pos = root.Position, Color = typeInfo.Color, Big = dealt >= 200 })
+		end
+	end
+	return dealt or 0
+end
+
+return Combat
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX0000000C"><Properties><string name="Name">Curses</string><ProtectedString name="Source"><![CDATA[-- Training cursed spirits: stationary targets for testing techniques away from Mahoraga.
+-- They pulse a weak cursed burst when players are close (which can also destroy guarding dogs).
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("TenShadows")
+local Config = require(Shared.Config)
+local ModelFactory = require(Shared.ModelFactory)
+local Combat = require(script.Parent.Combat)
+
+local Curses = {}
+
+local function spawnCurse(home)
+	local cfg = Config.Curses
+	local groundCF = CFrame.lookAt(home, home + Vector3.new(-home.X, 0, -home.Z + 1))
+	local model = ModelFactory.Build("CursedSpirit", { Anchored = true, Humanoid = true, CFrame = groundCF })
+	model.Name = "Cursed Spirit"
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	humanoid.MaxHealth = cfg.MaxHealth
+	humanoid.Health = cfg.MaxHealth
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
+	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOn
+	humanoid.WalkSpeed = 0
+	model:SetAttribute("Faction", "Curse")
+	model:SetAttribute("IsCurse", true)
+	model:SetAttribute("HitRadius", 3)
+	model.Parent = workspace
+	Combat.Register(model)
+
+	local root = model.PrimaryPart
+	local homeCF = root.CFrame
+	local dead = false
+	humanoid.HealthChanged:Connect(function(h)
+		if h <= 0 and not dead then
+			dead = true
+			Combat.FX("CurseBurst", { Pos = root.Position, Radius = 14 })
+			task.delay(0.3, function()
+				model:Destroy()
+			end)
+			task.delay(cfg.RespawnSeconds, spawnCurse, home)
+		end
+	end)
+
+	task.spawn(function()
+		local nextBurst = time() + cfg.BurstInterval
+		while not dead and model.Parent do
+			task.wait(0.25)
+			-- drift back home after being pulled by Toad
+			if (root.Position - homeCF.Position).Magnitude > 0.5 and not Combat.IsStunned(model) then
+				model:PivotTo(root.CFrame:Lerp(homeCF, 0.15))
+			end
+			if time() >= nextBurst and not Combat.IsStunned(model) then
+				nextBurst = time() + cfg.BurstInterval
+				local near = false
+				for _, player in ipairs(Players:GetPlayers()) do
+					local r = player.Character and Combat.GetRoot(player.Character)
+					if r and (r.Position - root.Position).Magnitude < cfg.BurstRadius * 2.5 then
+						near = true
+					end
+				end
+				if near then
+					local shape = { Type = "Circle", Pos = root.Position, Radius = cfg.BurstRadius }
+					Combat.FX("CurseBurst", { Pos = root.Position, Radius = cfg.BurstRadius })
+					for _, t in ipairs(Combat.GetTargets(model, "Curse", shape)) do
+						Combat.Damage(t, cfg.BurstDamage, "Boss", { SourceModel = model })
+					end
+				end
+			end
+		end
+	end)
+end
+
+function Curses.Start()
+	for _, pos in ipairs(Config.Curses.Positions) do
+		spawnCurse(pos)
+	end
+end
+
+return Curses
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX0000000D"><Properties><string name="Name">Mahoraga</string><ProtectedString name="Source"><![CDATA[-- Boss: Eight-Handled Sword Divergent Sila Divine General Mahoraga.
+--
+-- * Adapts to every damage type separately (the wheel turns, damage from that type drops,
+--   Mahoraga heals when an adaptation completes and can counter adapted techniques).
+-- * Much stronger than a normal enemy (high health, reduced damage taken, fast attacks),
+--   but every hit on a player goes through DamageRules, so it can never one-shot anyone.
+-- * Every attack is telegraphed on the ground so it can be dodged.
+-- * Defeating it tames it: everyone who fought gets the "Divine General Mahoraga" summon.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Shared = ReplicatedStorage:WaitForChild("TenShadows")
+local Config = require(Shared.Config)
+local Adaptation = require(Shared.Adaptation)
+local DamageRules = require(Shared.DamageRules)
+local ModelFactory = require(Shared.ModelFactory)
+local Combat = require(script.Parent.Combat)
+
+local BOSS = Config.Boss
+local ATK = BOSS.Attacks
+local UP = Vector3.new(0, 1, 0)
+
+local Mahoraga = {}
+Mahoraga.OnDefeated = nil -- set by Main: function(contributors: {Player})
+
+local current = nil -- state of the live boss
+
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local spawning = false
+
+function Mahoraga.IsAlive()
+	return spawning or (current ~= nil and current.Alive)
+end
+
+function Mahoraga.GetModel()
+	return current and current.Model
+end
+
+---------------------------------------------------------------- animation helpers
+
+local function poseMotor(state, jointName, angles, t, style)
+	local motor = state.Motors[jointName]
+	if not motor then
+		return
+	end
+	local goal = state.BaseC0[jointName] * CFrame.Angles(math.rad(angles.X), math.rad(angles.Y), math.rad(angles.Z))
+	TweenService:Create(motor, TweenInfo.new(t, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { C0 = goal }):Play()
+end
+
+local function restPose(state, t)
+	poseMotor(state, "RightArm", Vector3.zero, t or 0.25)
+	poseMotor(state, "LeftArm", Vector3.zero, t or 0.25)
+end
+
+local function wheelPosition(state)
+	local pivot = state.Model:FindFirstChild("WheelPivot")
+	return pivot and pivot.Position or state.Root.Position + UP * 12
+end
+
+local function turnWheel(state, completed, damageType)
+	local motor = state.Motors.Wheel
+	if motor then
+		local goal = state.BaseC0.Wheel * CFrame.Angles(0, math.rad(45 * state.Adapt.TotalTurns), 0)
+		TweenService:Create(motor, TweenInfo.new(0.35, Enum.EasingStyle.Back), { C0 = goal }):Play()
+	end
+	Combat.FX("WheelTurn", { Pos = wheelPosition(state), Completed = completed, DamageType = damageType })
+end
+
+local function face(state, pos)
+	local root = state.Root
+	local look = flat(pos - root.Position)
+	if look.Magnitude > 0.1 then
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + look)
+	end
+end
+
+local function stop(state)
+	state.Humanoid:MoveTo(state.Root.Position)
+end
+
+-- Waits, then returns false if the boss died meanwhile.
+local function pause(state, t)
+	task.wait(t)
+	return state.Alive
+end
+
+---------------------------------------------------------------- attribute sync for the client UI
+
+local function syncAttributes(state)
+	local model = state.Model
+	local list = {}
+	for _, damageType in ipairs(state.Adapt.Order) do
+		table.insert(list, damageType .. ":" .. state.Adapt:Progress(damageType) .. ":" .. (state.Adapt:IsAdapted(damageType) and 1 or 0))
+	end
+	model:SetAttribute("Adaptations", table.concat(list, ","))
+	model:SetAttribute("Phase", state.Phase)
+end
+
+---------------------------------------------------------------- damage in
+
+local function onDamaged(state, amount, damageType, info)
+	if not state.Alive then
+		return 0
+	end
+	local multiplier, turned, completed = state.Adapt:RegisterHit(damageType)
+	local dealt = math.floor(amount * BOSS.BaseDamageTaken * multiplier + 0.5)
+	local humanoid = state.Humanoid
+	humanoid.Health = math.max(0, humanoid.Health - dealt)
+	state.LastDamaged = time()
+
+	if info.Source then
+		state.Contributors[info.Source] = (state.Contributors[info.Source] or 0) + dealt
+	end
+
+	local note = nil
+	if state.Adapt:IsAdapted(damageType) and not completed then
+		note = "ADAPTED"
+		-- canon: once adapted, Mahoraga answers that technique immediately
+		if info.Source and time() >= state.NextCounter and math.random() < BOSS.CounterChance then
+			state.NextCounter = time() + BOSS.CounterCooldown
+			state.CounterTarget = info.Source
+		end
+	elseif multiplier < 1 then
+		note = string.format("-%d%%", math.floor((1 - multiplier) * 100 + 0.5))
+	end
+
+	if turned then
+		turnWheel(state, completed, damageType)
+		if completed then
+			local label = (Config.DamageTypes[damageType] or {}).Label or damageType
+			Combat.Notice("The wheel turns... Mahoraga has ADAPTED to " .. label .. "!", Color3.fromRGB(255, 214, 120))
+			humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + humanoid.MaxHealth * BOSS.AdaptHealFraction)
+			state.PendingResonance = true
+		end
+		syncAttributes(state)
+	end
+	return dealt, note
+end
+
+---------------------------------------------------------------- targets
+
+local function pickTarget(state)
+	local root = state.Root
+	local now = time()
+	-- Rabbit Escape decoys draw Mahoraga's attention first
+	for i = #Combat.Decoys, 1, -1 do
+		local d = Combat.Decoys[i]
+		if now > d.Until then
+			table.remove(Combat.Decoys, i)
+		elseif flat(d.Pos - root.Position).Magnitude < 90 then
+			return nil, d.Pos
+		end
+	end
+	local best, bestDist = nil, BOSS.AggroRange
+	for _, player in ipairs(Players:GetPlayers()) do
+		local char = player.Character
+		if char and Combat.IsAlive(char) then
+			local r = Combat.GetRoot(char)
+			local dist = r and (r.Position - root.Position).Magnitude
+			if dist and dist < bestDist then
+				best, bestDist = char, dist
+			end
+		end
+	end
+	if best then
+		return best, Combat.GetRoot(best).Position
+	end
+	return nil, nil
+end
+
+local function hitPlayers(state, shape, damage, knockback, stun)
+	local targets = Combat.GetTargets(state.Model, "Curse", shape)
+	for _, model in ipairs(targets) do
+		local kb = nil
+		if knockback then
+			local dir = flat(Combat.GetRoot(model).Position - state.Root.Position)
+			dir = dir.Magnitude > 0.1 and dir.Unit or state.Root.CFrame.LookVector
+			kb = dir * knockback + UP * knockback * 0.45
+		end
+		Combat.Damage(model, damage, "Boss", { SourceModel = state.Model, Knockback = kb, Stun = stun })
+	end
+	return #targets
+end
+
+---------------------------------------------------------------- attacks
+
+local Attacks = {}
+
+function Attacks.Combo(state, targetPos)
+	local a = ATK.Combo
+	for i = 1, a.Hits do
+		face(state, targetPos)
+		local root = state.Root
+		local look = root.CFrame.LookVector
+		Combat.FX("TelegraphCone", { Origin = root.Position, Dir = look, Range = a.Range, Angle = a.Angle, Duration = a.Windup * 0.8 })
+		local arm = i % 2 == 1 and "RightArm" or "LeftArm"
+		poseMotor(state, arm, Vector3.new(110, 0, i % 2 == 1 and 30 or -30), a.Windup * 0.8)
+		if not pause(state, a.Windup) then
+			return
+		end
+		poseMotor(state, arm, Vector3.new(-20, 0, 0), 0.1)
+		Combat.FX("BossSlash", { CFrame = root.CFrame, Radius = a.Range * 0.8, Span = a.Angle, Tilt = i % 2 == 1 and -30 or 30 })
+		hitPlayers(state, { Type = "Cone", Origin = root.Position, Dir = look, Range = a.Range, Angle = a.Angle }, a.Damage, i == a.Hits and 45 or 15)
+		if not pause(state, 0.15) then
+			return
+		end
+	end
+	restPose(state)
+end
+
+function Attacks.SwordOfExtermination(state, targetPos)
+	local a = ATK.SwordOfExtermination
+	face(state, targetPos)
+	local root = state.Root
+	local look = root.CFrame.LookVector
+	Combat.FX("TelegraphCone", { Origin = root.Position, Dir = look, Range = a.Range, Angle = a.Angle, Duration = a.Windup })
+	poseMotor(state, "RightArm", Vector3.new(170, 0, 10), a.Windup * 0.9, Enum.EasingStyle.Back)
+	if not pause(state, a.Windup) then
+		return
+	end
+	poseMotor(state, "RightArm", Vector3.new(-10, 0, 0), 0.12)
+	Combat.FX("BossSlash", { CFrame = root.CFrame * CFrame.Angles(0, 0, math.rad(80)), Radius = a.Range, Span = 90, Tilt = 0 })
+	hitPlayers(state, { Type = "Cone", Origin = root.Position, Dir = look, Range = a.Range, Angle = a.Angle }, a.Damage, 40)
+	pause(state, 0.35)
+	restPose(state)
+end
+
+function Attacks.GroundSlam(state, targetPos)
+	local a = ATK.GroundSlam
+	local root = state.Root
+	local landing = flat(targetPos) + UP * root.Position.Y
+	Combat.FX("TelegraphCircle", { Pos = flat(targetPos), Radius = a.Radius, Duration = a.Windup })
+	poseMotor(state, "RightArm", Vector3.new(160, 0, 20), 0.4)
+	poseMotor(state, "LeftArm", Vector3.new(160, 0, -20), 0.4)
+	face(state, targetPos)
+	-- leap: anchor briefly and arc over to the target
+	root.Anchored = true
+	local start = root.CFrame
+	local look = flat(landing - start.Position)
+	local goal = CFrame.lookAt(landing, landing + (look.Magnitude > 0.1 and look or start.LookVector))
+	local steps = 20
+	for i = 1, steps do
+		if not state.Alive then
+			root.Anchored = false
+			return
+		end
+		local t = i / steps
+		root.CFrame = start:Lerp(goal, t) + UP * math.sin(t * math.pi) * 22
+		task.wait(a.Windup / steps)
+	end
+	root.CFrame = goal
+	root.Anchored = false
+	poseMotor(state, "RightArm", Vector3.new(40, 0, 0), 0.08)
+	poseMotor(state, "LeftArm", Vector3.new(40, 0, 0), 0.08)
+	Combat.FX("BossSlam", { Pos = flat(landing), Radius = a.Radius })
+	hitPlayers(state, { Type = "Circle", Pos = flat(landing) + UP * landing.Y, Radius = a.Radius }, a.Damage, a.Knockback)
+	pause(state, 0.5)
+	restPose(state)
+end
+
+function Attacks.Rush(state, targetPos)
+	local a = ATK.Rush
+	face(state, targetPos)
+	local root = state.Root
+	local from = root.Position
+	local dir = flat(targetPos - from)
+	dir = dir.Magnitude > 0.1 and dir.Unit or root.CFrame.LookVector
+	local to = from + dir * a.Distance
+	-- stay inside the arena wall
+	local limit = Config.Arena.Radius - 15
+	local offset = flat(to - Config.Arena.Center)
+	if offset.Magnitude > limit then
+		to = Config.Arena.Center + offset.Unit * limit + UP * from.Y
+	end
+	Combat.FX("TelegraphLine", { From = from, To = to, Width = a.Width, Duration = a.Windup })
+	poseMotor(state, "RightArm", Vector3.new(70, 0, 20), a.Windup)
+	if not pause(state, a.Windup) then
+		return
+	end
+	Combat.FX("BossDash", { From = from, To = to })
+	root.CFrame = CFrame.lookAt(to, to + dir)
+	hitPlayers(state, { Type = "Line", From = from, To = to, Width = a.Width }, a.Damage, a.Knockback)
+	pause(state, 0.3)
+	restPose(state)
+end
+
+function Attacks.WorldSlash(state, targetPos)
+	local a = ATK.WorldSlash
+	face(state, targetPos)
+	local root = state.Root
+	local dir = flat(targetPos - root.Position)
+	dir = dir.Magnitude > 0.1 and dir.Unit or root.CFrame.LookVector
+	local from = root.Position - dir * 10
+	local to = root.Position + dir * a.Length
+	Combat.Notice("Mahoraga turns an adapted technique back on you: WORLD-CUTTING SLASH", Color3.fromRGB(255, 120, 120))
+	Combat.FX("TelegraphLine", { From = from, To = to, Width = a.Width, Duration = a.Windup })
+	poseMotor(state, "RightArm", Vector3.new(175, 0, 0), a.Windup * 0.8, Enum.EasingStyle.Back)
+	if not pause(state, a.Windup) then
+		return
+	end
+	poseMotor(state, "RightArm", Vector3.new(-15, 0, 0), 0.1)
+	Combat.FX("WorldSlash", { From = from, To = to })
+	hitPlayers(state, { Type = "Line", From = from, To = to, Width = a.Width }, a.Damage, 30)
+	pause(state, 0.6)
+	restPose(state)
+end
+
+function Attacks.Counter(state, player)
+	local a = ATK.Counter
+	local char = player.Character
+	local targetRoot = char and Combat.GetRoot(char)
+	if not targetRoot or not Combat.IsAlive(char) then
+		return
+	end
+	local behind = targetRoot.Position - flat(targetRoot.CFrame.LookVector) * 9
+	local root = state.Root
+	Combat.FX("BossDash", { From = root.Position, To = behind })
+	root.CFrame = CFrame.lookAt(behind, Vector3.new(targetRoot.Position.X, behind.Y, targetRoot.Position.Z))
+	Combat.FX("TelegraphCircle", { Pos = targetRoot.Position, Radius = a.Range * 0.6, Duration = a.Windup })
+	poseMotor(state, "RightArm", Vector3.new(120, 0, 40), a.Windup)
+	if not pause(state, a.Windup) then
+		return
+	end
+	poseMotor(state, "RightArm", Vector3.new(-10, 0, -20), 0.08)
+	Combat.FX("BossSlash", { CFrame = root.CFrame, Radius = a.Range, Span = 160, Tilt = -40 })
+	hitPlayers(state, { Type = "Circle", Pos = root.Position + root.CFrame.LookVector * 5, Radius = a.Range * 0.7 }, a.Damage, 50)
+	pause(state, 0.3)
+	restPose(state)
+end
+
+function Attacks.WheelResonance(state)
+	local a = ATK.WheelResonance
+	Combat.FX("BossRoar", { Pos = state.Root.Position })
+	hitPlayers(state, { Type = "Circle", Pos = state.Root.Position, Radius = a.Radius }, a.Damage, a.Knockback)
+end
+
+local function chooseAttack(state, dist)
+	local options = {}
+	local function add(name, weight)
+		for _ = 1, weight do
+			table.insert(options, name)
+		end
+	end
+	if dist < ATK.Combo.Range + 4 then
+		add("Combo", 3)
+		add("SwordOfExtermination", 2)
+	elseif dist < ATK.SwordOfExtermination.Range then
+		add("SwordOfExtermination", 3)
+		add("GroundSlam", 2)
+		add("Rush", 1)
+	else
+		add("Rush", 3)
+		add("GroundSlam", 2)
+	end
+	if state.Phase == 2 and state.Adapt:AdaptedCount() >= ATK.WorldSlash.MinAdaptations and time() >= state.NextWorldSlash then
+		add("WorldSlash", 3)
+	end
+	return options[math.random(1, #options)]
+end
+
+---------------------------------------------------------------- lifecycle
+
+local function aiLoop(state)
+	local humanoid = state.Humanoid
+	while state.Alive do
+		task.wait(0.1)
+		if not state.Alive then
+			break
+		end
+		local now = time()
+
+		-- phase 2
+		if state.Phase == 1 and humanoid.Health <= humanoid.MaxHealth * BOSS.Phase2Threshold then
+			state.Phase = 2
+			syncAttributes(state)
+			Combat.Notice("Mahoraga's wheel spins faster. PHASE 2", Color3.fromRGB(255, 120, 120))
+			Attacks.WheelResonance(state)
+		end
+
+		local slow = Combat.GetSlowFactor(state.Root.Position, "Curse")
+		humanoid.WalkSpeed = (state.Phase == 2 and BOSS.Phase2WalkSpeed or BOSS.WalkSpeed) * slow
+
+		if Combat.IsStunned(state.Model) then
+			stop(state)
+			continue
+		end
+
+		if state.PendingResonance then
+			state.PendingResonance = false
+			stop(state)
+			Attacks.WheelResonance(state)
+			continue
+		end
+
+		if state.CounterTarget then
+			local player = state.CounterTarget
+			state.CounterTarget = nil
+			stop(state)
+			Attacks.Counter(state, player)
+			state.NextAttack = time() + 0.8
+			continue
+		end
+
+		local _, targetPos = pickTarget(state)
+		if not targetPos then
+			-- nobody around: walk home and regenerate
+			humanoid:MoveTo(Config.Arena.BossAltar)
+			if now - state.LastDamaged > 8 then
+				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + humanoid.MaxHealth * BOSS.OutOfCombatRegen * 0.1)
+			end
+			continue
+		end
+
+		local dist = flat(targetPos - state.Root.Position).Magnitude
+		if now >= state.NextAttack and dist < 90 then
+			stop(state)
+			local name = chooseAttack(state, dist)
+			if name == "WorldSlash" then
+				state.NextWorldSlash = time() + ATK.WorldSlash.Cooldown
+			end
+			Attacks[name](state, targetPos)
+			local cd = ATK[name].Cooldown or 2
+			state.NextAttack = time() + cd * (state.Phase == 2 and BOSS.Phase2CooldownMultiplier or 1)
+		elseif dist > ATK.Combo.Range * 0.6 then
+			humanoid:MoveTo(targetPos)
+		else
+			stop(state)
+			face(state, targetPos)
+		end
+	end
+end
+
+local function onDied(state)
+	if not state.Alive then
+		return
+	end
+	state.Alive = false
+	local model = state.Model
+	local pos = state.Root.Position
+	Combat.FX("BossDefeated", { Pos = pos })
+	Combat.Notice("Mahoraga has been defeated. The ritual is complete: it is TAMED.", Color3.fromRGB(255, 226, 150))
+
+	local contributors = {}
+	for player, dmg in pairs(state.Contributors) do
+		if player.Parent and dmg > 0 then
+			table.insert(contributors, player)
+		end
+	end
+	if Mahoraga.OnDefeated then
+		Mahoraga.OnDefeated(contributors)
+	end
+
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") and part.Transparency < 1 then
+			TweenService:Create(part, TweenInfo.new(2), { Transparency = 1 }):Play()
+		end
+	end
+	task.delay(2.2, function()
+		model:Destroy()
+		if current == state then
+			current = nil
+		end
+	end)
+end
+
+-- Spawns Mahoraga at a ground position. summoner (optional) is who chanted.
+function Mahoraga.Spawn(groundPos, summoner)
+	if Mahoraga.IsAlive() then
+		return nil
+	end
+	local lookAt = summoner and summoner.Character and Combat.GetRoot(summoner.Character)
+	local facing = lookAt and flat(lookAt.Position - groundPos) or Vector3.new(0, 0, 1)
+	if facing.Magnitude < 0.1 then
+		facing = Vector3.new(0, 0, 1)
+	end
+	local groundCF = CFrame.lookAt(flat(groundPos), flat(groundPos) + facing.Unit)
+
+	spawning = true
+	Combat.FX("BossSpawn", { Pos = flat(groundPos) })
+	task.wait(1.1)
+	spawning = false
+
+	local model = ModelFactory.Build("Mahoraga", { Anchored = false, Humanoid = true, CFrame = groundCF, Scale = BOSS.Scale })
+	model.Name = "Mahoraga"
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	local root = model.PrimaryPart
+	local maxHealth = DamageRules.BossMaxHealth(BOSS.MaxHealth, BOSS.HealthPerExtraPlayer, #Players:GetPlayers())
+	humanoid.MaxHealth = maxHealth
+	humanoid.Health = maxHealth
+	humanoid.WalkSpeed = BOSS.WalkSpeed
+	humanoid.JumpPower = 0
+	for _, s in ipairs({ Enum.HumanoidStateType.FallingDown, Enum.HumanoidStateType.Ragdoll, Enum.HumanoidStateType.Seated, Enum.HumanoidStateType.Climbing, Enum.HumanoidStateType.Swimming }) do
+		humanoid:SetStateEnabled(s, false)
+	end
+	model:SetAttribute("Faction", "Curse")
+	model:SetAttribute("IsBoss", true)
+	model:SetAttribute("BossName", BOSS.Name)
+	model:SetAttribute("HitRadius", BOSS.HitRadius)
+	model:SetAttribute("KnockbackResist", BOSS.KnockbackResist)
+	model.Parent = workspace
+	root:SetNetworkOwner(nil)
+
+	local state = {
+		Model = model,
+		Humanoid = humanoid,
+		Root = root,
+		Alive = true,
+		Phase = 1,
+		Adapt = Adaptation.new(BOSS),
+		Motors = {},
+		BaseC0 = {},
+		Contributors = {},
+		NextAttack = time() + 2.2,
+		NextCounter = 0,
+		NextWorldSlash = 0,
+		LastDamaged = time(),
+		PendingResonance = false,
+		CounterTarget = nil,
+	}
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("Motor6D") then
+			state.Motors[d.Name] = d
+			state.BaseC0[d.Name] = d.C0
+		end
+	end
+	current = state
+	syncAttributes(state)
+
+	Combat.Register(model)
+	Combat.Handlers[model] = function(amount, damageType, info)
+		return onDamaged(state, amount, damageType, info)
+	end
+	humanoid.Died:Connect(function()
+		onDied(state)
+	end)
+	humanoid.HealthChanged:Connect(function(h)
+		if h <= 0 then
+			onDied(state)
+		end
+	end)
+
+	-- entrance: roar with both arms raised
+	root.Anchored = true
+	poseMotor(state, "RightArm", Vector3.new(150, 0, 30), 0.5, Enum.EasingStyle.Back)
+	poseMotor(state, "LeftArm", Vector3.new(150, 0, -30), 0.5, Enum.EasingStyle.Back)
+	Combat.FX("BossRoar", { Pos = root.Position })
+	Combat.FX("UI_Incantation", { Title = BOSS.Name, Sub = "八握剣異戒神将魔虚羅", Color = Color3.fromRGB(255, 226, 150) })
+	task.delay(1.2, function()
+		if state.Alive then
+			root.Anchored = false
+			restPose(state, 0.4)
+			task.spawn(aiLoop, state)
+		end
+	end)
+	return model
+end
+
+function Mahoraga.Despawn()
+	if current then
+		current.Alive = false
+		if current.Model then
+			current.Model:Destroy()
+		end
+		current = nil
+	end
+end
+
+return Mahoraga
+]]></ProtectedString></Properties></Item><Item class="Script" referent="RBX0000000E"><Properties><string name="Name">Main</string><ProtectedString name="Source"><![CDATA[-- Ten Shadows Technique + Mahoraga boss: server bootstrap.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage:WaitForChild("TenShadows").Config)
+local Arena = require(script.Parent.Arena)
+local Combat = require(script.Parent.Combat)
+local Abilities = require(script.Parent.Abilities)
+local Mahoraga = require(script.Parent.Mahoraga)
+local Curses = require(script.Parent.Curses)
+
+-- Build the world before anyone spawns into it.
+Players.CharacterAutoLoads = false
+Arena.Build()
+Curses.Start()
+Abilities.Init()
+
+local function setupCharacter(player, character)
+	local humanoid = character:WaitForChild("Humanoid")
+	local root = character:WaitForChild("HumanoidRootPart")
+	humanoid.MaxHealth = Config.Player.MaxHealth
+	humanoid.Health = Config.Player.MaxHealth
+	humanoid.WalkSpeed = Config.Player.WalkSpeed
+	character:SetAttribute("Faction", "Player")
+	character:SetAttribute("HitRadius", 2)
+
+	-- faint shadow aura at the feet: Ten Shadows users stand in their own darkness
+	local att = Instance.new("Attachment")
+	att.Name = "ShadowAura"
+	att.Position = Vector3.new(0, -2.8, 0)
+	att.Parent = root
+	local pe = Instance.new("ParticleEmitter")
+	pe.Texture = Config.Textures.Smoke
+	pe.Color = ColorSequence.new(Color3.fromRGB(14, 12, 20), Color3.fromRGB(90, 60, 150))
+	pe.Size = NumberSequence.new(1.6, 3)
+	pe.Transparency = NumberSequence.new(0.55, 1)
+	pe.Lifetime = NumberRange.new(0.8, 1.2)
+	pe.Speed = NumberRange.new(0.5, 1.5)
+	pe.SpreadAngle = Vector2.new(180, 0)
+	pe.Acceleration = Vector3.new(0, 2, 0)
+	pe.Rate = 10
+	pe.Parent = att
+
+	humanoid.Died:Connect(function()
+		task.delay(Config.Player.RespawnSeconds, function()
+			if player.Parent then
+				player:LoadCharacter()
+			end
+		end)
+	end)
+end
+
+local function onPlayerAdded(player)
+	player.CharacterAdded:Connect(function(character)
+		setupCharacter(player, character)
+	end)
+	player:LoadCharacter()
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(onPlayerAdded, player)
+end
+
+---------------------------------------------------------------- Mahoraga lifecycle
+
+local function spawnAtAltar()
+	if not Mahoraga.IsAlive() and #Players:GetPlayers() > 0 then
+		Mahoraga.Spawn(Config.Arena.BossAltar)
+	end
+end
+
+Mahoraga.OnDefeated = function(contributors)
+	for _, player in ipairs(contributors) do
+		Abilities.Unlock(player, "TamedMahoraga", "You tamed Mahoraga. Summon the Divine General with H.")
+	end
+	task.delay(Config.Boss.RespawnSeconds, spawnAtAltar)
+end
+
+task.spawn(function()
+	while #Players:GetPlayers() == 0 do
+		Players.PlayerAdded:Wait()
+	end
+	task.wait(12)
+	Combat.Notice("The ritual circle stirs... Mahoraga is coming. (Or chant it yourself: hold G)", Color3.fromRGB(255, 214, 120))
+	task.wait(3)
+	spawnAtAltar()
+end)
+]]></ProtectedString></Properties></Item></Item></Item><Item class="StarterPlayer" referent="RBX00000013"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX00000012"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="LocalScript" referent="RBX00000011"><Properties><string name="Name">TenShadowsClient</string><ProtectedString name="Source"><![CDATA[-- Ten Shadows client: input, HUD (hotbar, boss bar, adaptation wheel readout, incantations)
+-- and local playback of every visual effect the server broadcasts.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Shared = ReplicatedStorage:WaitForChild("TenShadows")
+local Config = require(Shared.Config)
+local VFX = require(Shared.VFX)
+local remotes = ReplicatedStorage:WaitForChild("TenShadowsRemotes")
+local AbilityRemote = remotes:WaitForChild("Ability")
+local FXRemote = remotes:WaitForChild("FX")
+
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+VFX.Init()
+
+local KEY_LABEL = {
+	One = "1", Two = "2", Three = "3", Four = "4", Five = "5", Six = "6", Seven = "7", Eight = "8", Nine = "9", Zero = "0",
+	MouseButton1 = "M1",
+}
+
+local GOLD = Color3.fromRGB(255, 214, 120)
+local INK = Color3.fromRGB(12, 11, 18)
+local PAPER = Color3.fromRGB(238, 234, 226)
+local MUTED = Color3.fromRGB(150, 144, 170)
+local PURPLE = Color3.fromRGB(120, 70, 200)
+
+---------------------------------------------------------------- UI helpers
+
+local function new(class, props, parent)
+	local inst = Instance.new(class)
+	for k, v in pairs(props) do
+		inst[k] = v
+	end
+	inst.Parent = parent
+	return inst
+end
+
+local function corner(parent, r)
+	return new("UICorner", { CornerRadius = UDim.new(0, r or 6) }, parent)
+end
+
+local function stroke(parent, color, thickness, transparency)
+	return new("UIStroke", { Color = color, Thickness = thickness or 1, Transparency = transparency or 0, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, parent)
+end
+
+local function label(props, parent)
+	local defaults = { BackgroundTransparency = 1, Font = Enum.Font.GothamBold, TextColor3 = PAPER, TextSize = 14 }
+	for k, v in pairs(props) do
+		defaults[k] = v
+	end
+	return new("TextLabel", defaults, parent)
+end
+
+local gui = new("ScreenGui", { Name = "TenShadowsUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling }, player:WaitForChild("PlayerGui"))
+local uiScale = new("UIScale", { Scale = 1 }, gui)
+local function rescale()
+	local cam = workspace.CurrentCamera
+	if cam then
+		uiScale.Scale = math.clamp(cam.ViewportSize.X / 1100, 0.55, 1)
+	end
+end
+local camera = workspace.CurrentCamera or workspace:GetPropertyChangedSignal("CurrentCamera"):Wait() and workspace.CurrentCamera
+rescale()
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
+
+---------------------------------------------------------------- hotbar
+
+local unlocked = {}
+local cooldownEnds = {}
+local slots = {}
+
+local hotbar = new("Frame", { Name = "Hotbar", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -14), Size = UDim2.fromOffset(0, 70), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1 }, gui)
+new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Bottom, SortOrder = Enum.SortOrder.LayoutOrder }, hotbar)
+
+local function shortName(name)
+	local map = {
+		DivineDogs = "Dogs", Nue = "Nue", Toad = "Toad", GreatSerpent = "Serpent", MaxElephant = "Elephant",
+		RabbitEscape = "Rabbits", RoundDeer = "Deer", PiercingOx = "Ox", TigerFuneral = "Tiger", Totality = "Totality",
+		ShadowStep = "Shadow", ChimeraShadowGarden = "DOMAIN", Agito = "Agito", Ritual = "Ritual", TamedMahoraga = "Mahoraga",
+	}
+	return map[name] or name
+end
+
+for i, name in ipairs(Config.AbilityOrder) do
+	local cfg = Config.Abilities[name]
+	local isSpecial = name == "ChimeraShadowGarden" or name == "TamedMahoraga" or name == "Ritual"
+	local slot = new("Frame", { Name = name, LayoutOrder = i, Size = UDim2.fromOffset(58, 64), BackgroundColor3 = INK, BackgroundTransparency = 0.15 }, hotbar)
+	corner(slot, 8)
+	local slotStroke = stroke(slot, isSpecial and GOLD or PURPLE, 1.5, 0.35)
+	label({ Text = cfg.Kanji, Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 6), Font = Enum.Font.GothamBlack, TextScaled = true, TextColor3 = isSpecial and GOLD or PAPER }, slot)
+	label({ Text = shortName(name), Size = UDim2.new(1, -4, 0, 14), Position = UDim2.fromOffset(2, 34), TextSize = 11, TextColor3 = MUTED, Font = Enum.Font.GothamMedium }, slot)
+	local key = cfg.Key
+	label({ Text = key == "G" and "hold G" or (KEY_LABEL[key] or key), Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 48), TextSize = 12, TextColor3 = GOLD }, slot)
+	local shade = new("Frame", { Name = "Cooldown", AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.35, ZIndex = 3 }, slot)
+	corner(shade, 8)
+	local cdText = label({ Text = "", Size = UDim2.fromScale(1, 1), TextSize = 20, Font = Enum.Font.GothamBlack, ZIndex = 4 }, slot)
+	local lock = label({ Text = "LOCKED", Size = UDim2.fromScale(1, 1), TextSize = 11, BackgroundTransparency = 0.25, BackgroundColor3 = Color3.new(0, 0, 0), TextColor3 = Color3.fromRGB(255, 120, 120), ZIndex = 5, Visible = cfg.Locked == true }, slot)
+	corner(lock, 8)
+	slots[name] = { Frame = slot, Shade = shade, Text = cdText, Lock = lock, Stroke = slotStroke }
+end
+
+local function refreshLocks()
+	for name, s in pairs(slots) do
+		local cfg = Config.Abilities[name]
+		s.Lock.Visible = cfg.Locked == true and not unlocked[name]
+	end
+end
+
+local function pulseSlot(name)
+	local s = slots[name]
+	if s then
+		s.Stroke.Transparency = 0
+		s.Stroke.Thickness = 3
+		TweenService:Create(s.Stroke, TweenInfo.new(0.5), { Transparency = 0.35, Thickness = 1.5 }):Play()
+	end
+end
+
+---------------------------------------------------------------- health, boss bar, notices, incantations
+
+local hp = new("Frame", { Name = "Health", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -92), Size = UDim2.fromOffset(360, 16), BackgroundColor3 = INK, BackgroundTransparency = 0.2 }, gui)
+corner(hp, 8)
+stroke(hp, Color3.new(1, 1, 1), 1, 0.8)
+local hpFill = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(110, 220, 140) }, hp)
+corner(hpFill, 8)
+local hpText = label({ Size = UDim2.fromScale(1, 1), TextSize = 12, ZIndex = 2, Text = "" }, hp)
+
+local boss = new("Frame", { Name = "Boss", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 44), Size = UDim2.fromOffset(640, 92), BackgroundTransparency = 1, Visible = false }, gui)
+label({ Size = UDim2.new(1, 0, 0, 20), Text = Config.Boss.Name, TextSize = 16, Font = Enum.Font.GothamBlack, TextColor3 = GOLD, TextStrokeTransparency = 0.4 }, boss)
+local bossBar = new("Frame", { Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 18), BackgroundColor3 = INK, BackgroundTransparency = 0.1 }, boss)
+corner(bossBar, 4)
+stroke(bossBar, GOLD, 1.5, 0.3)
+local bossLag = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(255, 120, 90) }, bossBar)
+corner(bossLag, 4)
+local bossFill = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(240, 230, 210) }, bossBar)
+corner(bossFill, 4)
+local bossHp = label({ Size = UDim2.fromScale(1, 1), TextSize = 12, ZIndex = 3, TextColor3 = INK, Text = "" }, bossBar)
+local phaseTag = label({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(80, 20), Text = "", TextSize = 13, TextColor3 = Color3.fromRGB(255, 110, 110), TextXAlignment = Enum.TextXAlignment.Right }, boss)
+local adaptRow = new("Frame", { Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1 }, boss)
+new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, Wraps = true }, adaptRow)
+
+local notices = new("Frame", { Name = "Notices", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 150), Size = UDim2.fromOffset(700, 120), BackgroundTransparency = 1 }, gui)
+new("UIListLayout", { Padding = UDim.new(0, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, notices)
+local noticeCount = 0
+
+local function notice(text, color)
+	noticeCount += 1
+	local l = label({ LayoutOrder = noticeCount, Size = UDim2.new(1, 0, 0, 22), Text = text, TextSize = 16, TextColor3 = color or PAPER, TextStrokeTransparency = 0.3, TextWrapped = true }, notices)
+	local items = {}
+	for _, c in ipairs(notices:GetChildren()) do
+		if c:IsA("TextLabel") then
+			table.insert(items, c)
+		end
+	end
+	if #items > 4 then
+		table.sort(items, function(a, b)
+			return a.LayoutOrder < b.LayoutOrder
+		end)
+		items[1]:Destroy()
+	end
+	task.delay(5, function()
+		if l.Parent then
+			TweenService:Create(l, TweenInfo.new(0.6), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+			task.wait(0.6)
+			l:Destroy()
+		end
+	end)
+end
+
+local incant = new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36), Size = UDim2.fromOffset(900, 130), BackgroundTransparency = 1 }, gui)
+local incantKanji = label({ Size = UDim2.new(1, 0, 0, 80), Text = "", Font = Enum.Font.GothamBlack, TextScaled = true, TextColor3 = PAPER, TextStrokeTransparency = 0.2, TextTransparency = 1, TextStrokeColor3 = Color3.fromRGB(40, 20, 70) }, incant)
+local incantTitle = label({ Position = UDim2.fromOffset(0, 84), Size = UDim2.new(1, 0, 0, 30), Text = "", TextSize = 26, Font = Enum.Font.GothamBlack, TextColor3 = GOLD, TextStrokeTransparency = 0.3, TextTransparency = 1 }, incant)
+local incantToken = 0
+
+local function showIncantation(title, sub, color)
+	incantToken += 1
+	local token = incantToken
+	incantKanji.Text = sub or ""
+	incantTitle.Text = string.upper(title or "")
+	incantKanji.TextColor3 = color or PAPER
+	incantKanji.TextTransparency = 0
+	incantTitle.TextTransparency = 0
+	incantKanji.TextStrokeTransparency = 0.2
+	incantTitle.TextStrokeTransparency = 0.3
+	incant.Position = UDim2.fromScale(0.5, 0.38)
+	TweenService:Create(incant, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Position = UDim2.fromScale(0.5, 0.36) }):Play()
+	task.delay(1.3, function()
+		if token == incantToken then
+			local info = TweenInfo.new(0.5)
+			TweenService:Create(incantKanji, info, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+			TweenService:Create(incantTitle, info, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+		end
+	end)
+end
+
+local chantBar = new("Frame", { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -120), Size = UDim2.fromOffset(300, 10), BackgroundColor3 = INK, Visible = false }, gui)
+corner(chantBar, 5)
+stroke(chantBar, PURPLE, 1.5)
+local chantFill = new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.fromRGB(190, 150, 255) }, chantBar)
+corner(chantFill, 5)
+
+local help = label({
+	AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 16, 1, -120), Size = UDim2.fromOffset(300, 150),
+	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Bottom, TextSize = 13, TextColor3 = MUTED,
+	Font = Enum.Font.GothamMedium, TextWrapped = true, RichText = true,
+	Text = "<b>TEN SHADOWS</b>\nM1  Shadow Blade combo\n1-9  Shikigami   0  Totality\nQ  Shadow Travel   F  Guard (hold)\nR  Domain: Chimera Shadow Garden\nT  Agito   H  Tamed Mahoraga\n<b>hold G</b>  Furube Yura Yura — summon Mahoraga",
+}, gui)
+task.delay(20, function()
+	TweenService:Create(help, TweenInfo.new(1), { TextTransparency = 1 }):Play()
+end)
+
+---------------------------------------------------------------- boss bar updates
+
+local lastAdapt = nil
+local function rebuildAdaptRow(str)
+	for _, c in ipairs(adaptRow:GetChildren()) do
+		if c:IsA("Frame") then
+			c:Destroy()
+		end
+	end
+	if str == "" then
+		return
+	end
+	for entry in string.gmatch(str, "[^,]+") do
+		local damageType, turns, adapted = string.match(entry, "(%w+):(%d+):(%d)")
+		if damageType then
+			local info = Config.DamageTypes[damageType] or { Label = damageType, Color = PAPER }
+			local isAdapted = adapted == "1"
+			local chip = new("Frame", { Size = UDim2.fromOffset(104, 34), BackgroundColor3 = isAdapted and Color3.fromRGB(70, 56, 20) or INK, BackgroundTransparency = 0.15 }, adaptRow)
+			corner(chip, 6)
+			stroke(chip, isAdapted and GOLD or info.Color, 1, isAdapted and 0 or 0.4)
+			label({ Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 2), Text = info.Label, TextSize = 12, TextColor3 = info.Color }, chip)
+			local pips = ""
+			for i = 1, Config.Boss.TurnsToAdapt do
+				pips ..= (i <= tonumber(turns) and "◆" or "◇")
+			end
+			label({ Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 18), Text = isAdapted and "ADAPTED" or pips, TextSize = isAdapted and 11 or 12, TextColor3 = isAdapted and GOLD or MUTED, Font = Enum.Font.GothamBlack }, chip)
+		end
+	end
+end
+
+local shownHealth = 1
+local accum = 0
+RunService.Heartbeat:Connect(function(dt)
+	-- player health
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		local f = math.clamp(hum.Health / math.max(1, hum.MaxHealth), 0, 1)
+		hpFill.Size = UDim2.fromScale(f, 1)
+		hpFill.BackgroundColor3 = f > 0.35 and Color3.fromRGB(110, 220, 140) or Color3.fromRGB(240, 90, 90)
+		hpText.Text = string.format("%d / %d%s", math.floor(hum.Health + 0.5), hum.MaxHealth, char:GetAttribute("Blocking") and "   GUARD" or "")
+	end
+
+	-- cooldowns
+	local now = time()
+	for name, s in pairs(slots) do
+		local ends = cooldownEnds[name]
+		if ends and ends.Finish > now then
+			local left = ends.Finish - now
+			s.Shade.Size = UDim2.fromScale(1, left / ends.Total)
+			s.Text.Text = left >= 10 and tostring(math.floor(left)) or string.format("%.1f", left)
+		elseif ends then
+			cooldownEnds[name] = nil
+			s.Shade.Size = UDim2.fromScale(1, 0)
+			s.Text.Text = ""
+			pulseSlot(name)
+		end
+	end
+
+	-- boss (throttled)
+	accum += dt
+	if accum < 0.05 then
+		return
+	end
+	accum = 0
+	local model = workspace:FindFirstChild("Mahoraga")
+	local bhum = model and model:GetAttribute("IsBoss") and model:FindFirstChildOfClass("Humanoid")
+	if bhum and bhum.Health > 0 then
+		boss.Visible = true
+		local f = math.clamp(bhum.Health / bhum.MaxHealth, 0, 1)
+		bossFill.Size = UDim2.fromScale(f, 1)
+		shownHealth += (f - shownHealth) * 0.08
+		bossLag.Size = UDim2.fromScale(math.max(f, shownHealth), 1)
+		bossHp.Text = string.format("%d / %d", math.floor(bhum.Health), bhum.MaxHealth)
+		phaseTag.Text = model:GetAttribute("Phase") == 2 and "PHASE 2" or ""
+		local adapt = model:GetAttribute("Adaptations") or ""
+		if adapt ~= lastAdapt then
+			lastAdapt = adapt
+			rebuildAdaptRow(adapt)
+		end
+	else
+		boss.Visible = false
+		shownHealth = 1
+		lastAdapt = nil
+	end
+end)
+
+---------------------------------------------------------------- input
+
+local keyToAbility = {}
+for name, cfg in pairs(Config.Abilities) do
+	keyToAbility[cfg.Key] = name
+end
+
+local function fire(name, extra)
+	local aim = mouse.Hit and mouse.Hit.Position or Vector3.zero
+	AbilityRemote:FireServer(name, aim, extra)
+end
+
+local chanting = false
+local chantStarted = 0
+local function stopChant(completed)
+	if not chanting then
+		return
+	end
+	chanting = false
+	chantBar.Visible = false
+	if not completed then
+		fire("RitualCancel")
+	end
+end
+
+RunService.RenderStepped:Connect(function()
+	if chanting then
+		local hold = Config.Abilities.Ritual.HoldSeconds
+		local a = math.clamp((time() - chantStarted) / hold, 0, 1)
+		chantFill.Size = UDim2.fromScale(a, 1)
+		if a >= 1 then
+			fire("Ritual")
+			stopChant(true)
+		end
+	end
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then
+		return
+	end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		fire("ShadowBlade")
+		return
+	end
+	local name = keyToAbility[input.KeyCode.Name]
+	if not name then
+		return
+	end
+	if name == "Block" then
+		fire("Block", true)
+	elseif name == "Ritual" then
+		if not chanting and not (cooldownEnds.Ritual and cooldownEnds.Ritual.Finish > time()) then
+			chanting = true
+			chantStarted = time()
+			chantFill.Size = UDim2.fromScale(0, 1)
+			chantBar.Visible = true
+			fire("RitualStart")
+		end
+	else
+		fire(name)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	local name = keyToAbility[input.KeyCode.Name]
+	if name == "Block" then
+		fire("Block", false)
+	elseif name == "Ritual" then
+		stopChant(false)
+	end
+end)
+
+---------------------------------------------------------------- server events
+
+local UI = {}
+
+function UI.UI_Cooldown(p)
+	cooldownEnds[p.Ability] = { Finish = time() + p.Duration, Total = p.Duration }
+	local s = slots[p.Ability]
+	if s then
+		s.Shade.Size = UDim2.fromScale(1, 1)
+	end
+end
+
+function UI.UI_Notice(p)
+	notice(p.Text, p.Color)
+end
+
+function UI.UI_Incantation(p)
+	showIncantation(p.Title, p.Sub, p.Color)
+end
+
+function UI.UI_Unlock(p)
+	unlocked[p.Ability] = true
+	refreshLocks()
+	pulseSlot(p.Ability)
+	local cfg = Config.Abilities[p.Ability]
+	if cfg then
+		showIncantation("Unlocked: " .. cfg.Name, cfg.Kanji, GOLD)
+	end
+end
+
+function UI.UI_State(p)
+	unlocked = p.Unlocked or {}
+	refreshLocks()
+end
+
+function UI.Knockback(p)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if root and hum then
+		hum:ChangeState(Enum.HumanoidStateType.Freefall)
+		root.AssemblyLinearVelocity = p.Velocity
+		VFX.Shake(0.6, 0.25)
+	end
+end
+
+FXRemote.OnClientEvent:Connect(function(name, params)
+	local effect = VFX.Effects[name]
+	if effect then
+		task.spawn(effect, params or {})
+	elseif UI[name] then
+		UI[name](params or {})
+	end
+end)
+
+AbilityRemote:FireServer("RequestState")
+refreshLocks()
+]]></ProtectedString></Properties></Item></Item></Item></roblox>
