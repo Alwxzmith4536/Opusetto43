@@ -1,0 +1,64 @@
+[
+ {
+  "name": "C1 photoreceptor -> descending neuron propagation",
+  "passed": false,
+  "criterion": "driving all R1-6 photoreceptors at 100 Hz activates >1% of descending neurons in the pure LIF connectome (expected to FAIL: early fly vision is graded, which is why flydoom injects vision at the visual projection neurons)",
+  "metrics": {
+   "summary": {
+    "photoreceptors": 7932,
+    "lamina_active_frac": 0.226723044397463,
+    "vpn_active_frac": 0.0,
+    "dn_active_frac": 0.0
+   }
+  },
+  "detail": ""
+ },
+ {
+  "name": "C2 lateralised visuomotor pathway",
+  "passed": true,
+  "criterion": "LC/LPLC drive in the left eye pushes DNa02 (ipsilateral steering) activity to the left more than right-eye drive does",
+  "metrics": {
+   "summary": {
+    "DNa02 L-R (Hz), left-eye LC drive": {
+     "n": 5,
+     "mean": 70.0,
+     "median": 70.0,
+     "std": 9.354143466934854,
+     "ci95": [
+      63.0,
+      78.0
+     ]
+    },
+    "DNa02 L-R (Hz), right-eye LC drive": {
+     "n": 5,
+     "mean": -32.0,
+     "median": -35.0,
+     "std": 6.708203932499369,
+     "ci95": [
+      -37.0,
+      -27.0
+     ]
+    },
+    "test": {
+     "U": 25.0,
+     "p": 0.005706018193000826,
+     "cliffs_delta": 1.0,
+     "mean_diff": 102.0
+    }
+   }
+  },
+  "detail": ""
+ },
+ {
+  "name": "C3 looming -> giant fibre",
+  "passed": true,
+  "criterion": "driving looming detectors LC4 + LPLC2 makes the giant fibre (DNp01) fire > 20 Hz from silence",
+  "metrics": {
+   "summary": {
+    "giant_fibre_hz": 227.5,
+    "baseline_hz": 0.0
+   }
+  },
+  "detail": ""
+ }
+]

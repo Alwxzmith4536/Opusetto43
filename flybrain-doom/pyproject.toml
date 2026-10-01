@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flydoom"
+version = "0.1.0"
+description = "A fruit-fly brain (Drosophila connectome, spiking LIF) that learns to play Doom, plus a test engine that checks whether it really learned."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["numpy>=1.24", "scipy>=1.10"]
+
+[project.optional-dependencies]
+doom = ["vizdoom>=1.2"]
+flywire = ["pandas>=2.0", "pyarrow>=12"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+flydoom = "flydoom.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["flydoom*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
