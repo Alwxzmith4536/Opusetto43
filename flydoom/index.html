@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FlyDoom Learning Lab</title>
+<meta name="description" content="A spiking fruit-fly brain model with mushroom-body dopamine learning plays a Doom-style shooter.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&family=VT323&display=swap">
+<style>
+  /* Layout: game screen + fly's-eye strip on the left, the brain instrument panel on the right; learning curve full width below.
+     Deliberately one dark look: a Doom status-bar palette next to a lab bench. */
+  :root {
+    --bg: #15100e;
+    --panel: #201815;
+    --line: #3a2b25;
+    --fg: #eadcd2;
+    --muted: #a89385;
+    --amber: #e8a33d;
+    --blood: #d2482c;
+    --dopa: #5fb7a8;
+    --punish: #b77adf;
+    --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --hud: "VT323", "IBM Plex Mono", ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 18px; }
+  header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+  h1 { font: 900 clamp(34px, 6vw, 56px)/0.9 var(--display); letter-spacing: 0.01em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+  h1 span { color: var(--blood); }
+  .lede { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+  h2 { font: 700 13px/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0 0 8px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select, button { font: 500 13px var(--mono); color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 7px 10px; cursor: pointer; }
+  button[aria-pressed="true"] { background: var(--amber); color: #1b120c; border-color: var(--amber); }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .col { display: grid; gap: 14px; align-content: start; min-width: 0; }
+  .screen { position: relative; background: #000; border: 1px solid var(--line); }
+  #view { display: block; width: 100%; aspect-ratio: 16 / 10; image-rendering: pixelated; }
+  .hudbar { display: grid; grid-template-columns: repeat(4, 1fr); background: #3b2c22; border-top: 2px solid #5a4333; }
+  .hudbar div { padding: 2px 8px 4px; border-right: 2px solid #2a1f18; text-align: center; }
+  .hudbar div:last-child { border-right: 0; }
+  .hudbar b { display: block; font: 400 clamp(26px, 4vw, 38px)/1 var(--hud); color: #ef2b1c; text-shadow: 2px 2px 0 #3a0806; font-variant-numeric: tabular-nums; }
+  .hudbar small { font: 400 15px/1 var(--hud); color: #c9b49a; letter-spacing: 0.08em; }
+  .eyerow { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 14px; align-items: start; }
+  @media (max-width: 480px) { .eyerow { grid-template-columns: minmax(0, 1fr); } }
+  canvas { max-width: 100%; }
+  #eye { width: 100%; height: 64px; display: block; }
+  #mini { width: 132px; height: 132px; display: block; border: 1px solid var(--line); image-rendering: pixelated; }
+  .note { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; min-width: 0; }
+  #raster { width: 100%; height: 260px; display: block; }
+  .bars { display: grid; gap: 6px; font: 12px var(--mono); }
+  .bar { display: grid; grid-template-columns: 84px minmax(0, 1fr) 54px; gap: 8px; align-items: center; }
+  .bar i { display: block; height: 10px; background: var(--line); position: relative; overflow: hidden; }
+  .bar i em { position: absolute; inset: 0 auto 0 0; background: var(--amber); }
+  .bar .v { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar.chosen span:first-child { color: var(--amber); }
+  #dopa { width: 100%; height: 48px; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font: 12px var(--mono); color: var(--muted); }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 3px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+  #curve { width: 100%; height: 220px; display: block; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .stats div { border-left: 2px solid var(--line); padding-left: 10px; }
+  .stats b { display: block; font: 700 22px var(--mono); font-variant-numeric: tabular-nums; }
+  .stats small { color: var(--muted); font-size: 12px; }
+  .explain { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; color: var(--muted); font-size: 14px; }
+  .explain p { margin: 0; max-width: 60ch; }
+  .explain strong { color: var(--fg); font-weight: 600; }
+  code { font: 13px var(--mono); color: var(--amber); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Fly<span>Doom</span> learning lab</h1>
+      <p class="lede">A 526-neuron spiking model of the fruit-fly visual system and mushroom body plays a Doom-style shooter. Dopamine neurons turn kills and damage into synaptic change, so the fly gets better at choosing when to shoot.</p>
+    </div>
+    <div class="controls" role="group" aria-label="Simulation controls">
+      <select id="cond" aria-label="Experimental condition"></select>
+      <button id="pause" type="button" aria-pressed="false">Pause</button>
+      <button id="s1" type="button" aria-pressed="true">1×</button>
+      <button id="s4" type="button" aria-pressed="false">4×</button>
+      <button id="train" type="button" aria-pressed="false">Train fast</button>
+      <button id="reset" type="button">New fly</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="screen">
+        <canvas id="view" width="320" height="200" aria-label="First-person game view"></canvas>
+        <div class="hudbar">
+          <div><b id="hAmmo">200</b><small>AMMO</small></div>
+          <div><b id="hHealth">100%</b><small>HEALTH</small></div>
+          <div><b id="hKills">0</b><small>KILLS</small></div>
+          <div><b id="hEp">1</b><small>EPISODE</small></div>
+        </div>
+      </div>
+      <div class="eyerow">
+        <div>
+          <h2>What the fly sees · 36 ommatidia, 270°</h2>
+          <canvas id="eye" width="720" height="128" aria-label="Compound eye input"></canvas>
+          <p class="note">Grey is wall nearness, red is an enemy. The bracket marks the 90° the Doom screen shows. The fly sees much wider, like a real <em>Drosophila</em>.</p>
+        </div>
+        <div>
+          <h2>Map</h2>
+          <canvas id="mini" width="128" height="128" aria-label="Top-down map"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <h2>Neural activity · spikes per population, last 240 tics</h2>
+        <canvas id="raster" width="600" height="520" aria-label="Population activity heatmap"></canvas>
+      </div>
+      <div class="panel">
+        <h2>Descending neurons → motor command</h2>
+        <div class="bars" id="dnBars"></div>
+      </div>
+      <div class="panel">
+        <h2>Mushroom body · learned KC→MBON weight vs. start</h2>
+        <div class="bars" id="wBars"></div>
+        <h2 style="margin-top:12px">Dopamine</h2>
+        <canvas id="dopa" width="600" height="96" aria-label="Dopamine trace"></canvas>
+        <div class="legend"><span style="color:var(--dopa)">PAM reward (kill, hit, new ground)</span><span style="color:var(--punish)">PPL1 punishment (miss, damage)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Learning curve · kills per 30-second episode</h2>
+    <canvas id="curve" width="1100" height="320" aria-label="Kills per episode"></canvas>
+    <div class="legend" style="margin-top:6px">
+      <span style="color:var(--amber)">this fly</span>
+      <span style="color:var(--fg)">5-episode average</span>
+      <span style="color:var(--muted)">dashed: test-engine means over 4 seeds (frozen 7.97, scrambled 4.72, random 0.80)</span>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div><b id="sEp">0</b><small>episodes played</small></div>
+      <div><b id="sAvg">–</b><small>kills, last 5 episodes</small></div>
+      <div><b id="sAcc">–</b><small>shot accuracy, last 5</small></div>
+      <div><b id="sSurv">–</b><small>survival, last 5</small></div>
+      <div><b id="sNet">–</b><small>neurons / synapses</small></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <p><strong>Eye to lobula.</strong> Each ommatidium raycasts the level. Lamina L2 cells sharpen dark-object contrast, LC11 cells detect small moving objects, LC4 cells detect looming, and lobula-plate tangential cells sense nearby walls from optic flow.</p>
+    <p><strong>Innate reflexes.</strong> Hardwired lobula-to-descending-neuron paths turn the fly toward objects (DNa02 steering), away from walls, and back off through the giant fiber and MDN "moonwalker" neurons when something looms. The fly has no innate urge to shoot.</p>
+    <p><strong>Learning.</strong> 300 Kenyon cells form a sparse code of the scene, kept sparse by APL inhibition. KC→MBON synapses change by a three-factor rule: Kenyon cell activity × efference copy of the chosen action × dopamine from PAM (reward) or PPL1 (punishment) cells.</p>
+    <p><strong>Controls.</strong> The test engine compares this fly with the same brain frozen, with its innate wiring scrambled, with the mushroom body lesioned, and with random play. Run it with <code>node flydoom/test-engine.js</code>.</p>
+  </div>
+</div>
+
+<script src="flydoom.js"></script>
+<script>
+(() => {
+  'use strict';
+  const F = window.FlyDoom;
+  const $ = (id) => document.getElementById(id);
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const COLORS = { amber: css('--amber'), blood: css('--blood'), dopa: css('--dopa'), punish: css('--punish'), muted: css('--muted'), line: css('--line'), fg: css('--fg'), panel: css('--panel') };
+  const REFS = [{ v: 7.97, label: 'frozen' }, { v: 4.72, label: 'scrambled' }, { v: 0.8, label: 'random' }];
+
+  // ── state ──
+  let sim, seed = 1, speed = 1, paused = false, training = false;
+  let rasterCols = [], dopaHist = [], lastFireTick = -99;
+  const condSel = $('cond');
+  for (const [k, c] of Object.entries(F.CONDITIONS)) condSel.add(new Option(c.label, k));
+
+  function newSim() {
+    sim = new F.Simulation({ condition: condSel.value, seed });
+    rasterCols = []; dopaHist = [];
+    const st = sim.agent.stats ? sim.agent.stats() : null;
+    $('sNet').textContent = st ? `${st.neurons} / ${st.synapses}` : 'no brain';
+    buildBars();
+    drawCurve();
+  }
+
+  // ── bars ──
+  const ACTION_LABEL = { turnL: 'turn left', turnR: 'turn right', forward: 'forward', backward: 'back', fire: 'fire' };
+  function buildBars() {
+    for (const id of ['dnBars', 'wBars']) {
+      $(id).innerHTML = F.ACTIONS.map((a) => `<div class="bar" data-a="${a}"><span>${id === 'dnBars' ? F.DN_NAMES[a] : ACTION_LABEL[a]}</span><i><em style="width:0"></em></i><span class="v">–</span></div>`).join('');
+    }
+  }
+  function updateBars() {
+    const ag = sim.agent;
+    if (!ag.lastDN) return;
+    const max = 4 * Math.ceil(ag.opts.substeps / 3);
+    F.ACTIONS.forEach((a, j) => {
+      const row = $('dnBars').children[j];
+      row.querySelector('em').style.width = Math.min(100, (ag.lastDN[a] / max) * 100) + '%';
+      row.querySelector('.v').textContent = ag.lastDN[a] + ' sp';
+      row.classList.toggle('chosen', !!ag.lastChosen[j]);
+    });
+    const w = ag.mbonWeights(), w0 = ag.opts.kcMbonInit;
+    F.ACTIONS.forEach((a, j) => {
+      const row = $('wBars').children[j], ratio = w[a] / w0;
+      row.querySelector('em').style.width = Math.min(100, (ratio / 4) * 100) + '%';
+      row.querySelector('.v').textContent = '×' + ratio.toFixed(2);
+    });
+  }
+
+  // ── first-person view ──
+  const view = $('view'), vctx = view.getContext('2d');
+  const VW = view.width, VH = view.height, FOV = Math.PI / 2, zbuf = new Float32Array(VW);
+  const IMP = ['..h..h..', '.rrrrrr.', 'rryrryrr', '.rrrrrr.', '..rddr..', 'brrrrrrb', 'b.rrrr.b', '..rrrr..', '..r..r..', '.bb..bb.'];
+  const IMP_C = { r: [168, 70, 44], d: [58, 16, 8], y: [255, 214, 70], b: [110, 44, 24], h: [210, 190, 160] };
+
+  function shade(rgb, k) { return `rgb(${rgb[0] * k | 0},${rgb[1] * k | 0},${rgb[2] * k | 0})`; }
+
+  function drawView() {
+    const w = sim.world, p = w.player;
+    const sky = vctx.createLinearGradient(0, 0, 0, VH / 2);
+    sky.addColorStop(0, '#2a1410'); sky.addColorStop(1, '#5a2a1a');
+    vctx.fillStyle = sky; vctx.fillRect(0, 0, VW, VH / 2);
+    const floor = vctx.createLinearGradient(0, VH / 2, 0, VH);
+    floor.addColorStop(0, '#1a1612'); floor.addColorStop(1, '#4a3f33');
+    vctx.fillStyle = floor; vctx.fillRect(0, VH / 2, VW, VH / 2);
+    const tanH = Math.tan(FOV / 2);
+    for (let x = 0; x < VW; x++) {
+      const rel = -Math.atan(((x + 0.5) / VW * 2 - 1) * tanH);
+      const ang = p.a + rel;
+      const hit = w.castRay(ang);
+      const perp = Math.max(0.05, hit.dist * Math.cos(rel));
+      zbuf[x] = perp;
+      const h = Math.min(VH * 4, (VH * 0.9) / perp);
+      const top = (VH - h) / 2;
+      const hx = p.x + Math.cos(ang) * hit.dist, hy = p.y + Math.sin(ang) * hit.dist;
+      const u = hit.side === 0 ? hy - Math.floor(hy) : hx - Math.floor(hx);
+      const k = Math.max(0.15, 1 - perp / 9) * (hit.side ? 0.78 : 1);
+      const brick = [120, 98, 82];
+      vctx.fillStyle = shade(brick, k);
+      vctx.fillRect(x, top, 1, h);
+      vctx.fillStyle = shade(brick, k * 0.55);
+      for (let r = 1; r < 6; r++) vctx.fillRect(x, top + (h * r) / 6, 1, Math.max(1, h / 60));
+      const course = Math.floor(u * 3 + 0.5) % 2;
+      if (((u * 3 + 0.5) % 1) < 0.07 || ((u * 3 + course * 0.5) % 1) < 0.04) vctx.fillRect(x, top, 1, h);
+    }
+    // enemies, far to near
+    const rels = w.relativeEnemies().sort((a, b) => b.dist - a.dist);
+    for (const r of rels) {
+      if (Math.abs(r.angle) > FOV / 2 + 0.4) continue;
+      const perp = r.dist * Math.cos(r.angle);
+      if (perp < 0.2) continue;
+      const sx = VW / 2 - (Math.tan(r.angle) / tanH) * (VW / 2);
+      const sh = (VH * 0.75) / perp, sw = sh * 0.8;
+      const left = sx - sw / 2, top = VH / 2 - sh * 0.35;
+      const k = Math.max(0.25, 1 - perp / 10);
+      const flash = r.enemy.flash > 0;
+      const cols = IMP[0].length, rows = IMP.length;
+      for (let c = 0; c < cols; c++) {
+        const x0 = Math.floor(left + (c * sw) / cols), x1 = Math.floor(left + ((c + 1) * sw) / cols);
+        for (let x = Math.max(0, x0); x < Math.min(VW, x1); x++) {
+          if (zbuf[x] < perp) continue;
+          for (let rr = 0; rr < rows; rr++) {
+            const ch = IMP[rr][c];
+            if (ch === '.') continue;
+            vctx.fillStyle = flash ? '#fff4d8' : shade(IMP_C[ch], k);
+            vctx.fillRect(x, top + (rr * sh) / rows, 1, sh / rows + 0.6);
+          }
+        }
+      }
+    }
+    // pistol + muzzle flash
+    const firing = w.tick - lastFireTick < 3;
+    if (firing) {
+      vctx.fillStyle = '#ffe08a';
+      vctx.beginPath(); vctx.arc(VW / 2, VH - 46, 12, 0, Math.PI * 2); vctx.fill();
+    }
+    vctx.fillStyle = '#5b5b62'; vctx.fillRect(VW / 2 - 7, VH - 40, 14, 40);
+    vctx.fillStyle = '#34343a'; vctx.fillRect(VW / 2 - 3, VH - 46, 6, 10);
+    vctx.fillStyle = '#c99a6a'; vctx.fillRect(VW / 2 - 14, VH - 18, 28, 18);
+    // crosshair
+    vctx.fillStyle = 'rgba(255,230,160,0.55)';
+    vctx.fillRect(VW / 2 - 4, VH / 2, 3, 1); vctx.fillRect(VW / 2 + 2, VH / 2, 3, 1);
+    // damage tint
+    if (w.lastEvents.includes('hurt')) { vctx.fillStyle = 'rgba(200,20,10,0.35)'; vctx.fillRect(0, 0, VW, VH); }
+  }
+
+  // ── compound eye strip ──
+  const eye = $('eye'), ectx = eye.getContext('2d');
+  function drawEye() {
+    const ag = sim.agent, E = eye.width, H = eye.height;
+    ectx.fillStyle = COLORS.panel; ectx.fillRect(0, 0, E, H);
+    const o = ag.lastObs || (ag.eye ? ag.eye.sample(sim.world) : null);
+    if (!o) { ectx.fillStyle = COLORS.muted; ectx.font = '24px IBM Plex Mono, monospace'; ectx.fillText('random agent has no eyes', 20, H / 2 + 8); return; }
+    const C = o.wall.length, cw = E / C, r = Math.min(cw / 2 - 1, 18);
+    for (let i = 0; i < C; i++) {
+      const cx = (i + 0.5) * cw, cy = H / 2 + (i % 2 ? 10 : -10);
+      const g = 30 + o.wall[i] * 170;
+      ectx.fillStyle = o.object[i] > 0 ? `rgb(${120 + o.object[i] * 135 | 0},${40 + o.loom[i] * 120 | 0},30)` : `rgb(${g | 0},${g * 0.93 | 0},${g * 0.86 | 0})`;
+      ectx.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const a = Math.PI / 6 + (k * Math.PI) / 3;
+        ectx[k ? 'lineTo' : 'moveTo'](cx + r * Math.cos(a), cy + r * Math.sin(a));
+      }
+      ectx.fill();
+    }
+    // bracket for the 90° Doom screen inside the 270° eye
+    const frac = (Math.PI / 2) / ag.eye.fov, x0 = E * (0.5 - frac / 2), x1 = E * (0.5 + frac / 2);
+    ectx.strokeStyle = COLORS.amber; ectx.lineWidth = 3;
+    ectx.beginPath(); ectx.moveTo(x0, 10); ectx.lineTo(x0, 2); ectx.lineTo(x1, 2); ectx.lineTo(x1, 10); ectx.stroke();
+    ectx.beginPath(); ectx.moveTo(x0, H - 10); ectx.lineTo(x0, H - 2); ectx.lineTo(x1, H - 2); ectx.lineTo(x1, H - 10); ectx.stroke();
+  }
+
+  // ── minimap ──
+  const mini = $('mini'), mctx = mini.getContext('2d');
+  function drawMini() {
+    const w = sim.world, s = mini.width / w.w;
+    mctx.fillStyle = '#0e0a09'; mctx.fillRect(0, 0, mini.width, mini.height);
+    for (let y = 0; y < w.h; y++) for (let x = 0; x < w.w; x++) {
+      if (w.map[y][x] === '#') { mctx.fillStyle = '#5a4538'; mctx.fillRect(x * s, y * s, s, s); }
+      else if (w.visited.has(y * w.w + x)) { mctx.fillStyle = '#231a16'; mctx.fillRect(x * s, y * s, s, s); }
+    }
+    const p = w.player;
+    mctx.fillStyle = 'rgba(232,163,61,0.13)';
+    mctx.beginPath(); mctx.moveTo(p.x * s, p.y * s); mctx.arc(p.x * s, p.y * s, s * 4, p.a - (3 * Math.PI) / 4, p.a + (3 * Math.PI) / 4); mctx.fill();
+    for (const e of w.enemies) { mctx.fillStyle = COLORS.blood; mctx.fillRect(e.x * s - 2, e.y * s - 2, 4, 4); }
+    mctx.fillStyle = COLORS.amber;
+    mctx.beginPath(); mctx.arc(p.x * s, p.y * s, 3, 0, Math.PI * 2); mctx.fill();
+    mctx.strokeStyle = COLORS.amber; mctx.lineWidth = 1.5;
+    mctx.beginPath(); mctx.moveTo(p.x * s, p.y * s); mctx.lineTo((p.x + Math.cos(p.a) * 0.9) * s, (p.y + Math.sin(p.a) * 0.9) * s); mctx.stroke();
+  }
+
+  // ── raster heatmap ──
+  const raster = $('raster'), rctx = raster.getContext('2d');
+  const RROWS = [['R_obj', 'Retina · object'], ['R_wall', 'Retina · wall'], ['L2', 'Lamina L2'], ['LC11', 'LC11 object'], ['LC4', 'LC4 looming'], ['LPTC', 'LPTC wall flow'],
+    ['KC', 'Kenyon cells'], ['APL', 'APL'], ['MBON', 'MBON'], ['PAM', 'PAM dopamine'], ['PPL1', 'PPL1 dopamine'], ['GF', 'Giant fiber'],
+    ['DN_turnL', 'DNa02 left'], ['DN_turnR', 'DNa02 right'], ['DN_forward', 'DNp09 fwd'], ['DN_backward', 'MDN back'], ['DN_fire', 'DN fire']];
+  const NCOLS = 240;
+  function pushRaster() {
+    if (!sim.agent.regionActivity) return;
+    rasterCols.push(sim.agent.regionActivity());
+    if (rasterCols.length > NCOLS) rasterCols.shift();
+    dopaHist.push(sim.agent.lastDA || 0);
+    if (dopaHist.length > NCOLS) dopaHist.shift();
+  }
+  function drawRaster() {
+    const W = raster.width, H = raster.height, lab = 170, rh = H / RROWS.length, cw = (W - lab) / NCOLS;
+    rctx.fillStyle = COLORS.panel; rctx.fillRect(0, 0, W, H);
+    rctx.font = '19px IBM Plex Mono, monospace'; rctx.textBaseline = 'middle';
+    RROWS.forEach(([k, label], r) => {
+      rctx.fillStyle = COLORS.muted; rctx.fillText(label, 0, r * rh + rh / 2);
+      for (let c = 0; c < rasterCols.length; c++) {
+        const v = Math.min(1, (rasterCols[c][k] || 0) * 2.2);
+        if (v < 0.02) continue;
+        const tint = k === 'PAM' ? [95, 183, 168] : k === 'PPL1' ? [183, 122, 223] : k.startsWith('R_') || k === 'L2' || k.startsWith('LC') || k === 'LPTC' ? [210, 72, 44] : [232, 163, 61];
+        rctx.fillStyle = `rgba(${tint[0]},${tint[1]},${tint[2]},${0.15 + v * 0.85})`;
+        rctx.fillRect(lab + c * cw, r * rh + 2, Math.ceil(cw), rh - 4);
+      }
+    });
+    if (!sim.agent.regionActivity) { rctx.fillStyle = COLORS.muted; rctx.fillText('random agent: no neurons', lab, H / 2); }
+  }
+  const dopa = $('dopa'), dctx = dopa.getContext('2d');
+  function drawDopa() {
+    const W = dopa.width, H = dopa.height, mid = H / 2, cw = W / NCOLS;
+    dctx.fillStyle = COLORS.panel; dctx.fillRect(0, 0, W, H);
+    dctx.fillStyle = COLORS.line; dctx.fillRect(0, mid, W, 1);
+    dopaHist.forEach((d, i) => {
+      if (!d) return;
+      const h = Math.min(1, Math.abs(d)) * (mid - 2);
+      dctx.fillStyle = d > 0 ? COLORS.dopa : COLORS.punish;
+      dctx.fillRect(i * cw, d > 0 ? mid - h : mid + 1, Math.max(2, cw), h);
+    });
+  }
+
+  // ── learning curve ──
+  const curve = $('curve'), cctx = curve.getContext('2d');
+  function drawCurve() {
+    const W = curve.width, H = curve.height, L = 54, R = 18, T = 14, B = 40;
+    cctx.fillStyle = COLORS.panel; cctx.fillRect(0, 0, W, H);
+    const hist = sim.history, n = Math.max(20, hist.length);
+    const ymax = Math.max(12, ...hist.map((h) => h.kills)) + 1;
+    const X = (i) => L + (i / (n - 1)) * (W - L - R), Y = (v) => T + (1 - v / ymax) * (H - T - B);
+    cctx.font = '20px IBM Plex Mono, monospace'; cctx.textBaseline = 'middle'; cctx.textAlign = 'right';
+    const step = ymax > 16 ? 4 : 2;
+    for (let v = 0; v <= ymax; v += step) {
+      cctx.fillStyle = COLORS.line; cctx.fillRect(L, Y(v), W - L - R, 1);
+      cctx.fillStyle = COLORS.muted; cctx.fillText(v, L - 10, Y(v));
+    }
+    cctx.textAlign = 'center'; cctx.textBaseline = 'top';
+    const xstep = n > 100 ? 25 : n > 40 ? 10 : 5;
+    for (let i = 0; i < n; i += xstep) { cctx.fillStyle = COLORS.muted; cctx.fillText(i + 1, X(i), H - B + 10); }
+    cctx.setLineDash([6, 6]); cctx.lineWidth = 1.5; cctx.textAlign = 'left'; cctx.textBaseline = 'bottom';
+    for (const ref of REFS) {
+      cctx.strokeStyle = COLORS.muted;
+      cctx.beginPath(); cctx.moveTo(L, Y(ref.v)); cctx.lineTo(W - R, Y(ref.v)); cctx.stroke();
+      cctx.fillStyle = COLORS.muted; cctx.fillText(ref.label, L + 6, Y(ref.v) - 3);
+    }
+    cctx.setLineDash([]);
+    if (hist.length) {
+      cctx.fillStyle = COLORS.amber;
+      hist.forEach((h, i) => { cctx.beginPath(); cctx.arc(X(i), Y(h.kills), hist.length > 120 ? 2 : 3.5, 0, Math.PI * 2); cctx.fill(); });
+      cctx.strokeStyle = COLORS.fg; cctx.lineWidth = 2.5; cctx.beginPath();
+      hist.forEach((h, i) => {
+        const win = hist.slice(Math.max(0, i - 4), i + 1), m = win.reduce((a, b) => a + b.kills, 0) / win.length;
+        cctx[i ? 'lineTo' : 'moveTo'](X(i), Y(m));
+      });
+      cctx.stroke();
+    } else {
+      cctx.fillStyle = COLORS.muted; cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
+      cctx.fillText('The first point appears when episode 1 ends. Press "Train fast" to skip ahead.', (L + W) / 2, H / 2);
+    }
+    const last = hist.slice(-5), m = (f) => last.reduce((a, b) => a + f(b), 0) / last.length;
+    $('sEp').textContent = hist.length;
+    $('sAvg').textContent = last.length ? m((h) => h.kills).toFixed(1) : '–';
+    $('sAcc').textContent = last.length ? Math.round(m((h) => h.accuracy) * 100) + '%' : '–';
+    $('sSurv').textContent = last.length ? Math.round(m((h) => (h.survived ? 1 : 0)) * 100) + '%' : '–';
+  }
+
+  function updateHud() {
+    const w = sim.world;
+    $('hAmmo').textContent = w.player.ammo;
+    $('hHealth').textContent = Math.max(0, w.player.health) + '%';
+    $('hKills').textContent = w.kills;
+    $('hEp').textContent = sim.episode + 1;
+  }
+
+  // ── loop ──
+  function stepOnce() {
+    const ended = sim.tick();
+    if (sim.world.lastEvents.some((e) => e === 'hit' || e === 'miss')) lastFireTick = sim.world.tick;
+    if (!training) pushRaster();
+    return ended;
+  }
+  let acc = 0, lastT = performance.now();
+  function frame(t) {
+    const dt = Math.min(100, t - lastT); lastT = t;
+    if (!paused) {
+      if (training) {
+        const t0 = performance.now();
+        let ended = false;
+        while (performance.now() - t0 < 30) ended = stepOnce() || ended;
+        if (ended) drawCurve();
+      } else {
+        acc += (dt / 1000) * 35 * speed;
+        let ended = false;
+        while (acc >= 1) { ended = stepOnce() || ended; acc--; }
+        if (ended) drawCurve();
+      }
+    }
+    if (!training || Math.floor(t / 250) !== Math.floor((t - dt) / 250)) {
+      drawView(); drawEye(); drawMini(); updateHud(); updateBars();
+      if (!training) { drawRaster(); drawDopa(); }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function setMode(mode) {
+    training = mode === 'train';
+    if (mode === 's1') speed = 1;
+    if (mode === 's4') speed = 4;
+    $('s1').setAttribute('aria-pressed', mode === 's1');
+    $('s4').setAttribute('aria-pressed', mode === 's4');
+    $('train').setAttribute('aria-pressed', training);
+  }
+  $('s1').onclick = () => setMode('s1');
+  $('s4').onclick = () => setMode('s4');
+  $('train').onclick = () => setMode(training ? 's1' : 'train');
+  $('pause').onclick = () => { paused = !paused; $('pause').setAttribute('aria-pressed', paused); $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('reset').onclick = () => { seed++; newSim(); };
+  condSel.onchange = newSim;
+
+  newSim();
+  // open in a working state: a few seconds of play already on screen
+  for (let i = 0; i < 120; i++) stepOnce();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "flydoom",
+  "version": "0.1.0",
+  "description": "Learning fruit-fly brain simulation that plays a Doom-style shooter, with a controlled-experiment test engine",
+  "license": "MIT",
+  "private": true,
+  "main": "flydoom.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "experiment": "node test-engine.js",
+    "experiment:quick": "node test-engine.js --quick"
+  },
+  "engines": { "node": ">=18" }
+}
