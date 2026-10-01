@@ -45,7 +45,7 @@ th{color:var(--muted);font-weight:500}
 <body>
 <header>
   <h1>Drive Learning Lab</h1>
-  <p>Two "brother" populations of neural-network drivers learn to race a track live through neuroevolution and share what they learn with each other. The test engine checks the champions on tracks they have never seen.</p>
+  <p>Three "brother" populations of drivers learn to race a track live through neuroevolution. Brothers A and B use a classic neural network and teach each other. Brother C uses a brain modelled on the fruit fly's mushroom body. The test engine checks the champions on tracks they have never seen.</p>
 </header>
 
 <div class="wrap">
@@ -84,9 +84,14 @@ th{color:var(--muted);font-weight:500}
     </div>
 
     <div class="card">
-      <h2>Leader's brain (live)</h2>
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h2 style="margin:0">Brain (live)</h2>
+        <select id="netSel" style="background:#21262d;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:4px">
+          <option value="lead">Overall leader</option><option value="A">Brother A</option><option value="B">Brother B</option><option value="C" selected>Brother C · Fly</option>
+        </select>
+      </div>
       <canvas id="net" class="panel" width="680" height="380"></canvas>
-      <p class="note">Left: 7 distance sensors, speed, bias. Right: steer, throttle. Orange = positive weight, blue = negative.</p>
+      <p class="note" id="netNote"></p>
     </div>
 
     <div class="card">
@@ -204,12 +209,7 @@ function makeTrack(seed) {
 }
 
 // ---------- brain ----------
-function randomGenome() {
-  const g = new Float32Array(GENES);
-  for (let i = 0; i < GENES; i++) g[i] = gauss() * 0.8;
-  return g;
-}
-function think(g, inp, hid, out) {
+function thinkMLP(g, inp, hid, out) {
   for (let h = 0; h < NH; h++) {
     let s = 0;
     for (let i = 0; i < NI; i++) s += g[h * NI + i] * inp[i];
@@ -223,8 +223,60 @@ function think(g, inp, hid, out) {
     out[o] = Math.tanh(s);
   }
 }
+// Fruit-fly mushroom body (simplified): sensors act as projection neurons (PNs).
+// 200 Kenyon cells (KCs) each sample 3 random PNs through fixed wiring that is the same
+// for the whole species (it is not evolved). Global APL-style inhibition lets only the
+// top 10% of KCs fire. Only the KC -> output neuron (MBON) synapses learn, as in the fly.
+const KC = 200, KC_IN = 3, KC_ACTIVE = 20;
+const kcWiring = (() => {
+  const r = mulberry32(42), idx = new Uint8Array(KC * KC_IN), w = new Float32Array(KC * KC_IN);
+  for (let i = 0; i < KC * KC_IN; i++) { idx[i] = r() * NI | 0; w[i] = r() * 2 - 1; }
+  return { idx, w };
+})();
+const kcScratch = new Float32Array(KC);
+// Quickselect: returns the k-th largest value (reorders arr in place).
+function kthLargest(arr, k) {
+  let lo = 0, hi = arr.length - 1;
+  const target = arr.length - k;
+  while (lo < hi) {
+    const pivot = arr[(lo + hi) >> 1];
+    let i = lo, j = hi;
+    while (i <= j) {
+      while (arr[i] < pivot) i++;
+      while (arr[j] > pivot) j--;
+      if (i <= j) { const t = arr[i]; arr[i] = arr[j]; arr[j] = t; i++; j--; }
+    }
+    if (target <= j) hi = j; else if (target >= i) lo = i; else break;
+  }
+  return arr[target];
+}
+function thinkFly(g, inp, kc, out) {
+  const { idx, w } = kcWiring;
+  for (let k = 0; k < KC; k++) {
+    let s = 0;
+    for (let j = 0; j < KC_IN; j++) s += w[k * KC_IN + j] * inp[idx[k * KC_IN + j]];
+    kc[k] = s;
+  }
+  kcScratch.set(kc);
+  const thr = kthLargest(kcScratch, KC_ACTIVE);         // APL inhibition: k-winners-take-all
+  for (let k = 0; k < KC; k++) kc[k] = kc[k] >= thr ? 1 : 0;
+  for (let o = 0; o < NO; o++) {
+    let s = g[KC * NO + o];
+    for (let k = 0; k < KC; k++) if (kc[k]) s += g[o * KC + k];
+    out[o] = Math.tanh(s);
+  }
+}
+const BRAINS = {
+  mlp: { kind: 'mlp', genes: GENES, hidden: NH, init: 0.8, think: thinkMLP },
+  fly: { kind: 'fly', genes: KC * NO + NO, hidden: KC, init: 0.25, think: thinkFly },
+};
+function randomGenome(brain) {
+  const g = new Float32Array(brain.genes);
+  for (let i = 0; i < g.length; i++) g[i] = gauss() * brain.init;
+  return g;
+}
 function mutate(g, rate, sigma) {
-  for (let i = 0; i < GENES; i++) if (Math.random() < rate) g[i] += gauss() * sigma;
+  for (let i = 0; i < g.length; i++) if (Math.random() < rate) g[i] += gauss() * sigma;
 }
 
 // ---------- car ----------
@@ -234,7 +286,7 @@ function newCar(g, team, laps, tr) {
     x: tr.cx[0], y: tr.cy[0], angle: Math.atan2(tr.cy[1] - tr.cy[0], tr.cx[1] - tr.cx[0]),
     speed: 0, idx: 0, lap: 0, prog: 0, best: 0, stall: 0, steps: 0,
     alive: true, crashed: false, finished: false,
-    rays: new Float32Array(NR).fill(1), inp: new Float32Array(NI), hid: new Float32Array(NH), out: new Float32Array(NO),
+    rays: new Float32Array(NR).fill(1), inp: new Float32Array(NI), hid: new Float32Array(team.brain.hidden), out: new Float32Array(NO),
   };
 }
 function rayHit(px, py, dx, dy, ax, ay, bx, by) {
@@ -259,7 +311,7 @@ function stepCar(car, tr) {
   }
   car.inp[NR] = car.speed / MAX_SPEED; car.inp[NR + 1] = 1;
   // think + act
-  think(car.g, car.inp, car.hid, car.out);
+  car.team.brain.think(car.g, car.inp, car.hid, car.out);
   car.speed = Math.min(MAX_SPEED, Math.max(0, (car.speed + car.out[1] * 0.2) * 0.985));
   car.angle += car.out[0] * 0.08 * Math.min(1, car.speed / 2.5);
   car.x += Math.cos(car.angle) * car.speed; car.y += Math.sin(car.angle) * car.speed;
@@ -288,8 +340,9 @@ function fitness(car) {
 
 // ---------- world ----------
 const teams = [
-  { id: 'A', name: 'Brother A · Explorer', color: '#f78166', rate: 0.14, sigma: 0.45 },
-  { id: 'B', name: 'Brother B · Refiner',  color: '#58a6ff', rate: 0.06, sigma: 0.22 },
+  { id: 'A', name: 'Brother A · Explorer', color: '#f78166', rate: 0.14, sigma: 0.45, brain: BRAINS.mlp },
+  { id: 'B', name: 'Brother B · Refiner',  color: '#58a6ff', rate: 0.06, sigma: 0.22, brain: BRAINS.mlp },
+  { id: 'C', name: 'Brother C · Fly',      color: '#e3b341', rate: 0.05, sigma: 0.3,  brain: BRAINS.fly },
 ];
 const world = { track: null, gen: 1, step: 0, running: true, speed: 3 };
 const history = [];
@@ -307,7 +360,7 @@ function setTrack(seed) {
 }
 function resetBrains() {
   for (const t of teams) {
-    t.genomes = Array.from({ length: POP }, randomGenome);
+    t.genomes = Array.from({ length: POP }, () => randomGenome(t.brain));
     t.record = 0; t.champion = null; t.lastBest = 0; t.lapsDone = 0;
   }
   history.length = 0; world.gen = 1;
@@ -324,8 +377,8 @@ function evolve(team) {
   const pick = () => { let b = null; for (let i = 0; i < 3; i++) { const r = ranked[Math.random() * ranked.length | 0]; if (!b || r.f > b.f) b = r; } return b.g; };
   const next = [ranked[0].g.slice(), ranked[1].g.slice()];
   while (next.length < POP) {
-    const a = pick(), b = pick(), ch = new Float32Array(GENES);
-    for (let i = 0; i < GENES; i++) ch[i] = Math.random() < 0.5 ? a[i] : b[i];
+    const a = pick(), b = pick(), ch = new Float32Array(a.length);
+    for (let i = 0; i < a.length; i++) ch[i] = Math.random() < 0.5 ? a[i] : b[i];
     mutate(ch, team.rate, team.sigma);
     next.push(ch);
   }
@@ -337,10 +390,14 @@ function evolve(team) {
 }
 function endGeneration() {
   for (const t of teams) evolve(t);
-  history.push({ gen: world.gen, A: teams[0].lastBest, B: teams[1].lastBest });
-  if (document.getElementById('share').checked) {
-    const [lead, follow] = teams[0].lastBest >= teams[1].lastBest ? teams : [teams[1], teams[0]];
-    if (lead.lastBest > 5 && lead.lastBest > follow.lastBest * 1.15) {
+  const rec = { gen: world.gen };
+  for (const t of teams) rec[t.id] = t.lastBest;
+  history.push(rec);
+  // Brothers with the same kind of brain can teach each other by copying the best driver.
+  // The fly's brain is wired differently, so it can't take a copy and learns on its own.
+  if (document.getElementById('share').checked) for (const follow of teams) {
+    const lead = teams.filter(t => t !== follow && t.brain === follow.brain).sort((a, b) => b.lastBest - a.lastBest)[0];
+    if (lead && lead.lastBest > 5 && lead.lastBest > follow.lastBest * 1.15) {
       for (let k = 0; k < 6; k++) {
         const g = lead.champion.slice(); mutate(g, 0.05, 0.15);
         follow.genomes[POP - 1 - k] = g;
@@ -443,9 +500,12 @@ function drawChart() {
 function drawNet() {
   const cv = document.getElementById('net'), g = cv.getContext('2d'), w = cv.width, h = cv.height;
   g.clearRect(0, 0, w, h);
-  const all = teams.map(leaderOf).filter(Boolean);
-  if (!all.length) return;
+  const sel = document.getElementById('netSel').value;
+  const all = (sel === 'lead' ? teams : teams.filter(t => t.id === sel)).map(t => leaderOf(t) || t.cars[0]);
   const c = all.sort((a, b) => b.best - a.best)[0];
+  const note = document.getElementById('netNote');
+  if (c.team.brain.kind === 'fly') return drawFlyNet(g, w, h, c, note);
+  note.textContent = 'Left: 7 distance sensors, speed, bias. Middle: 10 hidden neurons. Right: steer, throttle. Orange = positive weight, blue = negative.';
   const col = [NI, NH, NO], xs = [60, w / 2, w - 70];
   const pos = col.map((n, l) => Array.from({ length: n }, (_, i) => [xs[l], 30 + (h - 60) * (n === 1 ? 0.5 : i / (n - 1))]));
   const act = [c.inp, c.hid, c.out];
@@ -467,6 +527,49 @@ function drawNet() {
   g.fillText('steer ' + c.out[0].toFixed(2), w - 90, pos[2][0][1] + 7);
   g.fillText('throttle ' + c.out[1].toFixed(2), w - 90, pos[2][1][1] + 7);
   g.textAlign = 'left'; g.fillStyle = c.team.color; g.fillText(c.team.name, 10, h - 6);
+}
+function drawFlyNet(g, w, h, c, note) {
+  note.textContent = 'Fruit-fly mushroom body: sensors (projection neurons) → 200 Kenyon cells with fixed random wiring, only the top 10% may fire → 2 output neurons. Only Kenyon cell → output synapses learn. Bright = firing now.';
+  const inX = 50, outX = w - 70, gx0 = 150, gx1 = w - 190, cols = 20, rows = KC / cols;
+  const inPos = i => [inX, 30 + (h - 60) * i / (NI - 1)];
+  const kcPos = k => [gx0 + (gx1 - gx0) * (k % cols) / (cols - 1), 30 + (h - 60) * Math.floor(k / cols) / (rows - 1)];
+  const outPos = o => [outX, h * (o + 1) / 3];
+  const { idx, w: kw } = kcWiring;
+  g.lineWidth = 1;
+  for (let k = 0; k < KC; k++) if (c.hid[k]) {
+    const [kx, ky] = kcPos(k);
+    for (let j = 0; j < KC_IN; j++) {
+      const [ix, iy] = inPos(idx[k * KC_IN + j]);
+      g.strokeStyle = 'rgba(139,148,158,.35)'; g.beginPath(); g.moveTo(ix, iy); g.lineTo(kx, ky); g.stroke();
+    }
+    for (let o = 0; o < NO; o++) {
+      const wt = c.g[o * KC + k], [ox, oy] = outPos(o);
+      g.strokeStyle = wt > 0 ? `rgba(247,129,102,${Math.min(1, Math.abs(wt))})` : `rgba(88,166,255,${Math.min(1, Math.abs(wt))})`;
+      g.lineWidth = Math.min(4, 0.5 + 2 * Math.abs(wt));
+      g.beginPath(); g.moveTo(kx, ky); g.lineTo(ox, oy); g.stroke();
+    }
+    g.lineWidth = 1;
+  }
+  for (let k = 0; k < KC; k++) {
+    const [x, y] = kcPos(k);
+    g.beginPath(); g.arc(x, y, c.hid[k] ? 6 : 3.5, 0, Math.PI * 2);
+    g.fillStyle = c.hid[k] ? '#e3b341' : 'rgba(139,148,158,.35)'; g.fill();
+  }
+  for (let i = 0; i < NI; i++) {
+    const [x, y] = inPos(i);
+    g.beginPath(); g.arc(x, y, 10, 0, Math.PI * 2);
+    g.fillStyle = `rgba(230,237,243,${0.15 + 0.85 * Math.abs(c.inp[i])})`; g.fill();
+    g.strokeStyle = c.team.color; g.lineWidth = 2; g.stroke();
+  }
+  g.font = '20px system-ui'; g.textAlign = 'right'; g.fillStyle = '#e6edf3';
+  ['steer', 'throttle'].forEach((n, o) => {
+    const [x, y] = outPos(o);
+    g.beginPath(); g.arc(x, y, 12, 0, Math.PI * 2);
+    g.fillStyle = `rgba(230,237,243,${0.15 + 0.85 * Math.abs(c.out[o])})`; g.fill();
+    g.strokeStyle = c.team.color; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#e6edf3'; g.fillText(`${n} ${c.out[o].toFixed(2)}`, x + 60, y + 36);
+  });
+  g.textAlign = 'left'; g.fillStyle = c.team.color; g.fillText(c.team.name + ' · mushroom body', 10, h - 6);
 }
 
 function updateStats() {
@@ -523,7 +626,7 @@ document.getElementById('runTests').onclick = runTests;
 setTrack(1);
 resetBrains();
 spawn();
-log('Simulation started: 2 brothers × 30 drivers');
+log('Simulation started: 3 brothers × 30 drivers (C has a fruit-fly brain)');
 
 let frame = 0, lastGen = 0;
 function loop() {
