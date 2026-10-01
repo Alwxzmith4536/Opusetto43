@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite Battle Mode</title>
+<meta name="description" content="Fan-made sprite battle animation, part 1: Sonic vs Metal Sonic. All pixel art is drawn in code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+  /* Layout: one 16:9 pixel stage, a transport bar under it, chapter list below. Single deliberate night look. */
+  :root {
+    --ink: #070b1c;          /* page ground */
+    --panel: #0f1630;        /* control surfaces */
+    --line: #26325e;         /* hairlines */
+    --paper: #f2f0e8;        /* text */
+    --muted: #9aa3c7;        /* secondary text */
+    --sonic: #4a82ff;        /* Sonic blue */
+    --metal: #ff3a4c;        /* Metal Sonic's eye */
+    --gold: #ffd23f;         /* rings */
+    --pixel: "Press Start 2P", ui-monospace, Menlo, Consolas, monospace;
+    --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  html, body { background: var(--ink); color: var(--paper); margin: 0; }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 18px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+  h1 { font-family: var(--pixel); font-weight: 400; font-size: clamp(16px, 3.4vw, 28px); line-height: 1.3; margin: 0; }
+  h1 .vs { color: var(--muted); font-size: .6em; margin: 0 .5em; }
+  h1 .s { color: var(--sonic); } h1 .m { color: var(--metal); }
+  .tag { font-family: var(--pixel); font-size: 10px; color: var(--gold); letter-spacing: .06em; line-height: 1.8; }
+  .stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  button { font: 400 11px var(--pixel); color: var(--paper); background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible, .progress:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .progress { flex: 1 1 220px; min-width: 0; height: 10px; background: var(--panel); border: 1px solid var(--line); position: relative; cursor: pointer; }
+  .progress i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--sonic), var(--metal)); width: 0; }
+  .time { font-family: var(--pixel); font-size: 10px; color: var(--muted); }
+  ol.chapters { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+  ol.chapters button { width: 100%; text-align: left; display: flex; gap: 10px; align-items: baseline; line-height: 1.5; }
+  ol.chapters button b { font-weight: 400; font-size: 9px; color: var(--muted); }
+  ol.chapters button[aria-current="true"] { border-color: var(--gold); }
+  .note { color: var(--muted); font-size: 13px; max-width: 70ch; margin: 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="s">SONIC</span><span class="vs">VS</span><span class="m">METAL SONIC</span></h1>
+    <span class="tag">SPRITE BATTLE MODE · PART 1: COLLISION COURSE</span>
+  </header>
+
+  <div class="stage"><canvas id="cv" width="1280" height="720" aria-label="Pixel-art sprite battle between Sonic and Metal Sonic"></canvas></div>
+  <p class="sr" id="live" aria-live="polite"></p>
+
+  <div class="bar">
+    <button id="play" type="button">Pause</button>
+    <button id="restart" type="button">Restart</button>
+    <div class="progress" id="prog" role="slider" aria-label="Playback position" tabindex="0"><i id="progFill"></i></div>
+    <span class="time" id="time">0:00 / 0:00</span>
+  </div>
+
+  <ol class="chapters" id="chapters"></ol>
+
+  <p class="note">Part 1 of a fan-made sprite battle: a sunset run, Metal Sonic's arrival, a spin dash, a six-hit sky clash, a plasma beam and a homing attack, ending on a cliffhanger. The scene renders at 320×180 and is scaled up 4×. Every sprite is original pixel art drawn in code. Space bar plays and pauses; add <code>#t=30</code> to the URL to jump to a time. Sonic the Hedgehog and Metal Sonic belong to SEGA. This is an unofficial, non-commercial fan work.</p>
+</div>
+
+<script>
+(() => {
+const cv = document.getElementById('cv');
+const out = cv.getContext('2d');
+const W = 1280, H = 720, LW = 320, LH = 180, PX = 4;
+const low = document.createElement('canvas'); low.width = LW; low.height = LH;
+const g = low.getContext('2d');
+g.imageSmoothingEnabled = false; out.imageSmoothingEnabled = false;
+const GROUND = 150;
+const FONT = '"Press Start 2P", ui-monospace, monospace';
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- helpers ----------
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const pulse = (t, a, d) => t >= a && t < a + d ? 1 - (t - a) / d : 0;
+const arc = u => 4 * u * (1 - u);
+const mod = (a, n) => ((a % n) + n) % n;
+function rng(seed) { let s = (seed * 2654435761) >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function hexA(hex, a) { if (hex.length === 4) hex = '#' + [...hex.slice(1)].map(c => c + c).join(''); const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+function quad(a, b, c, u) { return [(1 - u) * (1 - u) * a[0] + 2 * u * (1 - u) * b[0] + u * u * c[0], (1 - u) * (1 - u) * a[1] + 2 * u * (1 - u) * b[1] + u * u * c[1]]; }
+
+// frame state, rebuilt every frame so seeking is deterministic
+let T = 0, amb = 0, cam = 0;
+const UI = [];
+const fx = { shake: 0, flash: 0, flashColor: '#fff' };
+function hitFx(t, a, shake, flash = 0, col = '#fff') {
+  fx.shake = Math.max(fx.shake, pulse(t, a, .35) * shake);
+  const q = pulse(t, a, .22) * flash; if (q > fx.flash) { fx.flash = q; fx.flashColor = col; }
+}
+
+// ---------- palette ----------
+// 0 clear · 1 outline · 2-4 Sonic blue · 5-6 skin · 7-8 white · 9-10 red · 11 black
+// 12-14 Metal navy · 15-17 silver · 18-19 gold · 20-21 eye red · 23-24 jet flame · 25-27 palm leaves
+const PAL = [null, '#0a0c22', '#1638a8', '#2f62f2', '#73a2ff', '#c47e4c', '#f6c48e', '#ffffff', '#b8c0d8', '#961022', '#e8283a', '#0d0d16',
+  '#0e1550', '#24399c', '#5577dc', '#5d6684', '#a7b0c8', '#e6eaf4', '#ffcc22', '#c07c12', '#ff2a2a', '#ffc0b0', '#000000', '#5ee0ff', '#e8ffff',
+  '#34b04a', '#1f7a36', '#155228'];
+const VARIANT = {
+  n: i => PAL[i],
+  w: () => '#ffffff',
+  k: i => i === 20 || i === 21 ? PAL[i] : '#05060e',
+  gb: () => '#5a9cff',
+  gr: () => '#ff3a50',
+};
+const rgbCache = {};
+function rgb(hex) { if (!rgbCache[hex]) { const n = parseInt(hex.slice(1), 16); rgbCache[hex] = [n >> 16, (n >> 8) & 255, n & 255]; } return rgbCache[hex]; }
+
+// ---------- indexed pixel buffer: crisp primitives, auto-outlines ----------
+const SW = 64, SH = 64, AX = 32, AY = 58; // sprite canvas; (AX, AY) is the ground point between the feet
+class Pix {
+  constructor(w = SW, h = SH) { this.w = w; this.h = h; this.d = new Uint8Array(w * h); }
+  set(x, y, c) { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.d[y * this.w + x] = c; }
+  get(x, y) { return x >= 0 && y >= 0 && x < this.w && y < this.h ? this.d[y * this.w + x] : 0; }
+  rect(x, y, w, h, c) { x = Math.round(x); y = Math.round(y); for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.set(x + i, y + j, c); }
+  ell(cx, cy, rx, ry, c) {
+    for (let y = Math.floor(cy - ry - 1); y <= Math.ceil(cy + ry + 1); y++) for (let x = Math.floor(cx - rx - 1); x <= Math.ceil(cx + rx + 1); x++) {
+      const dx = (x - cx) / (rx + .35), dy = (y - cy) / (ry + .35); if (dx * dx + dy * dy <= 1) this.set(x, y, c);
+    }
+  }
+  disc(cx, cy, r, c) { this.ell(cx, cy, r, r, c); }
+  line(x0, y0, x1, y1, c, th = 1) {
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+    for (let i = 0; i <= n; i++) { const x = lerp(x0, x1, i / n), y = lerp(y0, y1, i / n); if (th <= 1) this.set(x, y, c); else this.rect(x - th / 2 + .5, y - th / 2 + .5, th, th, c); }
+  }
+  poly(pts, c) {
+    let y0 = Infinity, y1 = -Infinity; for (const p of pts) { y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
+    for (let y = Math.round(y0); y <= Math.round(y1); y++) {
+      const xs = [];
+      for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) xs.push(a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
+      xs.sort((a, b) => a - b);
+      for (let k = 0; k + 1 < xs.length; k += 2) for (let x = Math.round(xs[k]); x <= Math.round(xs[k + 1]); x++) this.set(x, y, c);
+    }
+    for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; this.line(a[0], a[1], b[0], b[1], c); }
+  }
+  outline(c = 1) {
+    const s = this.d.slice();
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+      if (s[y * this.w + x]) continue;
+      const n = (x > 0 && s[y * this.w + x - 1]) || (x < this.w - 1 && s[y * this.w + x + 1]) || (y > 0 && s[(y - 1) * this.w + x]) || (y < this.h - 1 && s[(y + 1) * this.w + x]);
+      if (n) this.d[y * this.w + x] = c;
+    }
+    return this;
+  }
+  over(o) { for (let i = 0; i < this.d.length; i++) if (o.d[i]) this.d[i] = o.d[i]; }
+  canvas(v = 'n') {
+    const cnv = document.createElement('canvas'); cnv.width = this.w; cnv.height = this.h;
+    const cx = cnv.getContext('2d'), img = cx.createImageData(this.w, this.h), map = VARIANT[v];
+    for (let i = 0; i < this.d.length; i++) { const k = this.d[i]; if (!k) continue; const [r, gg, b] = rgb(map(k)); img.data.set([r, gg, b, 255], i * 4); }
+    cx.putImageData(img, 0, 0); return cnv;
+  }
+}
+function rotPix(src, ang, ox = AX, oy = AY - 16) {
+  const d = new Pix(src.w, src.h), c = Math.cos(ang), s = Math.sin(ang);
+  for (let y = 0; y < d.h; y++) for (let x = 0; x < d.w; x++) {
+    const dx = x - ox, dy = y - oy;
+    d.d[y * d.w + x] = src.get(Math.round(ox + dx * c + dy * s), Math.round(oy - dx * s + dy * c));
+  }
+  return d;
+}
+
+// ---------- characters ----------
+// Angles: 0 points down, +PI/2 points forward (the way the sprite faces), PI points up.
+const dir = (a, l) => [Math.sin(a) * l, Math.cos(a) * l];
+const CH = {
+  sonic: { d: 2, m: 3, li: 4, arm: 6, armB: 5, hand: 7, handB: 8, leg: 3, legB: 2, shoe: 10, shoeB: 9, strap: 7 },
+  metal: { d: 12, m: 13, li: 14, arm: 16, armB: 15, hand: 13, handB: 12, leg: 16, legB: 15, shoe: 10, shoeB: 9, strap: 18 },
+};
+const SPIKES = {
+  sonic: [[[-2, -8], [-13, -12], [-7, -3]], [[-6, -5], [-18, -2], [-7, 2]], [[-7, 1], [-16, 8], [-3, 7]]],
+  metal: [[[-2, -8], [-17, -11], [-7, -3]], [[-6, -4], [-22, -1], [-7, 2]], [[-6, 1], [-20, 8], [-2, 7]]],
+};
+const POSES = {
+  stand:  { lb: [-.15, 0], lf: [.18, .05], ab: [-.2, .1], af: [.2, .45] },
+  ready:  { y: 1, lean: 1, lb: [-.5, -.05], lf: [.5, .1], ab: [.8, 2.1], af: [1.1, 2.3], eye: 'det' },
+  wag:    { lb: [-.15, 0], lf: [.18, .05], ab: [-.2, .1], af: [1.5, 2.8], eye: 'det', mouth: 'grin', finger: 1 },
+  lookUp: { hy: -1, lean: -1, lb: [-.15, 0], lf: [.18, .05], ab: [-.3, -.1], af: [-.1, .2], look: -1 },
+  run0:   { lean: 2, y: 1, lf: [1.0, .3], lb: [-.6, -.5], af: [-.9, -.2], ab: [1.1, 2.2], eye: 'det' },
+  run1:   { lean: 2, y: 0, lf: [.1, -.1], lb: [.4, -1.4], af: [.2, 1.2], ab: [.1, 1.0], eye: 'det' },
+  run2:   { lean: 2, y: 1, lf: [-.6, -.5], lb: [1.0, .3], af: [1.1, 2.2], ab: [-.9, -.2], eye: 'det' },
+  run3:   { lean: 2, y: 0, lf: [.4, -1.4], lb: [.1, -.1], af: [.1, 1.0], ab: [.2, 1.2], eye: 'det' },
+  peel0:  { lean: 3, y: 1, blur: 0, af: [-1.3, -1.0], ab: [-1.1, -.8], eye: 'det', mouth: 'grin' },
+  peel1:  { lean: 3, y: 1, blur: 1, af: [-1.2, -.8], ab: [-1.3, -1.0], eye: 'det', mouth: 'grin' },
+  skid:   { lean: -2, y: 1, lf: [1.2, 1.0], lb: [-.2, .1], af: [-1.7, -1.2], ab: [-1.2, -.9], eye: 'det' },
+  hurt:   { lean: -2, y: -2, lf: [.8, .1], lb: [-.6, -.1], af: [2.6, 3.0], ab: [-2.6, -3.0], eye: 'hurt', mouth: 'open' },
+  jump:   { y: -1, lf: [.1, .05], lb: [-.05, 0], af: [2.9, 3.1], ab: [-2.9, -3.0] },
+  punch:  { lean: 2, y: 1, lf: [.6, .2], lb: [-.7, -.3], af: [1.55, 1.55], ab: [-.6, .6], eye: 'det' },
+  kick:   { lean: -2, y: -1, lf: [1.6, 1.6], lb: [-.1, .2], af: [-1.0, -.5], ab: [.6, 1.2], eye: 'det' },
+  hover:  { y: -1, lf: [.25, .05], lb: [-.1, 0], af: [.8, .6], ab: [-.6, -.4], jet: [7, 0] },
+  fly:    { lean: 3, lf: [-.6, -.9], lb: [-.8, -1.1], af: [-1.0, -1.2], ab: [-.8, -1.0], jet: [10, -1.3] },
+  charge: { lean: -1, lf: [.4, .1], lb: [-.4, -.1], af: [-1.4, -1.8], ab: [-1.2, -1.6], charge: 1, jet: [5, 0] },
+  kneel:  { y: 4, hy: 1, lf: [1.4, .1], lb: [-.2, -1.5], af: [.3, .2], ab: [.5, .4], eye: 'dim' },
+};
+
+function limb(l, o, a1, a2, l1, l2, col, th) {
+  const [x1, y1] = dir(a1, l1), k = [o[0] + x1, o[1] + y1];
+  const [x2, y2] = dir(a2, l2), e = [k[0] + x2, k[1] + y2];
+  l.line(o[0], o[1], k[0], k[1], col, th); l.line(k[0], k[1], e[0], e[1], col, th);
+  return e;
+}
+function shoe(l, e, a2, C, back) {
+  const [fx, fy] = dir(a2 + Math.PI / 2, 1), [sx, sy] = dir(a2, 1), col = back ? C.shoeB : C.shoe;
+  l.line(e[0] - fx, e[1] - fy, e[0] + fx * 3.5, e[1] + fy * 3.5, col, 3);
+  l.disc(e[0] + fx * 4, e[1] + fy * 4 + sy * .5, 1.4, col);
+  l.line(e[0] + fx - sx * 1.5, e[1] + fy - sy * 1.5, e[0] + fx + sx * 1.2, e[1] + fy + sy * 1.2, C.strap, 1);
+}
+function head(l, who, hx, hy, p) {
+  const C = CH[who], M = who === 'metal';
+  for (const [b1, tip, b2] of SPIKES[who]) {
+    l.poly([[hx + b1[0], hy + b1[1]], [hx + tip[0], hy + tip[1]], [hx + b2[0], hy + b2[1]]], C.m);
+    l.line(hx + b2[0], hy + b2[1], hx + tip[0] + 1, hy + tip[1], C.d);
+    l.line(hx + b1[0] - 1, hy + b1[1] + 1, hx + tip[0] + 3, hy + tip[1] + (tip[1] < 0 ? 1 : 0), C.li);
+  }
+  if (M) l.poly([[hx - 3, hy - 5], [hx - 1, hy - 16], [hx + 3, hy - 6]], C.m);
+  else l.poly([[hx - 3, hy - 5], [hx - 2, hy - 14], [hx + 3, hy - 6]], C.m);
+  l.disc(hx, hy, 9, C.d); l.disc(hx + 1, hy - 1, 8, C.m);
+  l.ell(hx - 1, hy - 5, 2, 1, C.li);
+  l.poly([[hx - 2, hy - 9], [hx - 1.5, hy - (M ? 13 : 12)], [hx + 1, hy - 9]], M ? 12 : 6);
+  const look = p.look || 0;
+  if (!M) {
+    l.ell(hx + 4, hy + 4, 5, 3, 6); l.ell(hx + 7, hy + 2, 3.5, 2.5, 6); l.rect(hx + 10, hy, 2, 2, 11);
+    l.ell(hx + 4, hy - 2, 2.5, 3.5, 7);
+    if (p.eye === 'hurt') { l.line(hx + 2, hy - 4, hx + 5, hy - 2, 11); l.line(hx + 5, hy - 2, hx + 2, hy, 11); }
+    else { l.rect(hx + 5, hy - 3 + look, 2, 3, 11); l.set(hx + 5, hy - 3 + look, 7); }
+    if (p.eye === 'det') l.line(hx + 1, hy - 6, hx + 7, hy - 4, C.m, 2);
+    if (p.mouth === 'grin') { l.line(hx + 4, hy + 5, hx + 8, hy + 5, 11); l.set(hx + 9, hy + 4, 11); }
+    if (p.mouth === 'open') { l.rect(hx + 5, hy + 4, 3, 2, 11); l.set(hx + 6, hy + 5, 10); }
+  } else {
+    l.ell(hx + 4, hy + 4, 5, 3, 16); l.ell(hx + 7, hy + 2, 3.5, 2.5, 16);
+    l.line(hx + 5, hy + 1, hx + 9, hy + 1, 17); l.rect(hx + 10, hy, 2, 2, 15); l.line(hx + 3, hy + 6, hx + 7, hy + 6, 15);
+    l.ell(hx + 4, hy - 2, 2.5, 3.5, 11);
+    l.line(hx + 1, hy - 6, hx + 7, hy - 3, C.m, 2);
+    if (p.eye !== 'off') { l.rect(hx + 5, hy - 2 + look, 2, 2, p.eye === 'dim' ? 9 : 20); if (p.eye !== 'dim') l.set(hx + 5, hy - 2 + look, 21); }
+  }
+}
+function buildChar(who, p) {
+  const C = CH[who], M = who === 'metal', pb = new Pix();
+  const y = p.y || 0, lean = p.lean || 0;
+  const hip = [AX - 1, AY - 11 + y], sh = [Math.round(AX - 1 + lean * .5), AY - 19 + y], hd = [AX + lean, AY - 29 + y + (p.hy || 0)];
+  const layer = fn => { const l = new Pix(); fn(l); l.outline(1); pb.over(l); };
+  if (p.jet) layer(l => {
+    const [len, ang] = p.jet, o = [sh[0] - 3, sh[1] + 5], [tx, ty] = dir(ang, len + (p.fl || 0) * 2), side = dir(ang + Math.PI / 2, 2);
+    const t2 = [o[0] + tx, o[1] + ty];
+    l.poly([[o[0] + side[0], o[1] + side[1]], [o[0] - side[0], o[1] - side[1]], t2], 23);
+    l.line(o[0], o[1], lerp(o[0], t2[0], .55), lerp(o[1], t2[1], .55), 24, 2);
+  });
+  layer(l => { const e = limb(l, [sh[0] - 1, sh[1] + 1], p.ab[0], p.ab[1], 4, 4, C.armB, 2); l.disc(e[0], e[1], 2, C.handB); });
+  if (p.blur == null) layer(l => { const e = limb(l, [hip[0] - 1, hip[1]], p.lb[0], p.lb[1], 5, 5, C.legB, 2); shoe(l, e, p.lb[1], C, true); });
+  layer(l => {
+    const cx = (sh[0] + hip[0]) / 2 + .5, cy = (sh[1] + hip[1]) / 2;
+    if (!M) l.poly([[hip[0] - 3, hip[1] - 3], [hip[0] - 8, hip[1] - 1], [hip[0] - 3, hip[1]]], C.m);
+    l.ell(cx - .5, cy, 4.5, 5.5, C.d); l.ell(cx + .5, cy - .5, 3.5, 4.5, C.m);
+    if (!M) l.ell(cx + 2, cy + 1, 2, 3.5, 6);
+    else {
+      const chg = p.charge || 0;
+      l.line(cx - 3, cy + 3, cx + 3, cy + 3, 15);
+      l.disc(cx + 2, cy - 1, chg ? 2.4 : 2, chg ? 24 : 18); l.set(cx + 2, cy - 1, chg ? 7 : 19);
+    }
+  });
+  if (p.blur != null) layer(l => {
+    const bx = hip[0] + 2, by = hip[1] + 7, ph = p.blur;
+    l.ell(bx + 2, by, 5, 3, C.shoe); l.ell(bx + 2, by, 3, 1.4, 0);
+    l.ell(bx - 3, by - 1, 4, 2.6, C.shoe); l.ell(bx - 3, by - 1, 2.2, 1, 0);
+    l.line(hip[0], hip[1], bx + (ph ? 3 : -2), by - 3, C.leg, 2);
+    for (let i = 0; i < 3; i++) { const a = i * 2.1 + ph * 1.05; l.set(bx + 2 + Math.cos(a) * 5, by + Math.sin(a) * 3, C.strap); }
+  });
+  else layer(l => { const e = limb(l, [hip[0] + 1, hip[1]], p.lf[0], p.lf[1], 5, 5, C.leg, 2); shoe(l, e, p.lf[1], C, false); });
+  layer(l => head(l, who, hd[0], hd[1], p));
+  layer(l => {
+    const e = limb(l, [sh[0] + 1, sh[1] + 1], p.af[0], p.af[1], 4, 4, C.arm, 2);
+    l.disc(e[0], e[1], 2, C.hand);
+    if (!M) { const [cx, cy] = dir(p.af[1], 1.6); l.line(e[0] - cx - 1, e[1] - cy, e[0] - cx + 1, e[1] - cy, 8); }
+    else l.set(e[0] + 1, e[1], 16);
+    if (p.finger) l.line(e[0], e[1] - 2, e[0], e[1] - 4, 7);
+  });
+  return pb;
+}
+function buildBall(who, m) {
+  const C = CH[who], M = who === 'metal', pb = new Pix(), l = new Pix();
+  const sq = m.sq || 1, ry = 10 * sq, cx = AX, cy = AY - 1 - ry, a0 = m.a * Math.PI / 4;
+  l.ell(cx, cy, 10, ry, C.d); l.ell(cx + .5, cy - .5, 8.6, ry - 1.4, C.m);
+  for (let k = 0; k < 3; k++) for (let s = 0; s <= 1.001; s += .08) {
+    const b = a0 + k * 2.094 + s * 1.1, r = 2.5 + s * 7.5;
+    l.set(cx + Math.cos(b) * r, cy + Math.sin(b) * r * sq, C.d);
+    if (s > .3) l.set(cx + Math.cos(b - .12) * (r - 1), cy + Math.sin(b - .12) * (r - 1) * sq, C.d);
+  }
+  for (let b = -2.7; b < -1.5; b += .1) l.set(cx + Math.cos(b) * 7, cy + Math.sin(b) * 7 * sq, C.li);
+  const gx = cx + Math.cos(a0 + 1) * 5, gy = cy + Math.sin(a0 + 1) * 5 * sq;
+  if (M) { l.disc(gx, gy, 1.6, 16); l.rect(gx, gy - 1, 2, 1, 20); }
+  else { l.disc(gx, gy, 1.8, 6); l.set(gx + 1, gy - 1, 7); }
+  l.outline(1); pb.over(l); return pb;
+}
+
+const sprCache = new Map();
+function sprite(who, pose, m, v = 'n', rot = 0) {
+  const key = `${who}|${pose}|${m ? JSON.stringify(m) : ''}|${v}|${rot}`;
+  let s = sprCache.get(key); if (s) return s;
+  let pb = pose === 'ball' ? buildBall(who, m) : buildChar(who, Object.assign({}, POSES[pose], m));
+  if (rot) pb = rotPix(pb, rot * Math.PI / 8);
+  s = pb.canvas(v); sprCache.set(key, s); return s;
+}
+// Draw a character with its feet at world x / screen y. f: 1 faces right, -1 faces left. rot: steps of PI/8.
+function ch(who, pose, x, y, o = {}) {
+  const { f = 1, v = 'n', rot = 0, a = 1, m = null, sc = 1 } = o;
+  if (a <= 0) return;
+  const s = sprite(who, pose, m, v, mod(Math.round(rot), 16));
+  g.save(); g.globalAlpha = a; g.translate(Math.round(x - cam), Math.round(y)); g.scale(f * sc, sc);
+  g.drawImage(s, -AX, -AY); g.restore();
+}
+function ball(who, cx, cy, o = {}) { ch(who, 'ball', cx, cy + 11 * (o.m && o.m.sq || 1), o); }
+const spin = (t, rate = 24) => ({ a: mod(Math.floor(t * rate), 8) });
+const jetFl = t => ({ fl: Math.floor(t * 20) % 2 });
+
+// rings: 8 animation frames, cached
+const ringFrames = [...Array(8)].map((_, i) => {
+  const p = new Pix(12, 12), rx = Math.max(.6, Math.abs(Math.cos(i / 8 * Math.PI)) * 4.4);
+  p.ell(6, 6, rx, 4.4, 19); p.ell(5.7, 5.7, rx * .92, 4.1, 18);
+  if (rx > 1.6) p.ell(6, 6, rx - 1.7, 2.7, 0);
+  p.set(6 - rx * .6, 3, 7); p.outline(1);
+  return p.canvas();
+});
+function ring(x, y, ph) { g.drawImage(ringFrames[mod(Math.floor(ph), 8)], Math.round(x - cam - 6), Math.round(y - 6)); }
+
+// ---------- low-res drawing primitives ----------
+function pc(x, y, r, col) {
+  g.fillStyle = col; x = Math.round(x); y = Math.round(y); r = Math.max(0, Math.round(r));
+  for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy + r * .6)); g.fillRect(x - w, y + dy, 2 * w + 1, 1); }
+}
+function pl(x0, y0, x1, y1, col, th = 1) {
+  g.fillStyle = col; const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+  for (let i = 0; i <= n; i++) g.fillRect(Math.round(lerp(x0, x1, i / n) - th / 2), Math.round(lerp(y0, y1, i / n) - th / 2), th, th);
+}
+function star(x, y, s, col, col2 = '#fff') {
+  x = Math.round(x - cam); y = Math.round(y);
+  pl(x - s, y, x + s, y, col); pl(x, y - s, x, y + s, col);
+  const d = Math.round(s * .5); pl(x - d, y - d, x + d, y + d, col2); pl(x - d, y + d, x + d, y - d, col2);
+  g.fillStyle = col2; g.fillRect(x - 1, y - 1, 3, 3);
+}
+function impact(x, y, age, size = 14, col = '#ffd23f') {
+  if (age <= 0 || age >= 1) return;
+  const sx = x - cam;
+  if (age < .3) pc(sx, y, size * (.5 + age * 1.6), age < .12 ? '#ffffff' : col);
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4 + .2, r0 = size * (.4 + age * 1.4), r1 = size * (.8 + age * 2.1);
+    pl(sx + Math.cos(a) * r0, y + Math.sin(a) * r0, sx + Math.cos(a) * r1, y + Math.sin(a) * r1, i % 2 ? '#ffffff' : col, age < .5 ? 2 : 1);
+  }
+}
+function dust(x, y, age, seed = 1, n = 5, dirx = -1) {
+  if (age <= 0 || age >= 1) return;
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) {
+    const sp = 6 + r() * 16, ox = dirx * (r() * .6 + .4) * sp * age * 2, oy = -r() * 10 * age;
+    pc(x - cam + ox + (r() - .5) * 6, y + oy - 2, (2 + r() * 3) * (1 - age * .7), age < .4 ? '#f4eee4' : '#b8a8b8');
+  }
+}
+function boom(x, y, age, seed = 1, s = 1) {
+  if (age <= 0 || age >= 1) return;
+  const r = rng(seed);
+  for (let i = 0; i < 4; i++) {
+    const a = clamp(age * 1.4 - i * .12), ox = (r() - .5) * 16 * s, oy = (r() - .7) * 14 * s;
+    if (a <= 0 || a >= 1) continue;
+    const R = (3 + a * 9) * s, sx = x - cam + ox, sy = y + oy;
+    if (a < .7) { pc(sx, sy, R, '#ff7a1a'); pc(sx, sy, R * .7, '#ffd23f'); if (a < .35) pc(sx, sy, R * .4, '#ffffff'); }
+    else pc(sx, sy - a * 6, R * (1.2 - a), '#6a5a6a');
+  }
+}
+function zap(x0, y0, x1, y1, seed, col) {
+  const r = rng(seed); let px = x0 - cam, py = y0;
+  for (let i = 1; i <= 6; i++) { const nx = lerp(x0, x1, i / 6) - cam + (i < 6 ? (r() - .5) * 8 : 0), ny = lerp(y0, y1, i / 6) + (i < 6 ? (r() - .5) * 8 : 0); pl(px, py, nx, ny, col); px = nx; py = ny; }
+}
+function speedLines(t, col, n = 14, seed = 3, dirx = -1) {
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) { const y = Math.floor(r() * LH), len = 12 + r() * 40, sp = 300 + r() * 400; const x = mod(r() * LW + dirx * t * sp, LW + 60) - 30; g.fillStyle = col; g.fillRect(Math.round(x), y, Math.round(len), 1); }
+}
+
+// ---------- zone: sunset hill, pre-rendered parallax layers ----------
+const ZONE = (() => {
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; };
+  // sky with dithered bands and a striped sun
+  const [sky, s] = mk(LW, 100);
+  const bands = ['#24134a', '#3a1d64', '#5a2676', '#843078', '#b23e72', '#da5866', '#f27c5c', '#fca45e', '#ffcc72', '#ffe7a0'];
+  const bh = 96 / bands.length;
+  for (let i = 0; i < bands.length; i++) {
+    const y0 = Math.round(i * bh); s.fillStyle = bands[i]; s.fillRect(0, y0, LW, Math.ceil(bh) + 1);
+    if (i) for (let y = y0; y < y0 + 3; y++) for (let x = (y + (y - y0)) % 2; x < LW; x += (y - y0) + 2) { s.fillStyle = bands[i - 1]; s.fillRect(x, y, 1, 1); }
+  }
+  s.fillStyle = '#fff3b8';
+  for (let dy = -20; dy <= 4; dy++) { if (dy > -8 && mod(dy, 4) === 0) continue; const w = Math.floor(Math.sqrt(400 - dy * dy)); s.fillRect(234 - w, 94 + dy, 2 * w + 1, 1); }
+  // clouds
+  const [clouds, c2] = mk(640, 46); const rc = rng(5);
+  for (let k = 0; k < 7; k++) {
+    const cx = k * 92 + rc() * 40, cy = 14 + rc() * 18, n = 4 + Math.floor(rc() * 3);
+    for (let i = 0; i < n; i++) { const x = cx + i * 9, r = 5 + rc() * 5; c2.fillStyle = '#c4628a'; circ(c2, x, cy + 2, r); }
+    for (let i = 0; i < n; i++) { const x = cx + i * 9, r = 4 + rc() * 4; c2.fillStyle = '#ffb4a4'; circ(c2, x, cy, r); }
+    c2.fillStyle = '#ffe0c8'; c2.fillRect(cx + 2, cy - 4, n * 6, 1);
+  }
+  // far mountains
+  const [mtn, m] = mk(640, 44);
+  for (let x = 0; x < 640; x++) {
+    const h = Math.round(18 + 9 * Math.sin(2 * Math.PI * 3 * x / 640) + 7 * Math.sin(2 * Math.PI * 7 * x / 640 + 1.3) + 3 * Math.sin(2 * Math.PI * 17 * x / 640 + .4));
+    const h2 = 18 + 9 * Math.sin(2 * Math.PI * 3 * (x + 1) / 640) + 7 * Math.sin(2 * Math.PI * 7 * (x + 1) / 640 + 1.3) + 3 * Math.sin(2 * Math.PI * 17 * (x + 1) / 640 + .4);
+    m.fillStyle = '#4c2c74'; m.fillRect(x, 44 - h, 1, h);
+    m.fillStyle = h2 < h ? '#a2609e' : '#6a3e8c'; m.fillRect(x, 44 - h, 1, 2);
+  }
+  // mid hills, banded green
+  const [hill, hl] = mk(640, 70);
+  for (let x = 0; x < 640; x++) {
+    const h = Math.round(36 + 9 * Math.sin(2 * Math.PI * 2 * x / 640) + 6 * Math.sin(2 * Math.PI * 5 * x / 640 + 2) + 2 * Math.sin(2 * Math.PI * 23 * x / 640));
+    for (let y = 70 - h; y < 70; y++) { const b = Math.floor((y - (70 - h)) / 6); hl.fillStyle = b % 2 ? '#257338' : '#2f8c40'; hl.fillRect(x, y, 1, 1); }
+    hl.fillStyle = '#6ccc54'; hl.fillRect(x, 70 - h, 1, 2);
+  }
+  // palm tree
+  const pp = new Pix(44, 56);
+  for (let i = 0; i < 9; i++) { const x = 22 + Math.round(Math.sin(i * .25) * 4), y = 54 - i * 4; pp.rect(x - 2, y - 3, 4, 4, i % 2 ? 19 : 5); }
+  const top = [22 + Math.round(Math.sin(2) * 4), 18];
+  for (const [ax, ay, len] of [[-1, .2, 15], [1, .2, 16], [-.8, -.6, 12], [.8, -.6, 12], [0, -1, 8], [-1, .9, 11], [1, .9, 11]]) {
+    for (let s2 = 0; s2 <= len; s2++) { const x = top[0] + ax * s2, y = top[1] + ay * s2 + s2 * s2 * .045; pp.rect(x, y, 2, 2, s2 < len * .5 ? 25 : 26); pp.set(x, y + 2, 27); }
+  }
+  pp.disc(top[0], top[1] + 2, 2, 19); pp.outline(1);
+  // ground tile: grass lip + checker dirt
+  const [gt, gg] = mk(64, 30);
+  for (let x = 0; x < 64; x++) {
+    const z = 4 + (mod(x, 8) < 4 ? mod(x, 4) : 3 - mod(x, 4));
+    gg.fillStyle = '#3cb043'; gg.fillRect(x, 0, 1, z); gg.fillStyle = '#8ee05a'; gg.fillRect(x, 0, 1, 1); gg.fillStyle = '#1f6a2a'; gg.fillRect(x, z, 1, 1);
+    for (let y = z + 1; y < 30; y++) { const ck = (Math.floor(x / 8) + Math.floor((y + 2) / 8)) % 2; gg.fillStyle = ck ? '#c46a2c' : '#8e4416'; gg.fillRect(x, y, 1, 1); }
+  }
+  for (let i = 0; i < 8; i++) { gg.fillStyle = '#e08a44'; gg.fillRect(i * 8 + 1, 10 + (i % 2) * 8, 2, 1); }
+  return { sky, clouds, mtn, hill, palm: pp, gt };
+  function circ(cx2, x, y, r) { for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy)); cx2.fillRect(Math.round(x - w), Math.round(y + dy), 2 * w + 1, 1); } }
+})();
+const palmC = ZONE.palm.canvas();
+// sunflower head, two sway frames
+const FLOWER = [0, 1].map(k => {
+  const p = new Pix(9, 9), rows = ['..y.y..', '.yyyyyy', 'yybbbyy', '.ybbby.', 'yybbbyy', 'yyyyyy.', '..y.y..'];
+  rows.forEach((r, y) => [...r].forEach((ch2, x) => { if (ch2 !== '.') p.set(x + 1, y + 1, ch2 === 'y' ? (k && (x + y) % 3 === 0 ? 19 : 18) : 11); }));
+  p.set(4, 4, 19); p.outline(1); return p.canvas();
+});
+function tiled(img, x, y) { const w = img.width; for (let ox = mod(Math.round(x), w) - w; ox < LW; ox += w) g.drawImage(img, ox, y); }
+function sunflower(x, ph) {
+  const sx = Math.round(x - cam); if (sx < -10 || sx > LW + 10) return;
+  g.fillStyle = '#1f6a2a'; g.fillRect(sx, GROUND - 12, 1, 12); g.fillRect(sx + 1, GROUND - 6, 2, 1);
+  g.drawImage(FLOWER[ph], sx - 4 + ph, GROUND - 20);
+}
+function drawZone(c = cam, o = {}) {
+  const save = cam; cam = c;
+  g.drawImage(ZONE.sky, 0, 0);
+  tiled(ZONE.clouds, -c * .05 - amb * 4, 6);
+  tiled(ZONE.mtn, -c * .12, 54);
+  g.fillStyle = '#2a3a8a'; g.fillRect(0, 96, LW, 40);
+  g.fillStyle = '#3a52aa'; g.fillRect(0, 96, LW, 2); g.fillRect(0, 104, LW, 1); g.fillRect(0, 112, LW, 1);
+  const r = rng(9);
+  for (let i = 0; i < 46; i++) {
+    const y = 97 + Math.floor(r() * 26), len = 2 + Math.floor(r() * 7), sun = i < 18;
+    const x = sun ? 214 + r() * 40 + Math.sin(amb * 2 + i) * 3 : mod(r() * LW - c * .2 + amb * (r() - .5) * 20, LW);
+    if ((Math.floor(amb * 3) + i) % 4 === 0) continue;
+    g.fillStyle = sun ? '#ffe7a0' : '#8ab0ff'; g.fillRect(Math.round(x), y, len, 1);
+  }
+  tiled(ZONE.hill, -c * .35, 86);
+  for (let k = -1; k < 4; k++) { const x = mod(-c * .6, 260) + k * 260 + 40; g.drawImage(palmC, Math.round(x), 104); g.drawImage(palmC, Math.round(x + 130), 100); }
+  tiled(ZONE.gt, -c, GROUND);
+  const ph = Math.floor(amb * 2.5) % 2;
+  for (let x = Math.floor(c / 140) * 140 - 140 + 30; x < c + LW + 140; x += 140) sunflower(x, ph);
+  if (o.crater != null) {
+    const sx = o.crater - c; g.fillStyle = '#3a1a0a'; g.fillRect(Math.round(sx - 16), GROUND, 32, 3); g.fillRect(Math.round(sx - 12), GROUND + 3, 24, 2);
+    g.fillStyle = '#8e4416'; g.fillRect(Math.round(sx - 19), GROUND - 2, 4, 2); g.fillRect(Math.round(sx + 15), GROUND - 2, 4, 2); g.fillRect(Math.round(sx - 8), GROUND - 1, 2, 1);
+  }
+  cam = save;
+}
+function grade(color, a, op = 'multiply') { if (a <= 0) return; g.save(); g.globalCompositeOperation = op; g.globalAlpha = a; g.fillStyle = color; g.fillRect(0, 0, LW, LH); g.restore(); }
+
+// ---------- hi-res overlay: text, dialogue, HUD ----------
+function txt(s, x, y, size, col, align = 'left', shadow = Math.max(2, size / 6)) {
+  out.font = `${size}px ${FONT}`; out.textAlign = align; out.textBaseline = 'alphabetic';
+  out.fillStyle = '#000'; out.fillText(s, x + shadow, y + shadow);
+  out.lineWidth = Math.max(4, size / 4); out.strokeStyle = '#0a0c22'; out.lineJoin = 'round'; out.strokeText(s, x, y);
+  out.fillStyle = col; out.fillText(s, x, y);
+}
+function banner(text, a, col, y = 260, size = 56, sub = null) {
+  if (a <= 0) return;
+  UI.push(() => { out.save(); out.globalAlpha = Math.min(1, a); txt(text, W / 2, y, size, col, 'center'); if (sub) txt(sub, W / 2, y + size * .5 + 30, 18, '#f2f0e8', 'center'); out.restore(); });
+}
+const NAMES = { sonic: 'SONIC', metal: 'METAL SONIC' };
+const TALK = { sonic: '#4a82ff', metal: '#ff3a4c' };
+let lastCaption = '';
+function talk(t, lines) {
+  for (const [a, b, who, text] of lines) {
+    if (t < a || t >= b) continue;
+    const al = Math.min(seg(t, a, a + .15), 1 - seg(t, b - .15, b));
+    const shown = text.slice(0, Math.floor((t - a) * 42));
+    const top = scenes[curScene].hud ? 136 : 24;
+    UI.push(() => dialogueBox(who, shown, al, t, top));
+    const cap = `${NAMES[who]}: ${text}`; if (cap !== lastCaption) { lastCaption = cap; live.textContent = cap; }
+  }
+}
+function dialogueBox(who, text, a, t, y) {
+  out.save(); out.globalAlpha = a;
+  const x = 60, w = 1160, h = 168, col = TALK[who];
+  out.fillStyle = 'rgba(6,9,28,.9)'; out.fillRect(x, y, w, h);
+  out.strokeStyle = '#f2f0e8'; out.lineWidth = 4; out.strokeRect(x + 2, y + 2, w - 4, h - 4);
+  out.strokeStyle = col; out.strokeRect(x + 10, y + 10, w - 20, h - 20);
+  // portrait: the head of the character's own sprite, scaled 4x
+  out.fillStyle = who === 'metal' ? '#2a0a14' : '#0c1a48'; out.fillRect(x + 24, y + 22, 136, 124);
+  const s = sprite(who, 'stand', null, 'n', 0), bob = Math.floor(t * 4) % 2 && text.length % 3 ? 2 : 0;
+  out.drawImage(s, 11, 10, 34, 31, x + 24, y + 20 + bob, 136, 124);
+  txt(NAMES[who], x + 188, y + 52, 18, col, 'left', 3);
+  out.font = `18px ${FONT}`; out.textAlign = 'left'; out.fillStyle = who === 'metal' ? '#ffb0b8' : '#f2f0e8';
+  const words = text.split(' '); let line = '', ly = y + 96;
+  for (const wd of words) { const test = line ? line + ' ' + wd : wd; if (out.measureText(test).width > w - 230 && line) { out.fillText(line, x + 188, ly); line = wd; ly += 32; } else line = test; }
+  out.fillText(line, x + 188, ly);
+  if (who === 'metal') { const r = rng(Math.floor(t * 12)); out.fillStyle = 'rgba(255,58,76,.5)'; for (let i = 0; i < 3; i++) out.fillRect(x + 188 + r() * 800, y + 70 + r() * 70, 12 + r() * 40, 4); }
+  out.restore();
+}
+
+// ---------- fight bookkeeping: damage and rings are functions of global time ----------
+const HITS = [];   // { T, who, dmg }
+const RINGEV = []; // { T, add } or { T, set }
+function hp(who, at) { let v = 100; for (const h of HITS) if (h.who === who && h.T <= at) v = clamp(v - h.dmg, 0, 100); return v; }
+function rings(at) { let n = 0; for (const e of RINGEV) if (e.T <= at) n = e.set != null ? e.set : n + e.add; return n; }
+let FIGHT_T = 0;
+function hud(at, intro = 1) {
+  UI.push(() => {
+    out.save();
+    const bar = (x, who, right) => {
+      const w = 500, now = hp(who, at) / 100 * intro, lag = hp(who, at - .7) / 100 * intro, col = TALK[who];
+      out.fillStyle = '#000'; out.fillRect(x + 4, 34, w, 30);
+      out.fillStyle = '#f2f0e8'; out.fillRect(x - 4, 22, w + 8, 38);
+      out.fillStyle = '#200a14'; out.fillRect(x, 26, w, 30);
+      const fill = (f, c) => { out.fillStyle = c; const fw = Math.round(w * f / 4) * 4; out.fillRect(right ? x + w - fw : x, 26, fw, 30); };
+      fill(Math.max(lag, now), '#e83030'); fill(now, now < .35 ? '#ff8a3a' : '#ffd23f');
+      out.fillStyle = 'rgba(255,255,255,.45)'; const fw = Math.round(w * now / 4) * 4; out.fillRect(right ? x + w - fw : x, 26, fw, 6);
+      txt(NAMES[who], right ? x + w : x, 92, 18, col, right ? 'right' : 'left', 3);
+    };
+    bar(40, 'sonic', false); bar(740, 'metal', true);
+    const secs = Math.max(0, 99 - Math.floor(Math.max(0, at - FIGHT_T)));
+    out.fillStyle = '#0a0c22'; out.fillRect(598, 18, 84, 56); out.strokeStyle = '#f2f0e8'; out.lineWidth = 4; out.strokeRect(600, 20, 80, 52);
+    txt(String(secs).padStart(2, '0'), 640, 62, 28, '#ffd23f', 'center', 3);
+    ringHud(40, 128, rings(at));
+    out.restore();
+  });
+}
+function ringHud(x, y, n) {
+  out.drawImage(ringFrames[mod(Math.floor(amb * 8), 8)], x, y - 30, 40, 40);
+  txt('RINGS', x + 52, y - 2, 18, '#ffd23f', 'left', 3);
+  txt(String(n), x + 168, y - 2, 18, n ? '#f2f0e8' : (Math.floor(amb * 4) % 2 ? '#ff3a4c' : '#f2f0e8'), 'left', 3);
+}
+
+// ---------- the run: Sonic's path is analytic so ring pickups can be precomputed ----------
+function runX(t) {
+  if (t < .6) return 60;
+  if (t < 1.8) return 60 + 125 * (t - .6) ** 2;
+  if (t < 6.4) return 240 + 300 * (t - 1.8);
+  if (t < 7) { const u = t - 6.4; return 1620 + 300 * u - 250 * u * u; }
+  return 1710;
+}
+const runV = t => t < .6 ? 0 : t < 1.8 ? 250 * (t - .6) : t < 6.4 ? 300 : t < 7 ? 300 - 500 * (t - 6.4) : 0;
+const JUMP = [3.6, 4.3];
+const runY = t => { const u = seg(t, JUMP[0], JUMP[1]); return u > 0 && u < 1 ? -66 * arc(u) : 0; };
+const SPRING_X = runX(JUMP[0]) + 6;
+const RUN_RINGS = [];
+for (let i = 0; i < 7; i++) RUN_RINGS.push({ x: 420 + i * 18, y: GROUND - 12 });
+for (let i = 0; i < 7; i++) { const tt = JUMP[0] + (i + .5) / 7 * (JUMP[1] - JUMP[0]); RUN_RINGS.push({ x: runX(tt), y: GROUND - 12 + runY(tt) }); }
+for (let i = 0; i < 9; i++) RUN_RINGS.push({ x: 1200 + i * 20, y: GROUND - 12 });
+for (const r of RUN_RINGS) { let t = 0; while (t < 8 && runX(t) < r.x - 4) t += .005; r.tc = t; }
+
+// ---------- scenes ----------
+// Fixed fight positions (world x). The camera only pans between them.
+const SX0 = 1710, MX0 = 1840;
+const scenes = [
+  { name: 'Title', dur: 5.5, draw(t) {
+    g.fillStyle = '#070b1c'; g.fillRect(0, 0, LW, LH);
+    const r = rng(2);
+    for (let i = 0; i < 60; i++) { const x = mod(r() * LW - t * (6 + r() * 30), LW), y = r() * 120; g.fillStyle = r() < .3 ? '#ffd23f' : '#9aa3c7'; g.fillRect(Math.round(x), Math.round(y), 1, 1); }
+    for (let i = 0; i < 9; i++) { const y = 128 + i * i * .7; g.fillStyle = i % 2 ? '#141e48' : '#0f1630'; g.fillRect(0, Math.round(y), LW, LH); }
+    g.fillStyle = '#2b3a78'; for (let k = -10; k <= 10; k++) pl(160 + k * 4, 128, 160 + k * 40, 180, '#1d2a60');
+    cam = 0;
+    const slide = easeOut(seg(t, .2, 1.2));
+    ch('sonic', 'wag', lerp(-40, 92, slide), 168, { sc: 2 });
+    ch('metal', 'stand', lerp(360, 228, slide), 168, { f: -1, sc: 2, v: t < 2.2 ? 'k' : 'n' });
+    if (t > 2.2) hitFx(t, 2.2, 2, .7, '#ff3a4c');
+    UI.push(() => {
+      out.save(); out.globalAlpha = seg(t, 0, .6);
+      txt('SPRITE BATTLE MODE', W / 2, 92, 22, '#ffd23f', 'center', 3);
+      const a = seg(t, .9, 1.4); out.globalAlpha = a;
+      txt('SONIC', 348, 168, 40, '#4a82ff', 'center'); txt('VS', 520, 164, 28, '#f2f0e8', 'center'); txt('METAL SONIC', 812, 168, 40, '#ff3a4c', 'center');
+      out.globalAlpha = seg(t, 1.6, 2.1); txt('PART 1: COLLISION COURSE', W / 2, 220, 20, '#f2f0e8', 'center', 3);
+      if (t > 2.6 && Math.floor(t * 2.5) % 2) { out.globalAlpha = 1; txt('PRESS START', W / 2, 690, 18, '#f2f0e8', 'center', 3); }
+      out.restore();
+    });
+  }},
+  { name: 'Sunset run', dur: 8, draw(t) {
+    const x = runX(t), v = runV(t), y = GROUND + runY(t);
+    cam = Math.max(0, x - 150 + Math.min(v, 300) * .22);
+    drawZone();
+    // spring
+    const sq = pulse(t, JUMP[0] - .04, .2), sx = Math.round(SPRING_X - cam);
+    g.fillStyle = '#0a0c22'; g.fillRect(sx - 9, GROUND - 9 + Math.round(sq * 4), 18, 9 - Math.round(sq * 4) + 1);
+    g.fillStyle = '#e8283a'; g.fillRect(sx - 8, GROUND - 4, 16, 4); g.fillStyle = '#b8c0d8'; g.fillRect(sx - 6, GROUND - 7 + Math.round(sq * 3), 12, 3 - Math.round(sq * 2));
+    g.fillStyle = '#ffd23f'; g.fillRect(sx - 8, GROUND - 9 + Math.round(sq * 4), 16, 2);
+    // rings and pickups
+    for (const r of RUN_RINGS) {
+      if (t < r.tc) ring(r.x, r.y, amb * 8);
+      else if (t < r.tc + .3) { const a = (t - r.tc) / .3; star(r.x, r.y - a * 4, Math.round(2 + a * 3), '#ffd23f'); }
+    }
+    if (v > 240) speedLines(t, 'rgba(255,255,255,.35)', 10, 4, -1);
+    // Sonic
+    let pose = 'stand', m = null;
+    if (t >= JUMP[0] && t < JUMP[1]) pose = 'ball', m = spin(t, 30);
+    else if (t >= 6.4 && t < 7) pose = 'skid';
+    else if (t >= 7) pose = 'lookUp';
+    else if (v >= 280) pose = 'peel' + (Math.floor(t * 16) % 2);
+    else if (v > 0) pose = 'run' + (Math.floor(t * (6 + v / 22)) % 4);
+    if (pose === 'ball') ball('sonic', x, y - 11, { m });
+    else ch('sonic', pose, x, y, { m });
+    if (t >= 6.4 && t < 7) for (let k = 0; k < 4; k++) dust(x + 8 - k * 14, GROUND, seg(t, 6.4 + k * .12, 6.9 + k * .12), 20 + k, 3, -1);
+    if (t > 1 && t < 1.25) dust(60, GROUND, seg(t, .7, 1.25), 9, 6, -1);
+    // Metal streaks across the sky
+    const fu = seg(t, 5.6, 6.3);
+    if (fu > 0 && fu < 1) {
+      const savedCam = cam; cam = 0;
+      const mx = lerp(380, -60, fu), my = lerp(26, 44, fu);
+      for (let k = 1; k <= 4; k++) ch('metal', 'fly', mx + k * 14, my, { f: -1, v: 'gr', a: .35 - k * .07, m: jetFl(t) });
+      ch('metal', 'fly', mx, my, { f: -1, m: jetFl(t) });
+      cam = savedCam;
+    }
+    const surprise = seg(t, 6.35, 6.45) * (1 - seg(t, 7.6, 7.8));
+    if (surprise > 0) UI.push(() => { out.save(); out.globalAlpha = surprise; txt('!', (x - cam + 4) * PX, (GROUND - 50) * PX, 40, '#ffd23f', 'center', 4); out.restore(); });
+    UI.push(() => { ringHud(40, 64, rings(T)); txt('TIME', 40, 104, 18, '#ffd23f', 'left', 3); txt(`0'${String(Math.floor(t)).padStart(2, '0')}"`, 156, 104, 18, '#f2f0e8', 'left', 3); });
+  }},
+  { name: 'Arrival', dur: 10, draw(t) {
+    cam = 1600; drawZone();
+    // Metal: fly in, hover down, land
+    let mx, my, pose, m = jetFl(t);
+    if (t < .9) { const u = easeOut(seg(t, 0, .9)); mx = lerp(2000, 1850, u); my = lerp(20, 64, u); pose = 'fly'; }
+    else if (t < 2.2) { const u = ease(seg(t, .9, 2.2)); mx = lerp(1850, MX0, u); my = lerp(64, GROUND, u) + Math.round(Math.sin(t * 6) * 1.5 * (1 - u)); pose = 'hover'; }
+    else { mx = MX0; my = GROUND; pose = 'stand'; m = null; }
+    if (t < .9) for (let k = 1; k <= 3; k++) ch('metal', 'fly', mx + k * 12, my - k * 3, { f: -1, v: 'gr', a: .3 - k * .08, m });
+    ch('metal', pose, mx, my, { f: -1, m });
+    dust(MX0 - 4, GROUND, seg(t, 2.2, 2.8), 4, 5, -1); dust(MX0 + 4, GROUND, seg(t, 2.2, 2.8), 5, 5, 1);
+    hitFx(t, 2.2, 2);
+    // eye glint
+    const gl = pulse(t, 2.6, .5); if (gl > 0) star(MX0 - 5, GROUND - 31, Math.round(1 + gl * 5), '#ff2a2a', '#ffc0b0');
+    // Sonic
+    const sp = t < 2.4 ? 'lookUp' : t < 8.6 ? 'ready' : 'wag';
+    ch('sonic', sp, SX0, GROUND);
+    talk(t, [
+      [2.8, 5, 'metal', 'TARGET ACQUIRED: SONIC.'],
+      [5, 7, 'sonic', 'You again? I left you in a scrap heap last time.'],
+      [7, 8.6, 'metal', 'REBUILT. UPGRADED. NOW 0.3% FASTER.'],
+      [8.6, 10, 'sonic', 'Point three, huh? Then try to keep up!'],
+    ]);
+  }},
+  { name: 'VS', dur: 4, draw(t) {
+    cam = 0;
+    const r = rng(8);
+    g.fillStyle = '#123a9c'; g.fillRect(0, 0, LW, LH);
+    for (let i = 0; i < 24; i++) { const y = Math.floor(r() * LH), x = mod(r() * LW + t * (200 + r() * 300), LW + 60) - 60; g.fillStyle = r() < .5 ? '#2f62f2' : '#73a2ff'; g.fillRect(Math.round(x), y, 20 + Math.round(r() * 40), 1); }
+    g.save(); g.beginPath(); g.moveTo(196, 0); g.lineTo(LW, 0); g.lineTo(LW, LH); g.lineTo(124, LH); g.closePath(); g.clip();
+    g.fillStyle = '#7a0c1c'; g.fillRect(0, 0, LW, LH);
+    for (let i = 0; i < 24; i++) { const y = Math.floor(r() * LH), x = mod(r() * LW - t * (200 + r() * 300), LW + 60) - 60; g.fillStyle = r() < .5 ? '#c8202e' : '#ff5a6a'; g.fillRect(Math.round(x), y, 20 + Math.round(r() * 40), 1); }
+    g.restore();
+    pl(196, 0, 124, LH, '#ffffff', 3);
+    const sl = easeOut(seg(t, 0, .45));
+    ch('sonic', 'ready', lerp(-80, 82, sl), 150, { sc: 2 });
+    ch('metal', 'stand', lerp(400, 244, sl), 150, { f: -1, sc: 2 });
+    hitFx(t, .45, 4, .8);
+    const pop = seg(t, .45, .6);
+    if (pop > 0) UI.push(() => {
+      out.save(); txt('VS', W / 2, 330, Math.round(lerp(150, 96, pop)), '#ffd23f', 'center', 8);
+      txt('SONIC', 60, 690, 28, '#ffffff', 'left'); txt('FASTEST THING ALIVE', 60, 650, 14, '#c8d8ff', 'left', 2);
+      txt('METAL SONIC', W - 60, 690, 28, '#ffffff', 'right'); txt('THE PERFECT COPY', W - 60, 650, 14, '#ffc0c8', 'right', 2);
+      out.restore();
+    });
+  }},
+  { name: 'Spin dash', dur: 10, hud: true, hits: [[4.3, 'sonic', 14]], ringLoss: 4.3, draw(t) {
+    cam = Math.round(lerp(1600, 1790, ease(seg(t, 3, 3.9))));
+    drawZone();
+    hud(T, ease(seg(t, .1, 1.2)));
+    banner('ROUND 1', seg(t, .1, .3) * (1 - seg(t, .9, 1)), '#f2f0e8', 280, 56);
+    banner('FIGHT!', seg(t, 1, 1.1) * (1 - seg(t, 1.6, 1.75)), '#ffd23f', 290, Math.round(lerp(110, 72, seg(t, 1, 1.15))));
+    hitFx(t, 1, 3);
+    // Sonic
+    if (t < 1.7) ch('sonic', 'ready', SX0, GROUND);
+    else if (t < 3) {
+      const rev = [1.9, 2.3, 2.7].some(a => t >= a && t < a + .1);
+      ball('sonic', SX0, GROUND - 9, { m: { a: mod(Math.floor(t * 40), 8), sq: rev ? .7 : .8 } });
+      for (const a of [1.9, 2.3, 2.7]) dust(SX0 - 8, GROUND, seg(t, a, a + .5), Math.floor(a * 10), 4, -1);
+      banner('SPIN DASH!', seg(t, 2.4, 2.5) * (1 - seg(t, 3.3, 3.5)), '#4a82ff', 250, 44);
+    } else if (t < 3.55) {
+      const u = easeOut(seg(t, 3, 3.55)), x = lerp(SX0, 1990, u);
+      for (let k = 1; k <= 4; k++) { const xk = lerp(SX0, 1990, easeOut(seg(t - k * .03, 3, 3.55))); ball('sonic', xk, GROUND - 11, { m: spin(t, 40), v: 'gb', a: .5 - k * .1 }); }
+      ball('sonic', x, GROUND - 11, { m: spin(t, 40) });
+      dust(SX0, GROUND, seg(t, 3, 3.5), 77, 6, -1);
+    } else if (t < 3.75) {
+      ch('sonic', 'skid', lerp(1990, 2000, seg(t, 3.55, 3.75)), GROUND);
+      dust(1996, GROUND, seg(t, 3.55, 4), 31, 4, -1);
+    } else if (t < 4.3) ch('sonic', 'ready', 2000, GROUND, { f: -1 });
+    else if (t < 5) {
+      const u = seg(t, 4.3, 5), fl = t < 4.5 && Math.floor(t * 30) % 2;
+      ch('sonic', 'hurt', lerp(2000, 1890, u), GROUND - 34 * arc(u), { f: 1, v: fl ? 'w' : 'n' });
+    } else if (t < 5.5) ch('sonic', 'skid', 1890, GROUND, { f: 1, m: { lean: 0, y: 2 } });
+    else ch('sonic', t > 8 ? 'wag' : 'ready', 1890, GROUND);
+    dust(1890, GROUND, seg(t, 5, 5.5), 41, 4, -1);
+    // Metal: dodges the dash with a glitch, then drops a kick from behind
+    if (t < 3.08) ch('metal', 'stand', MX0, GROUND, { f: -1 });
+    else if (t < 3.3) { const u = seg(t, 3.08, 3.3); for (let k = 0; k < 3; k++) ch('metal', 'stand', MX0 + (k - 1) * 6 * u, GROUND - k * 10 * u, { f: -1, v: 'gr', a: .6 * (1 - u) }); }
+    if (t >= 3.85 && t < 4.05) { const u = seg(t, 3.85, 4.05); ch('metal', 'hover', 2070, GROUND - 56, { f: -1, v: Math.floor(t * 30) % 2 ? 'gr' : 'n', a: u, m: jetFl(t) }); }
+    else if (t >= 4.05 && t < 4.3) { const u = seg(t, 4.05, 4.3); ch('metal', 'kick', lerp(2070, 2014, u), lerp(GROUND - 56, GROUND - 6, u), { f: -1 }); }
+    else if (t >= 4.3 && t < 4.7) { const u = easeOut(seg(t, 4.3, 4.7)); ch('metal', 'kick', lerp(2014, 2010, u), lerp(GROUND - 6, GROUND, u), { f: -1 }); }
+    else if (t >= 4.7) ch('metal', 'stand', 2010, GROUND, { f: -1 });
+    impact(2004, GROUND - 22, seg(t, 4.3, 4.75), 14);
+    hitFx(t, 4.3, 6, .7);
+    if (t >= 4.3) ringScatter(2000, GROUND - 16, t - 4.3, Math.min(16, rings(T - (t - 4.3) - .01)));
+    talk(t, [
+      [5.8, 7.9, 'sonic', 'Okay... not bad for a toaster.'],
+      [7.9, 10, 'metal', 'PREDICTION ACCURACY: 99.7%.'],
+    ]);
+  }},
+  { name: 'Sky clash', dur: 9, hud: true, draw(t) {
+    cam = Math.round(lerp(1790, 1830, ease(seg(t, 6, 8.5))));
+    drawZone();
+    hud(T);
+    const C = [[1950, 104], [1915, 80], [1990, 72], [1925, 98], [1975, 84], [1950, 74]], tk = k => .85 + k * .42;
+    const sPos = (k, side) => [C[k][0] + side * 11, C[k][1]];
+    // path of each fighter between clashes
+    function pathAt(side, start) {
+      if (t < .5) return null;
+      if (t < tk(0)) { const u = seg(t, .5, tk(0)); return quad(start, [lerp(start[0], C[0][0], .5), 70], sPos(0, side), u); }
+      for (let k = 0; k < 5; k++) if (t < tk(k + 1)) {
+        const u = seg(t, tk(k), tk(k + 1)), a = sPos(k, side), b = sPos(k + 1, side);
+        return quad(a, [(a[0] + b[0]) / 2 + side * 46, (a[1] + b[1]) / 2 - 22], b, u);
+      }
+      return null;
+    }
+    const sP = pathAt(-1, [1890, GROUND - 11]), mP = pathAt(1, [2010, GROUND - 11]);
+    // Sonic
+    if (t < .5) ch('sonic', 'ready', 1890, GROUND);
+    else if (sP) ball('sonic', sP[0], sP[1], { m: spin(t, 30) });
+    else if (t < 3.65) { const u = seg(t, tk(5), 3.65); ball('sonic', lerp(1939, 1940, u), lerp(C[5][1], GROUND - 11, u) - 30 * arc(u), { m: spin(t, 30) }); }
+    else ch('sonic', t > 4 && t < 6.2 ? 'wag' : 'ready', 1940, GROUND);
+    dust(1940, GROUND, seg(t, 3.65, 4.1), 51, 4, -1);
+    // Metal
+    if (t < .5) ch('metal', 'stand', 2010, GROUND, { f: -1 });
+    else if (mP) ball('metal', mP[0], mP[1], { m: spin(t, 30), f: -1 });
+    else if (t < 3.5) { const u = seg(t, tk(5), 3.5); ch('metal', 'hurt', lerp(1961, 2070, u), lerp(C[5][1] + 10, GROUND, u * u), { f: -1, rot: -u * 6, v: u < .2 && Math.floor(t * 30) % 2 ? 'w' : 'n' }); }
+    else if (t < 4.6) ch('metal', 'hurt', 2070, GROUND - 2, { f: -1, rot: -4, m: { eye: 'dim' } });
+    else if (t < 5.4) ch('metal', 'kneel', 2070, GROUND, { f: -1, m: { eye: Math.floor(t * 10) % 3 ? 'dim' : 'off' } });
+    else if (t < 6.2) ch('metal', 'stand', 2070, GROUND, { f: -1 });
+    else { const u = ease(seg(t, 6.2, 7.4)); ch('metal', 'hover', 2070, GROUND - 40 * u, { f: -1, m: jetFl(t) }); }
+    boom(2070, GROUND - 6, seg(t, 3.5, 4.3), 12, 1);
+    hitFx(t, 3.5, 5);
+    for (let k = 0; k < 6; k++) { impact(C[k][0], C[k][1], seg(t, tk(k), tk(k) + .35), k === 5 ? 18 : 10, k % 2 ? '#4a82ff' : '#ffd23f'); hitFx(t, tk(k), k === 5 ? 7 : 3, k === 5 ? .6 : 0); }
+    const hits = Math.min(6, Math.max(0, Math.floor((t - tk(0)) / .42) + 1));
+    const ca = 1 - seg(t, 4.2, 4.4);
+    if (t > tk(0) && t < 4.4) UI.push(() => {
+      out.save(); out.globalAlpha = ca; const pop = Math.round(pulse(t, tk(hits - 1), .15) * 10);
+      txt(`${hits} HIT${hits > 1 ? 'S' : ''}`, 40, 196, 36 + pop, hits === 6 ? '#ffd23f' : '#f2f0e8', 'left', 4);
+      if (hits === 6) txt('SKY CLASH COMBO!', 40, 236, 16, '#ff3a4c', 'left', 2);
+      out.restore();
+    });
+    talk(t, [
+      [4.1, 6.1, 'sonic', 'What\'s wrong? Did your prediction lag?'],
+      [6.4, 8.9, 'metal', 'RECALCULATING... PLASMA CORE ONLINE.'],
+    ]);
+  }, hits: [[.85, 'metal', 3], [1.27, 'sonic', 3], [1.69, 'metal', 3], [2.11, 'sonic', 3], [2.53, 'metal', 3], [2.95, 'metal', 12]] },
+  { name: 'Plasma core', dur: 9, hud: true, hits: [[2.65, 'metal', 20]], draw(t) {
+    cam = 1830; drawZone(cam, { crater: t > 3.2 ? 2110 : null });
+    hud(T);
+    const MH = [2070, GROUND - 40], chest = [MH[0] - 3, MH[1] - 17];
+    // Metal charges, fires, gets hit, crashes
+    if (t < 1.4) {
+      ch('metal', 'charge', MH[0], MH[1], { f: -1, m: jetFl(t) });
+      const r = rng(Math.floor(t * 8));
+      for (let i = 0; i < 8; i++) { const a = r() * 6.28, d = 30 * (1 - mod(t * 2 + i / 8, 1)); g.fillStyle = i % 2 ? '#e8ffff' : '#5ee0ff'; g.fillRect(Math.round(chest[0] - cam + Math.cos(a) * d), Math.round(chest[1] + Math.sin(a) * d), 2, 2); }
+      const glow = seg(t, .2, 1.4); pc(chest[0] - cam, chest[1], 2 + glow * 4, '#e8ffff');
+    } else if (t < 2.65) ch('metal', 'charge', MH[0], MH[1], { f: -1, m: jetFl(t) });
+    else if (t < 3.2) { const u = seg(t, 2.65, 3.2); ch('metal', 'hurt', lerp(MH[0], 2110, u), lerp(MH[1], GROUND, u * u), { f: -1, rot: -u * 4, v: Math.floor(t * 30) % 2 ? 'w' : 'n' }); }
+    else ch('metal', 'hurt', 2110, GROUND + 1, { f: -1, rot: -4, m: { eye: t > 7 && Math.floor(t * 8) % 3 === 0 ? 'n' : 'off' } });
+    banner('PLASMA CORE', seg(t, .4, .55) * (1 - seg(t, 1.6, 1.8)), '#ff3a4c', 230, 44);
+    // beam sweeps along the ground toward Sonic
+    const beamOn = t >= 1.4 && t < 2.65, tx = lerp(2040, 1800, seg(t, 1.4, 2.9));
+    if (beamOn) {
+      const w = Math.floor(t * 30) % 2;
+      pl(chest[0] - cam, chest[1], tx - cam, GROUND - 2, '#ff6a1a', 8 + w); pl(chest[0] - cam, chest[1], tx - cam, GROUND - 2, '#ffd23f', 5 + w); pl(chest[0] - cam, chest[1], tx - cam, GROUND - 2, '#ffffff', 2);
+      pc(chest[0] - cam, chest[1], 5 + w, '#e8ffff');
+      fx.shake = Math.max(fx.shake, 1.5);
+    }
+    for (let x = 2040, i = 0; x > Math.max(tx, 1840); x -= 16, i++) { const born = 1.4 + (2040 - x) / 240 * 1.5; if (t > born) { boom(x, GROUND - 4, seg(t, born, born + .7), i + 60, .8); g.fillStyle = '#2a120a'; g.fillRect(Math.round(x - cam - 5), GROUND, 10, 2); } }
+    // Sonic: jump over the beam, lock on, homing attack, rebound, land
+    if (t < 1.85) ch('sonic', 'ready', 1940, GROUND);
+    else if (t < 2.35) { const u = easeOut(seg(t, 1.85, 2.35)); ball('sonic', lerp(1940, 1985, u), lerp(GROUND - 11, GROUND - 84, u), { m: spin(t, 30) }); }
+    else if (t < 2.45) ball('sonic', 1985, GROUND - 84, { m: spin(t, 40) });
+    else if (t < 2.65) { const u = seg(t, 2.45, 2.65); const x = lerp(1985, 2060, u), y = lerp(GROUND - 84, GROUND - 60, u);
+      for (let k = 1; k <= 4; k++) ball('sonic', lerp(1985, 2060, seg(t - k * .025, 2.45, 2.65)), lerp(GROUND - 84, GROUND - 60, seg(t - k * .025, 2.45, 2.65)), { m: spin(t, 40), v: 'gb', a: .5 - k * .1 });
+      ball('sonic', x, y, { m: spin(t, 40) }); }
+    else if (t < 3.6) { const u = seg(t, 2.65, 3.6); ball('sonic', lerp(2060, 2000, u), lerp(GROUND - 60, GROUND - 11, u * u) - 30 * arc(u), { m: spin(t, 24) }); }
+    else ch('sonic', t > 4.2 && t < 6.6 ? 'wag' : 'ready', 2000, GROUND);
+    dust(2000, GROUND, seg(t, 3.6, 4), 61, 4, -1);
+    const lock = t >= 2.15 && t < 2.65 && Math.floor(t * 16) % 2;
+    if (lock) { const lx = MH[0] - cam, ly = MH[1] - 16; g.fillStyle = '#ff3a4c'; g.fillRect(lx - 8, ly - 8, 5, 1); g.fillRect(lx - 8, ly - 8, 1, 5); g.fillRect(lx + 4, ly - 8, 5, 1); g.fillRect(lx + 8, ly - 8, 1, 5); g.fillRect(lx - 8, ly + 8, 5, 1); g.fillRect(lx - 8, ly + 4, 1, 5); g.fillRect(lx + 4, ly + 8, 5, 1); g.fillRect(lx + 8, ly + 4, 1, 5); }
+    impact(2062, GROUND - 58, seg(t, 2.65, 3.1), 20);
+    hitFx(t, 2.65, 8, .9);
+    boom(2110, GROUND - 6, seg(t, 3.2, 4.1), 90, 1.4); hitFx(t, 3.2, 6);
+    banner('HOMING ATTACK!', seg(t, 2.5, 2.6) * (1 - seg(t, 3.6, 3.8)), '#4a82ff', 240, 44);
+    if (t > 6.8) { const r = rng(Math.floor(t * 14)); if (r() < .7) zap(2110 + (r() - .5) * 20, GROUND - 4 - r() * 10, 2110 + (r() - .5) * 30, GROUND - 10 - r() * 14, Math.floor(t * 14), r() < .5 ? '#5ee0ff' : '#ff3a4c'); }
+    talk(t, [
+      [4.1, 6.5, 'sonic', 'You can\'t predict a guy who never plans ahead!'],
+      [6.7, 9, 'sonic', '...Huh. Kinda quiet over there.'],
+    ]);
+  }},
+  { name: 'Overdrive', dur: 11, hud: true, hits: [[3.6, 'metal', -25], [7.4, 'sonic', 22]], draw(t) {
+    const FZ = 7.52, tf = Math.min(t, FZ);
+    if (t > FZ) amb = scenesStartOf(this) + FZ;
+    cam = Math.round(lerp(1830, 1880, ease(seg(tf, 0, 1))));
+    drawZone(cam, { crater: 2110 });
+    const od = seg(tf, 3, 4);
+    grade('#ff4060', od * .55); grade('#1a0010', od * .25, 'source-over');
+    hud(T);
+    // floating debris during the power-up
+    if (od > 0) { const r = rng(4); for (let i = 0; i < 14; i++) { const x = 1990 + r() * 220, sp = 6 + r() * 14, y = GROUND - mod((tf - 3) * sp + r() * 40, 70); g.fillStyle = r() < .5 ? '#8e4416' : '#c46a2c'; g.fillRect(Math.round(x - cam), Math.round(y), 2 + Math.floor(r() * 2), 2); } }
+    // Metal
+    const MX = 2110;
+    if (tf < 1.6) ch('metal', 'hurt', MX, GROUND + 1, { f: -1, rot: -4 + Math.round(seg(tf, .8, 1.6) * 4), m: { eye: Math.floor(tf * 10) % 3 ? 'dim' : 'n' } });
+    else if (tf < 2.4) ch('metal', 'kneel', MX, GROUND, { f: -1, m: { eye: Math.floor(tf * 10) % 2 ? 'dim' : 'n' } });
+    else if (tf < 7.2) {
+      if (od > 0) { // aura
+        const r = rng(Math.floor(tf * 16));
+        for (let i = 0; i < 3; i++) { const a = r() * 6.28; zap(MX + Math.cos(a) * 6, GROUND - 20 + Math.sin(a) * 8, MX + Math.cos(a) * 22, GROUND - 22 + Math.sin(a) * 24, Math.floor(tf * 16) + i, i % 2 ? '#ff3a4c' : '#5ee0ff'); }
+        for (let k = 1; k <= 2; k++) ch('metal', 'charge', MX + (r() - .5) * 4, GROUND - (r() * 3), { f: -1, v: 'gr', a: .35 * od / k });
+      }
+      ch('metal', tf < 2.8 ? 'stand' : 'charge', MX, GROUND, { f: -1, m: tf < 2.8 ? null : { jet: null } });
+    } else { // vanish -> reappear in Sonic's face
+      const u = seg(tf, 7.2, 7.35);
+      pl(MX - cam, GROUND - 20, lerp(MX, 2016, u) - cam, GROUND - 20, '#ff3a4c', 3);
+      if (tf >= 7.35) ch('metal', 'punch', 2016, GROUND, { f: -1 });
+    }
+    for (let i = 0; i < 4; i++) dust(MX + (i - 2) * 8, GROUND, seg(tf, 1.6 + i * .3, 2.6 + i * .3), 70 + i, 2, i % 2 ? 1 : -1);
+    if (tf < 2.4) { const r = rng(Math.floor(tf * 12)); if (r() < .6) zap(MX + (r() - .5) * 20, GROUND - 4 - r() * 12, MX + (r() - .5) * 30, GROUND - 10 - r() * 16, Math.floor(tf * 12), r() < .5 ? '#5ee0ff' : '#ff3a4c'); }
+    hitFx(tf, 3, 8, .9, '#ff3a4c');
+    if (tf > 3) fx.shake = Math.max(fx.shake, 1.5 * (1 - seg(tf, 5, 6)));
+    // Sonic
+    if (tf < 7.4) ch('sonic', 'ready', tf > 5 ? 1994 : 2000, GROUND, { m: tf > 5 ? { mouth: 'open' } : null });
+    else ch('sonic', 'hurt', 1994, GROUND - 4, { v: t < FZ ? 'w' : 'n' });
+    impact(2006, GROUND - 22, seg(tf, 7.4, 7.6), 22, '#ff3a4c');
+    hitFx(t, 7.4, 10, 1); // real time, so the flash and shake fade out over the freeze frame
+    banner('OVERDRIVE', seg(tf, 3.1, 3.2) * (1 - seg(tf, 4.8, 5)), '#ff3a4c', 260, 72, 'LIMITER DISENGAGED');
+    // freeze frame: drain the colour, then the cliffhanger arrow
+    if (t > FZ) {
+      grade('#808080', seg(t, FZ, FZ + .3), 'saturation');
+      grade('#c89a5a', seg(t, FZ, FZ + .3) * .55, 'multiply');
+      const a = seg(t, FZ + .4, FZ + .8);
+      if (a > 0) UI.push(() => {
+        out.save(); out.globalAlpha = a; const x = lerp(-600, 60, easeOut(a)), y = 600;
+        out.fillStyle = '#0a0c22'; out.beginPath(); out.moveTo(x - 6, y - 46); out.lineTo(x + 506, y - 46); out.lineTo(x + 566, y + 4); out.lineTo(x + 506, y + 54); out.lineTo(x - 6, y + 54); out.closePath(); out.fill();
+        out.fillStyle = '#e8b74a'; out.beginPath(); out.moveTo(x, y - 40); out.lineTo(x + 500, y - 40); out.lineTo(x + 554, y + 4); out.lineTo(x + 500, y + 48); out.lineTo(x, y + 48); out.closePath(); out.fill();
+        out.font = `22px ${FONT}`; out.fillStyle = '#3a2410'; out.textAlign = 'left'; out.fillText('TO BE CONTINUED', x + 34, y + 16);
+        out.restore();
+      });
+    }
+    talk(t, [
+      [.6, 2.9, 'metal', 'DAMAGE: CRITICAL. LIMITER... DISENGAGED.'],
+      [5, 7, 'sonic', '...Okay. THAT\'s new.'],
+    ]);
+  }},
+  { name: 'Next time', dur: 6, draw(t) {
+    cam = 0;
+    g.fillStyle = '#070b1c'; g.fillRect(0, 0, LW, LH);
+    const r = rng(12);
+    for (let i = 0; i < 50; i++) { g.fillStyle = r() < .3 ? '#ff3a4c' : '#26325e'; g.fillRect(Math.round(mod(r() * LW + t * 10 * (r() - .5), LW)), Math.round(r() * LH), 1, 1); }
+    ch('sonic', 'ready', 120, 132, { sc: 1, v: 'k', a: seg(t, .3, 1) });
+    ch('metal', 'charge', 200, 132, { f: -1, v: 'k', a: seg(t, .3, 1) });
+    UI.push(() => {
+      out.save(); out.globalAlpha = seg(t, 0, .6);
+      txt('END OF PART 1', W / 2, 130, 40, '#f2f0e8', 'center');
+      out.globalAlpha = seg(t, .8, 1.4);
+      txt('NEXT: PART 2 - OVERDRIVE', W / 2, 600, 24, '#ff3a4c', 'center', 3);
+      out.globalAlpha = seg(t, 1.4, 2);
+      txt('FAN ANIMATION · NOT AFFILIATED WITH SEGA', W / 2, 660, 12, '#9aa3c7', 'center', 2);
+      out.restore();
+    });
+  }},
+];
+function scenesStartOf(s) { return starts[scenes.indexOf(s)]; }
+
+function ringScatter(x0, y0, age, n) {
+  if (age > 2.6 || n <= 0) return;
+  if (age > 1.6 && Math.floor(age * 16) % 2) return;
+  for (let i = 0; i < n; i++) {
+    const a = Math.PI * (.12 + .76 * (i % 8) / 7), sp = i < 8 ? 120 : 70;
+    let x = x0, y = y0, vx = Math.cos(a) * sp * (i % 2 ? 1 : -1), vy = -Math.sin(a) * sp - 30;
+    const steps = Math.floor(age * 60);
+    for (let s = 0; s < steps; s++) { vy += 300 / 60; x += vx / 60; y += vy / 60; if (y > GROUND - 6 && vy > 0) { y = GROUND - 6; vy = -vy * .7; vx *= .9; } }
+    ring(x, y, amb * 16 + i);
+  }
+}
+
+// ---------- playback ----------
+const total = scenes.reduce((s, x) => s + x.dur, 0);
+const starts = []; scenes.reduce((s, x, i) => (starts[i] = s, s + x.dur), 0);
+scenes.forEach((s, i) => { for (const [t, who, dmg] of s.hits || []) HITS.push({ T: starts[i] + t, who, dmg }); if (s.ringLoss != null) RINGEV.push({ T: starts[i] + s.ringLoss, set: 0 }); });
+const runStart = starts[scenes.findIndex(s => s.name === 'Sunset run')];
+for (const r of RUN_RINGS) RINGEV.push({ T: runStart + r.tc, add: 1 });
+RINGEV.sort((a, b) => a.T - b.T);
+FIGHT_T = starts[scenes.findIndex(s => s.name === 'Spin dash')] + 1;
+
+let time = 0, playing = true, last = null, curScene = -1;
+const live = document.getElementById('live');
+const playBtn = document.getElementById('play');
+const prog = document.getElementById('prog'), fill = document.getElementById('progFill'), timeEl = document.getElementById('time');
+const chapList = document.getElementById('chapters');
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+scenes.forEach((s, i) => {
+  const li = document.createElement('li'), b = document.createElement('button');
+  b.type = 'button'; b.innerHTML = `<b>${fmt(starts[i])}</b><span></span>`; b.lastChild.textContent = s.name;
+  b.addEventListener('click', () => seek(starts[i] + .001));
+  li.appendChild(b); chapList.appendChild(li);
+});
+
+function seek(t) { time = clamp(t, 0, total - .001); last = null; render(); }
+function sceneAt(t) { let i = scenes.length - 1; while (i > 0 && starts[i] > t) i--; return i; }
+
+function render() {
+  const i = sceneAt(time), s = scenes[i], lt = time - starts[i];
+  if (i !== curScene) { curScene = i; [...chapList.querySelectorAll('button')].forEach((b, j) => b.setAttribute('aria-current', j === i)); }
+  T = time; amb = time; UI.length = 0; fx.shake = 0; fx.flash = 0;
+  g.save(); s.draw(lt); g.restore();
+  out.fillStyle = '#000'; out.fillRect(0, 0, W, H);
+  const sh = reduceMotion ? 0 : Math.round(fx.shake), r = rng(Math.floor(time * 60));
+  out.drawImage(low, Math.round((r() - .5) * 2 * sh) * PX, Math.round((r() - .5) * 2 * sh) * PX, W, H);
+  if (fx.flash > 0) { out.fillStyle = hexA(fx.flashColor, reduceMotion ? fx.flash * .3 : fx.flash); out.fillRect(0, 0, W, H); }
+  for (const f of UI) f();
+  fill.style.width = (time / total * 100) + '%';
+  timeEl.textContent = `${fmt(time)} / ${fmt(total)}`;
+}
+
+function frame(now) {
+  const dt = last == null ? 0 : Math.min(.05, (now - last) / 1000); last = now;
+  if (playing) { time += dt; if (time >= total) time = 0; }
+  render();
+  requestAnimationFrame(frame);
+}
+
+function toggle() { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play'; }
+playBtn.addEventListener('click', toggle);
+document.getElementById('restart').addEventListener('click', () => { seek(0); if (!playing) toggle(); });
+prog.addEventListener('click', e => { const r = prog.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * total); });
+prog.addEventListener('keydown', e => { if (e.key === 'ArrowRight') seek(time + 3); if (e.key === 'ArrowLeft') seek(time - 3); });
+document.addEventListener('keydown', e => { if (e.code === 'Space' && e.target.tagName !== 'BUTTON') { e.preventDefault(); toggle(); } });
+function fromHash() { const m = location.hash.match(/t=([\d.]+)/); if (m) { seek(+m[1]); if (playing) toggle(); } }
+addEventListener('hashchange', fromHash);
+
+const fontReady = document.fonts ? document.fonts.load(`16px ${FONT}`).catch(() => {}) : Promise.resolve();
+fontReady.then(() => { fromHash(); requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>
