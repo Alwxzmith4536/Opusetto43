@@ -1,0 +1,14 @@
+{
+  "name": "flybrain-doom",
+  "version": "0.1.0",
+  "description": "A spiking fruit-fly brain model that plays a Doom-like game, plus a test engine that checks whether it actually learns.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "experiment": "node cli/run.mjs",
+    "build": "node cli/build.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

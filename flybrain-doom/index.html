@@ -1,0 +1,2889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>Fly Brain Doom</title>
+<meta name="description" content="A spiking fruit-fly brain model plays a Doom-like game, and a test engine checks whether it actually learns.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Libre+Franklin:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a lab rig. Game view and compound eye on the left, the live brain on the right;
+     a second tab runs controlled experiments. One deliberate dark look (it is a game). */
+  :root {
+    --bg: #14110e;          /* umber black, like Doom's brown stone at night */
+    --panel: #1c1815;
+    --panel-2: #241f1a;
+    --line: #362e27;
+    --ink: #efe4d2;         /* bone */
+    --muted: #a4968a;
+    --faint: #6f6359;
+    --accent: #e0532c;      /* status-bar red-orange */
+    --orb-blue: #5a8dff;
+    --orb-green: #3fcf66;
+    --imp: #b0673a;
+    --punish: #ff5a6e;      /* PPL1 dopamine */
+    --reward: #f2b33d;      /* PAM dopamine */
+    --exc: #e8915a;
+    --inh: #6aa8d8;
+    /* chart series, validated categorical order (dark surface) */
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300;
+    --grid: #2e2721;
+    --display: "Big Shoulders Display", Impact, "Arial Narrow", sans-serif;
+    --body: "Libre Franklin", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { background: var(--bg); color: var(--ink); }
+  body { font: 15px/1.5 var(--body); }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-block: 20px 48px; padding-inline: 16px; display: grid; gap: 18px; }
+  header { display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: end; justify-content: space-between; }
+  h1 { font: 800 clamp(34px, 6vw, 58px)/0.9 var(--display); margin: 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+  h1 span { color: var(--accent); }
+  .lede { margin: 6px 0 0; color: var(--muted); max-width: 70ch; }
+  h2 { font: 800 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; margin: 0; text-wrap: balance; }
+  h3 { font: 600 12px/1.2 var(--body); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0; }
+  a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tabs button { font: 800 17px var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px 6px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tabs button:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .watch { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+  @media (max-width: 980px) { .watch { grid-template-columns: minmax(0, 1fr); } }
+  .col { display: grid; gap: 14px; min-width: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); padding: 12px; display: grid; gap: 10px; min-width: 0; }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  canvas { display: block; max-width: 100%; }
+  #game { width: 100%; height: auto; aspect-ratio: 960 / 600; image-rendering: pixelated; background: #000; border: 1px solid var(--line); }
+  #eyes { width: 100%; height: auto; aspect-ratio: 960 / 96; }
+  .eye-labels { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--faint); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .field { display: grid; gap: 3px; min-width: 0; }
+  .field label { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  select, input[type="number"] { font: 14px var(--body); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); padding: 6px 8px; min-width: 0; }
+  button.btn { font: 600 14px var(--body); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); padding: 7px 12px; cursor: pointer; }
+  button.btn:hover { border-color: var(--muted); }
+  button.btn.primary { background: var(--accent); border-color: var(--accent); color: #1a0d07; }
+  button.btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  button.btn:disabled { opacity: .45; cursor: default; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+  .meter { display: grid; grid-template-columns: 74px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: 13px; }
+  .meter .bar { height: 10px; background: var(--panel-2); position: relative; border-radius: 2px; overflow: hidden; }
+  .meter .bar i { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+  .meter .bar .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--faint); }
+  .meter output { font: 12px var(--mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+  .note { font-size: 13px; color: var(--muted); margin: 0; max-width: 70ch; }
+  .kbd { font: 12px var(--mono); border: 1px solid var(--line); padding: 0 4px; border-radius: 3px; color: var(--muted); }
+  .log { font: 12px/1.45 var(--mono); color: var(--muted); margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; max-height: 132px; overflow: auto; }
+  .log li b { color: var(--ink); font-weight: 500; }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .stat-row b { color: var(--ink); font-weight: 500; }
+  #brain { width: 100%; height: auto; aspect-ratio: 1000 / 560; }
+  #raster { width: 100%; height: 150px; background: #100d0b; }
+  .chip { font: 600 11px var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+  .chip.yes { color: #7fd99a; } .chip.no { color: var(--muted); } .chip.warn { color: var(--reward); }
+  /* lab */
+  .lab { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 980px) { .lab { grid-template-columns: minmax(0, 1fr); } }
+  .checks { display: grid; gap: 4px; }
+  .checks label { display: flex; gap: 8px; align-items: center; font: 400 14px var(--body); letter-spacing: 0; text-transform: none; color: var(--ink); cursor: pointer; }
+  .progress { height: 8px; background: var(--panel-2); position: relative; }
+  .progress i { position: absolute; inset: 0 auto 0 0; background: var(--accent); width: 0; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  td.num { font: 13px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart text { fill: var(--muted); font: 11px var(--mono); }
+  .chart .axis-title { fill: var(--muted); font: 600 11px var(--body); letter-spacing: .06em; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .tip { position: fixed; pointer-events: none; background: var(--panel-2); border: 1px solid var(--line); padding: 6px 8px; font: 12px/1.4 var(--mono); color: var(--ink); z-index: 10; max-width: 280px; }
+  .verdicts { display: grid; gap: 8px; }
+  .verdict { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 8px 10px; background: var(--panel-2); }
+  .verdict p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+  .wiring { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 980px) { .wiring { grid-template-columns: minmax(0, 1fr); } }
+  .prose p, .prose li { max-width: 72ch; color: var(--ink); }
+  .prose ul { padding-left: 20px; }
+  .prose h2 { margin-top: 8px; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Fly Brain <span>Doom</span></h1>
+      <p class="lede">A spiking model of the fruit fly brain plays a Doom-like game. The test engine checks whether it learns, with the controls a fly lab would use.</p>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-watch" aria-selected="true" aria-controls="view-watch">Watch the fly</button>
+    <button role="tab" id="tab-lab" aria-selected="false" aria-controls="view-lab">Test lab</button>
+    <button role="tab" id="tab-wiring" aria-selected="false" aria-controls="view-wiring">Wiring &amp; method</button>
+  </nav>
+
+  <!-- WATCH -->
+  <section id="view-watch" role="tabpanel" aria-labelledby="tab-watch" class="watch">
+    <div class="col">
+      <canvas id="game" width="960" height="600" aria-label="Game view from the fly's position"></canvas>
+      <div class="panel">
+        <div class="panel-head"><h3>What the compound eyes see</h3><span class="note">32 ommatidial columns, 260&deg; field</span></div>
+        <canvas id="eyes" width="960" height="96" aria-label="Compound eye mosaic"></canvas>
+        <div class="eye-labels"><span>left eye 130&deg;</span><span>ahead</span><span>right eye 130&deg;</span></div>
+      </div>
+      <div class="panel">
+        <div class="controls">
+          <button class="btn primary" id="play" type="button">Pause</button>
+          <div class="field"><label for="scenario">Scenario</label><select id="scenario"></select></div>
+          <div class="field"><label for="condition">Brain</label><select id="condition"></select></div>
+          <div class="field"><label for="speed">Speed</label><select id="speed"><option value="1">1&times;</option><option value="4">4&times;</option><option value="16">16&times;</option><option value="64">Max</option></select></div>
+          <button class="btn" id="swap" type="button" title="Swap which orb color heals">Swap colors</button>
+          <button class="btn" id="newfly" type="button">New fly</button>
+          <button class="btn" id="human" type="button" aria-pressed="false">You play</button>
+        </div>
+        <p class="note" id="human-note" hidden>Arrows or <span class="kbd">W A S D</span> to move, <span class="kbd">Q</span>/<span class="kbd">E</span> to sidestep, <span class="kbd">Space</span> to fire. The fly's brain still sees and feels everything, so it learns from your play.</p>
+        <div class="stat-row" id="session"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Brain activity</h3><span class="note" id="brain-note"></span></div>
+        <canvas id="brain" width="1000" height="560" aria-label="Circuit diagram with live firing rates"></canvas>
+        <div class="legend"><span><i style="background:var(--exc)"></i>excitatory</span><span><i style="background:var(--inh)"></i>inhibitory</span><span><i style="background:var(--punish)"></i>punishment dopamine</span><span><i style="background:var(--reward)"></i>reward dopamine, plastic KC&rarr;MBON (width = strength)</span></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <div class="panel-head"><h3>Spikes</h3><span class="note">KCs, MBONs, dopamine, descending</span></div>
+        <canvas id="raster" width="760" height="150" aria-label="Spike raster"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>What the mushroom body has learned</h3><span class="chip" id="heals-chip"></span></div>
+        <div id="memory" class="checks"></div>
+        <p class="note">Learned value of each color: KC&rarr;MBON-11 (approach) minus KC&rarr;MBON-01 (avoid), relative to a naive fly. Left = aversion, right = attraction.</p>
+      </div>
+      <div class="panel">
+        <h3>Motor commands</h3>
+        <div id="motor" class="checks"></div>
+      </div>
+      <div class="panel">
+        <h3>Events</h3>
+        <ul class="log" id="log"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAB -->
+  <section id="view-lab" role="tabpanel" aria-labelledby="tab-lab" class="lab" hidden>
+    <div class="col">
+      <div class="panel">
+        <h2>Run an experiment</h2>
+        <div class="field"><label for="protocol">Protocol</label><select id="protocol"></select></div>
+        <p class="note" id="protocol-note"></p>
+        <div class="grid2">
+          <div class="field"><label for="subjects">Flies per condition</label><input id="subjects" type="number" min="2" max="64" value="8"></div>
+          <div class="field"><label for="acq">Training episodes</label><input id="acq" type="number" min="2" max="40" value="8"></div>
+          <div class="field"><label for="rev">Reversal episodes</label><input id="rev" type="number" min="0" max="20" value="4"></div>
+          <div class="field"><label for="seed">Seed</label><input id="seed" type="number" min="1" value="1"></div>
+        </div>
+        <div class="field"><label>Conditions</label><div class="checks" id="cond-checks"></div></div>
+        <div class="controls">
+          <button class="btn primary" id="run" type="button">Run</button>
+          <button class="btn" id="stop" type="button" disabled>Stop</button>
+          <button class="btn" id="copy" type="button">Copy results JSON</button>
+        </div>
+        <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+        <p class="note" id="lab-status"></p>
+      </div>
+      <div class="panel">
+        <h3>How the test decides</h3>
+        <p class="note">Each fly has its own random Kenyon-cell wiring. Half the flies are healed by blue orbs and half by green, so any innate color bias cancels out. Every condition runs the same flies in the same worlds. A condition <b>learns</b> if its preference for the healing color is above zero (two-sided permutation test, p&lt;0.05). It <b>re-learns</b> if, after the colors swap, it first prefers the old color and then the new one.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <div class="panel-head"><h2>Who&rsquo;s learning?</h2><span class="note" id="result-source"></span></div>
+        <div class="verdicts" id="verdicts"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3 id="curve-title">Learning curve by encounter</h3></div>
+        <div class="legend" id="curve-legend"></div>
+        <svg class="chart" id="curve" viewBox="0 0 760 300" role="img" aria-label="Learning curves"></svg>
+        <p class="note" id="curve-note"></p>
+      </div>
+      <div class="panel">
+        <h3>Numbers</h3>
+        <div class="table-wrap"><table id="table"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WIRING -->
+  <section id="view-wiring" role="tabpanel" aria-labelledby="tab-wiring" class="wiring" hidden>
+    <div class="panel prose" id="method"></div>
+    <div class="panel">
+      <h3>Cell types in this model</h3>
+      <div class="table-wrap"><table id="celltypes"></table></div>
+    </div>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script id="flycore">var FlyCore = (function () {
+'use strict';
+// ---- rng.js ----
+// Seeded random numbers. Every run of the engine is reproducible from its seed.
+
+function hashSeed(...parts) {
+  let h = 2166136261 >>> 0;
+  for (const p of parts) {
+    const s = String(p);
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    h ^= 0x9e3779b9;
+    h = Math.imul(h ^ (h >>> 15), 0x85ebca6b) >>> 0;
+  }
+  return h >>> 0;
+}
+
+class RNG {
+  constructor(seed = 1) {
+    this.s = (seed >>> 0) || 0x6d2b79f5;
+    this.spare = null;
+  }
+  next() {
+    // mulberry32
+    let t = (this.s = (this.s + 0x6d2b79f5) >>> 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  range(a, b) { return a + (b - a) * this.next(); }
+  int(n) { return Math.floor(this.next() * n); }
+  pick(arr) { return arr[this.int(arr.length)]; }
+  chance(p) { return this.next() < p; }
+  normal() {
+    if (this.spare !== null) { const v = this.spare; this.spare = null; return v; }
+    let u, v, s;
+    do { u = this.next() * 2 - 1; v = this.next() * 2 - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
+    const m = Math.sqrt(-2 * Math.log(s) / s);
+    this.spare = v * m;
+    return u * m;
+  }
+  shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = this.int(i + 1);
+      const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+}
+
+// ---- maps.js ----
+// Level layouts. '.' is floor; every other character is a wall material:
+//   T  grey tech panel      B  brown stone
+//   #  steel pillar         S  slime-streaked pillar
+
+const WALL_STYLE = {
+  T: { name: 'tech', lum: 0.72, rgb: [118, 124, 132] },
+  B: { name: 'stone', lum: 0.48, rgb: [120, 86, 58] },
+  '#': { name: 'steel', lum: 0.6, rgb: [96, 100, 110] },
+  S: { name: 'slime', lum: 0.52, rgb: [84, 104, 70] },
+};
+
+const RAW = {
+  // Open room with four pillars. Used for the valence-learning task.
+  arena: {
+    label: 'Arena',
+    start: { x: 8.5, y: 13.5, angle: -Math.PI / 2 },
+    rows: [
+      'TTTTTTTTTTTTTTTT',
+      'T..............T',
+      'T..............T',
+      'T...#......#...T',
+      'T..............T',
+      'T..............T',
+      'T..............T',
+      'T......SS......T',
+      'T......SS......T',
+      'T..............T',
+      'T..............T',
+      'T..............T',
+      'T...#......#...T',
+      'T..............T',
+      'T..............T',
+      'TTTTTTTTTTTTTTTT',
+    ],
+  },
+  // A hangar loosely in the spirit of E1M1: side rooms, pillars, a slime court.
+  hangar: {
+    label: 'Hangar',
+    start: { x: 11.5, y: 17.5, angle: -Math.PI / 2 },
+    rows: [
+      'TTTTTTTTTTTTTTTTTTTTTTTT',
+      'T......B.........B.....T',
+      'T......B.........B.....T',
+      'T..BB.............BB...T',
+      'T......B.........B.....T',
+      'T......BBB.....BBB.....T',
+      'TBB.BBBB...........BB.BT',
+      'T..........#..#........T',
+      'T..........#..#........T',
+      'T..##..............##..T',
+      'T..#................#..T',
+      'T.......SS....SS.......T',
+      'T.......SS....SS.......T',
+      'T..#................#..T',
+      'T..##..............##..T',
+      'T......................T',
+      'TBBBB.BBBBB..BBBBB.BBBBT',
+      'T.........B..B.........T',
+      'T.........B..B.........T',
+      'TTTTTTTTTTTTTTTTTTTTTTTT',
+    ],
+  },
+};
+
+function compile(key, raw) {
+  const height = raw.rows.length;
+  const width = raw.rows[0].length;
+  const cells = new Uint8Array(width * height);
+  const open = [];
+  raw.rows.forEach((row, y) => {
+    if (row.length !== width) throw new Error(`map ${key}: row ${y} has ${row.length} cells, expected ${width}`);
+    for (let x = 0; x < width; x++) {
+      const ch = row[x];
+      if (ch === '.') { open.push([x, y]); continue; }
+      if (!WALL_STYLE[ch]) throw new Error(`map ${key}: unknown wall '${ch}'`);
+      cells[y * width + x] = ch.charCodeAt(0);
+    }
+  });
+  return { key, label: raw.label, width, height, cells, open, start: raw.start, rows: raw.rows };
+}
+
+const MAPS = Object.fromEntries(Object.entries(RAW).map(([k, v]) => [k, compile(k, v)]));
+
+// ---- world.js ----
+// A small Doom-like world: grid walls, imps that throw fireballs, a hitscan pistol,
+// and two colors of orb. One orb color heals and the other burns; which is which
+// is set per world (goodColor), so no fixed wiring can know it in advance.
+//
+// Coordinates: x grows east, y grows south (rows of the map). An angle a points
+// along (cos a, sin a). A bearing is measured from the heading and is positive
+// to the left, so turning left lowers the heading angle.
+
+
+
+const TIC_RATE = 35; // Doom's game tic rate
+const TIC = 1 / TIC_RATE;
+const DEG = Math.PI / 180;
+
+const SCENARIOS = {
+  forage: {
+    label: 'Valence forage', map: 'arena', imps: 0, orbsPerColor: 3, seconds: 40,
+    about: 'Blue and green orbs in an open room. One color heals, the other burns.',
+  },
+  combat: {
+    label: 'Imp hangar', map: 'hangar', imps: 3, orbsPerColor: 0, seconds: 40,
+    about: 'Imps that chase and throw fireballs. Tests pursuit, aiming and escape.',
+  },
+  doom: {
+    label: 'Mixed E1', map: 'hangar', imps: 3, orbsPerColor: 3, seconds: 60,
+    about: 'Imps and orbs together.',
+  },
+};
+
+const ORB_COLORS = ['blue', 'green'];
+const otherColor = (c) => (c === 'blue' ? 'green' : 'blue');
+
+const PLAYER = { radius: 0.25, speed: 3.0, backSpeed: 1.8, strafeSpeed: 2.6, turnSpeed: 200 * DEG, maxHealth: 200 };
+const IMP = {
+  radius: 0.32, hp: 60, speed: 1.5, sight: 12, fireMin: 2.2, fireMax: 4.0,
+  melee: 0.85, meleeDmg: [3, 9], ballSpeed: 6, ballRadius: 0.22, ballDmg: [4, 10],
+  painChance: 0.78, respawn: 3, minSpawnDist: 7,
+};
+const PISTOL = { cooldown: 0.4, dmg: [12, 22], spread: 1.0 * DEG, range: 24, ammo: 200 };
+const ORB = { radius: 0.24, touch: 0.55, heal: 10, burn: 12, respawn: 2.5, minSpawnDist: 3 };
+
+const wrapAngle = (a) => {
+  a = (a + Math.PI) % (2 * Math.PI);
+  if (a < 0) a += 2 * Math.PI;
+  return a - Math.PI;
+};
+const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+
+class World {
+  constructor({ scenario = 'forage', seed = 1, goodColor = 'blue' } = {}) {
+    this.scenarioName = scenario;
+    this.sc = SCENARIOS[scenario];
+    if (!this.sc) throw new Error(`unknown scenario ${scenario}`);
+    this.map = MAPS[this.sc.map];
+    this.goodColor = goodColor;
+    this.seed = seed;
+    this.reset();
+  }
+
+  reset() {
+    const m = this.map;
+    this.rng = new RNG(this.seed);
+    this.time = 0;
+    this.tic = 0;
+    this.nextId = 1;
+    this.duration = this.sc.seconds;
+    this.player = {
+      x: m.start.x, y: m.start.y, angle: m.start.angle + this.rng.range(-0.4, 0.4),
+      vx: 0, vy: 0, health: 100, ammo: PISTOL.ammo, cooldown: 0, alive: true, hurtAt: -1, healAt: -1,
+    };
+    this.entities = [];
+    for (let i = 0; i < this.sc.imps; i++) this.spawnImp();
+    for (const color of ORB_COLORS) for (let i = 0; i < this.sc.orbsPerColor; i++) this.spawnOrb(color);
+    this.stats = { good: 0, bad: 0, kills: 0, damage: 0, healed: 0, shots: 0, hits: 0, bumps: 0, distance: 0, touches: '' };
+    this.lastShot = null;
+    this.fx = []; // short-lived visual effects for the renderer
+  }
+
+  get done() { return !this.player.alive || this.time >= this.duration - 1e-9; }
+
+  // ---------- geometry ----------
+  cellAt(cx, cy) {
+    const m = this.map;
+    if (cx < 0 || cy < 0 || cx >= m.width || cy >= m.height) return 84; // 'T'
+    return m.cells[cy * m.width + cx];
+  }
+  solid(x, y) { return this.cellAt(Math.floor(x), Math.floor(y)) !== 0; }
+
+  // DDA ray cast. Returns distance to the first wall and where on it the ray hit.
+  castRay(ox, oy, ang, maxDist = 40) {
+    const dx = Math.cos(ang), dy = Math.sin(ang);
+    let mx = Math.floor(ox), my = Math.floor(oy);
+    const ddx = dx === 0 ? 1e30 : Math.abs(1 / dx);
+    const ddy = dy === 0 ? 1e30 : Math.abs(1 / dy);
+    let stepX, stepY, sx, sy;
+    if (dx < 0) { stepX = -1; sx = (ox - mx) * ddx; } else { stepX = 1; sx = (mx + 1 - ox) * ddx; }
+    if (dy < 0) { stepY = -1; sy = (oy - my) * ddy; } else { stepY = 1; sy = (my + 1 - oy) * ddy; }
+    let side = 0, dist = 0;
+    for (let i = 0; i < 96; i++) {
+      if (sx < sy) { dist = sx; sx += ddx; mx += stepX; side = 0; } else { dist = sy; sy += ddy; my += stepY; side = 1; }
+      if (dist > maxDist) return { dist: maxDist, cell: 0, side, u: 0, mx, my };
+      const c = this.cellAt(mx, my);
+      if (c) {
+        let u = side === 0 ? oy + dist * dy : ox + dist * dx;
+        u -= Math.floor(u);
+        return { dist, cell: c, side, u, mx, my };
+      }
+    }
+    return { dist: maxDist, cell: 0, side, u: 0, mx, my };
+  }
+
+  lineOfSight(ax, ay, bx, by) {
+    const d = Math.hypot(bx - ax, by - ay);
+    return this.castRay(ax, ay, Math.atan2(by - ay, bx - ax), d + 0.01).dist >= d - 0.05;
+  }
+
+  // Bearing of a point from the player: positive to the left, in (-pi, pi].
+  bearingTo(x, y) {
+    const p = this.player;
+    return wrapAngle(p.angle - Math.atan2(y - p.y, x - p.x));
+  }
+
+  // Slide a circle through the grid. Returns true if a wall blocked it.
+  moveCircle(o, dx, dy, r) {
+    let bumped = false;
+    const nx = o.x + dx;
+    if (!this.solid(nx + Math.sign(dx) * r, o.y - r * 0.9) && !this.solid(nx + Math.sign(dx) * r, o.y + r * 0.9)) o.x = nx;
+    else if (dx !== 0) bumped = true;
+    const ny = o.y + dy;
+    if (!this.solid(o.x - r * 0.9, ny + Math.sign(dy) * r) && !this.solid(o.x + r * 0.9, ny + Math.sign(dy) * r)) o.y = ny;
+    else if (dy !== 0) bumped = true;
+    return bumped;
+  }
+
+  randomOpenSpot(minDist) {
+    const p = this.player, open = this.map.open;
+    for (let tries = 0; tries < 200; tries++) {
+      const [cx, cy] = open[this.rng.int(open.length)];
+      const x = cx + 0.5 + this.rng.range(-0.2, 0.2), y = cy + 0.5 + this.rng.range(-0.2, 0.2);
+      if (Math.hypot(x - p.x, y - p.y) < minDist) continue;
+      if (this.entities.some((e) => e.alive !== false && Math.hypot(e.x - x, e.y - y) < 1.2)) continue;
+      return { x, y };
+    }
+    const [cx, cy] = open[this.rng.int(open.length)];
+    return { x: cx + 0.5, y: cy + 0.5 };
+  }
+
+  spawnImp() {
+    const s = this.randomOpenSpot(IMP.minSpawnDist);
+    const imp = {
+      id: this.nextId++, kind: 'imp', x: s.x, y: s.y, vx: 0, vy: 0, radius: IMP.radius,
+      hp: IMP.hp, alive: true, alert: false, cd: this.rng.range(1, 2.5), pain: 0,
+      heading: this.rng.range(-Math.PI, Math.PI), wobble: 0, wobbleT: 0, respawn: 0, attackAt: -1,
+    };
+    this.entities.push(imp);
+    return imp;
+  }
+
+  spawnOrb(color) {
+    const s = this.randomOpenSpot(ORB.minSpawnDist);
+    const orb = { id: this.nextId++, kind: 'orb', color, x: s.x, y: s.y, vx: 0, vy: 0, radius: ORB.radius, alive: true, respawn: 0 };
+    this.entities.push(orb);
+    return orb;
+  }
+
+  hurt(amount, ev) {
+    const p = this.player;
+    if (!p.alive) return;
+    p.health -= amount;
+    p.hurtAt = this.time;
+    ev.damage += amount;
+    this.stats.damage += amount;
+    if (p.health <= 0) { p.health = 0; p.alive = false; ev.died = true; }
+  }
+
+  // ---------- one game tic ----------
+  // action: { forward: -1..1, turn: -1..1 (left +), strafe: -1..1 (left +), fire: bool }
+  step(action = {}) {
+    const ev = { damage: 0, heal: 0, good: 0, bad: 0, kill: 0, shot: false, hit: false, bump: false, died: false };
+    const p = this.player, rng = this.rng;
+    if (this.done) return ev;
+
+    // Player motion
+    const turn = clamp(action.turn || 0, -1, 1);
+    const fwd = clamp(action.forward || 0, -1, 1);
+    const strafe = clamp(action.strafe || 0, -1, 1);
+    p.angle = wrapAngle(p.angle - turn * PLAYER.turnSpeed * TIC);
+    const sp = (fwd >= 0 ? PLAYER.speed : PLAYER.backSpeed) * fwd;
+    const ss = strafe * PLAYER.strafeSpeed;
+    // left of heading is (sin a, -cos a)
+    const mvx = (Math.cos(p.angle) * sp + Math.sin(p.angle) * ss) * TIC;
+    const mvy = (Math.sin(p.angle) * sp - Math.cos(p.angle) * ss) * TIC;
+    const ox = p.x, oy = p.y;
+    ev.bump = this.moveCircle(p, mvx, mvy, PLAYER.radius);
+    // imps are solid
+    for (const e of this.entities) {
+      if (e.kind !== 'imp' || !e.alive) continue;
+      const d = Math.hypot(p.x - e.x, p.y - e.y), min = PLAYER.radius + e.radius;
+      if (d < min && d > 1e-6) { p.x = e.x + (p.x - e.x) / d * min; p.y = e.y + (p.y - e.y) / d * min; if (this.solid(p.x, p.y)) { p.x = ox; p.y = oy; } }
+    }
+    p.vx = (p.x - ox) / TIC; p.vy = (p.y - oy) / TIC;
+    this.stats.distance += Math.hypot(p.x - ox, p.y - oy);
+    if (ev.bump) this.stats.bumps++;
+
+    // Pistol (hitscan)
+    p.cooldown = Math.max(0, p.cooldown - TIC);
+    if (action.fire && p.cooldown <= 0 && p.ammo > 0) {
+      p.cooldown = PISTOL.cooldown; p.ammo--; ev.shot = true; this.stats.shots++;
+      const ang = p.angle + rng.normal() * PISTOL.spread;
+      const wallD = this.castRay(p.x, p.y, ang, PISTOL.range).dist;
+      const cx = Math.cos(ang), cy = Math.sin(ang);
+      let best = null, bestT = wallD;
+      for (const e of this.entities) {
+        if (e.kind !== 'imp' || !e.alive) continue;
+        const ex = e.x - p.x, ey = e.y - p.y, t = ex * cx + ey * cy;
+        if (t <= 0 || t >= bestT) continue;
+        if (ex * ex + ey * ey - t * t <= e.radius * e.radius) { best = e; bestT = t; }
+      }
+      this.lastShot = { t: this.time, ang, dist: bestT, hit: !!best };
+      if (best) {
+        ev.hit = true; this.stats.hits++;
+        best.hp -= Math.round(rng.range(PISTOL.dmg[0], PISTOL.dmg[1]));
+        best.alert = true;
+        this.fx.push({ kind: 'blood', x: best.x, y: best.y, t: this.time });
+        if (best.hp <= 0) {
+          best.alive = false; best.respawn = IMP.respawn; best.diedAt = this.time;
+          ev.kill++; this.stats.kills++;
+        } else if (rng.chance(IMP.painChance)) best.pain = 0.25;
+      } else {
+        this.fx.push({ kind: 'puff', x: p.x + cx * (bestT - 0.05), y: p.y + cy * (bestT - 0.05), t: this.time });
+      }
+    }
+
+    // Entities
+    const keep = [];
+    for (const e of this.entities) {
+      if (e.kind === 'imp') this.updateImp(e, ev);
+      else if (e.kind === 'fireball') { if (!this.updateFireball(e, ev)) continue; }
+      else if (e.kind === 'orb') this.updateOrb(e, ev);
+      keep.push(e);
+    }
+    this.entities = keep;
+    this.fx = this.fx.filter((f) => this.time - f.t < 0.6);
+
+    this.time += TIC;
+    this.tic++;
+    return ev;
+  }
+
+  updateImp(e, ev) {
+    const p = this.player, rng = this.rng;
+    if (!e.alive) {
+      e.respawn -= TIC;
+      if (e.respawn <= 0) {
+        const s = this.randomOpenSpot(IMP.minSpawnDist);
+        Object.assign(e, { x: s.x, y: s.y, hp: IMP.hp, alive: true, alert: false, cd: rng.range(1.5, 3), pain: 0 });
+      }
+      e.vx = e.vy = 0;
+      return;
+    }
+    const ox = e.x, oy = e.y;
+    if (e.pain > 0) { e.pain -= TIC; e.vx = e.vy = 0; return; }
+    const dx = p.x - e.x, dy = p.y - e.y, dist = Math.hypot(dx, dy);
+    const sees = p.alive && dist < IMP.sight && this.lineOfSight(e.x, e.y, p.x, p.y);
+    if (sees) e.alert = true;
+    e.wobbleT -= TIC;
+    if (e.wobbleT <= 0) { e.wobble = rng.range(-0.8, 0.8); e.wobbleT = rng.range(0.5, 1.2); }
+    let speed;
+    if (e.alert && p.alive) {
+      e.heading = Math.atan2(dy, dx) + e.wobble;
+      speed = dist > 1.1 ? IMP.speed : 0;
+      e.cd -= TIC;
+      if (e.cd <= 0 && sees) {
+        e.attackAt = this.time;
+        if (dist < IMP.melee) {
+          this.hurt(Math.round(rng.range(IMP.meleeDmg[0], IMP.meleeDmg[1])), ev);
+          e.cd = 1.0;
+        } else {
+          const a = Math.atan2(dy, dx) + rng.normal() * 2 * DEG;
+          this.entities.push({
+            id: this.nextId++, kind: 'fireball', x: e.x + Math.cos(a) * 0.45, y: e.y + Math.sin(a) * 0.45,
+            vx: Math.cos(a) * IMP.ballSpeed, vy: Math.sin(a) * IMP.ballSpeed, radius: IMP.ballRadius, life: 4, alive: true, from: e.id,
+          });
+          e.cd = rng.range(IMP.fireMin, IMP.fireMax);
+        }
+      }
+    } else {
+      if (e.wobbleT > 1.0) e.heading += e.wobble;
+      speed = IMP.speed * 0.4;
+    }
+    if (speed > 0) {
+      const hit = this.moveCircle(e, Math.cos(e.heading) * speed * TIC, Math.sin(e.heading) * speed * TIC, e.radius);
+      if (hit) e.heading += rng.range(1, 2.5);
+      // don't walk into the player
+      const d2 = Math.hypot(p.x - e.x, p.y - e.y), min = PLAYER.radius + e.radius;
+      if (d2 < min) { e.x = ox; e.y = oy; }
+    }
+    e.vx = (e.x - ox) / TIC; e.vy = (e.y - oy) / TIC;
+  }
+
+  updateFireball(b, ev) {
+    const p = this.player;
+    b.life -= TIC;
+    const nx = b.x + b.vx * TIC, ny = b.y + b.vy * TIC;
+    if (b.life <= 0 || this.solid(nx, ny)) { this.fx.push({ kind: 'boom', x: b.x, y: b.y, t: this.time }); return false; }
+    b.x = nx; b.y = ny;
+    if (p.alive && Math.hypot(p.x - b.x, p.y - b.y) < PLAYER.radius + b.radius) {
+      this.hurt(Math.round(this.rng.range(IMP.ballDmg[0], IMP.ballDmg[1])), ev);
+      this.fx.push({ kind: 'boom', x: b.x, y: b.y, t: this.time });
+      return false;
+    }
+    return true;
+  }
+
+  updateOrb(o, ev) {
+    const p = this.player;
+    if (!o.alive) {
+      o.respawn -= TIC;
+      if (o.respawn <= 0) { const s = this.randomOpenSpot(ORB.minSpawnDist); o.x = s.x; o.y = s.y; o.alive = true; }
+      return;
+    }
+    if (!p.alive || Math.hypot(p.x - o.x, p.y - o.y) > ORB.touch) return;
+    o.alive = false; o.respawn = ORB.respawn;
+    if (o.color === this.goodColor) {
+      p.health = Math.min(PLAYER.maxHealth, p.health + ORB.heal);
+      p.healAt = this.time;
+      ev.heal += ORB.heal; ev.good++; this.stats.good++; this.stats.healed += ORB.heal; this.stats.touches += 'g';
+      this.fx.push({ kind: 'heal', x: o.x, y: o.y, t: this.time });
+    } else {
+      ev.bad++; this.stats.bad++; this.stats.touches += 'b';
+      this.fx.push({ kind: 'burn', x: o.x, y: o.y, t: this.time });
+      this.hurt(ORB.burn, ev);
+    }
+  }
+}
+
+// ---- eye.js ----
+// Compound eyes and optic lobe.
+//
+// Each eye is a strip of ommatidial columns (azimuth only). Left eye spans
+// -10..130 degrees, right eye mirrors it, so the fly sees 260 degrees with a
+// 20 degree binocular zone in front. The optic lobe is modelled as rate
+// filters; its outputs become Poisson spike rates for the visual projection
+// neurons (VPNs) that enter the spiking central brain:
+//
+//   LC10a   small-object detector, retinotopic        -> AOTU (pursuit)
+//   LC4     looming speed (1/time-to-contact)          -> giant fiber
+//   LPLC2   angular size of an approaching object      -> giant fiber
+//   HS      horizontal optic flow (Reichardt, T4/T5)   -> steering (optomotor)
+//   vPN     color channels to the mushroom body calyx  -> Kenyon cells
+//   MECH    wall contact ahead (bristles / legs)       -> steering, backing
+//   MECHb   wall contact behind                        -> forward walking
+//
+// Looming cells only respond to objects that move toward the fly; expansion
+// caused by the fly's own walking is cancelled (efference copy).
+
+
+
+const EYE = { cols: 16, span: 140 * DEG, inner: -10 * DEG, range: 22 };
+const COLOR_CHANNELS = ['blue', 'green', 'red', 'dark'];
+
+// How each thing looks to the fly's photoreceptors.
+const LOOK = {
+  imp: { blue: 0, green: 0, red: 0.55, dark: 0.9, contrast: 0.85, lum: 0.25 },
+  fireball: { blue: 0, green: 0, red: 1, dark: 0, contrast: 1, lum: 1 },
+  orb_blue: { blue: 1, green: 0, red: 0, dark: 0, contrast: 0.9, lum: 0.85 },
+  orb_green: { blue: 0, green: 1, red: 0, dark: 0, contrast: 0.9, lum: 0.85 },
+};
+const lookOf = (e) => (e.kind === 'orb' ? LOOK['orb_' + e.color] : LOOK[e.kind]);
+
+const WALL_LUM = {};
+for (const [ch, s] of Object.entries(WALL_STYLE)) WALL_LUM[ch.charCodeAt(0)] = s.lum;
+
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+// Column azimuths for one eye (bearing, positive = left).
+function columnAzimuths(side) {
+  const out = new Float32Array(EYE.cols), w = EYE.span / EYE.cols;
+  for (let c = 0; c < EYE.cols; c++) {
+    const b = EYE.inner + (c + 0.5) * w;
+    out[c] = side === 0 ? b : -b;
+  }
+  return out;
+}
+const AZ = [columnAzimuths(0), columnAzimuths(1)];
+const COLW = EYE.span / EYE.cols;
+
+// Small-object size tuning of LC10a (full angular width, degrees).
+function sizeTuning(widthDeg) {
+  const l = Math.log(Math.max(widthDeg, 0.2) / 10);
+  return Math.exp(-(l * l) / (2 * 0.9 * 0.9));
+}
+
+class OpticLobe {
+  constructor() {
+    const n = EYE.cols;
+    this.lum = [new Float32Array(n), new Float32Array(n)];
+    this.prevLum = [new Float32Array(n), new Float32Array(n)];
+    this.out = {
+      lc10a: [new Float32Array(n), new Float32Array(n)],
+      lc4: [new Float32Array(n), new Float32Array(n)],
+      lplc2: [new Float32Array(n), new Float32Array(n)],
+      hs: [0, 0],
+      vpn: [new Float32Array(COLOR_CHANNELS.length), new Float32Array(COLOR_CHANNELS.length)],
+      mech: [0, 0],
+      mechBack: [0, 0],
+      // for display: per-column color the eye saw
+      view: { rgb: [new Float32Array(n * 3), new Float32Array(n * 3)], lum: this.lum },
+    };
+    this.primed = false;
+  }
+
+  reset() { this.primed = false; }
+
+  process(world) {
+    const p = world.player, n = EYE.cols, o = this.out;
+    // swap luminance buffers
+    const t = this.prevLum; this.prevLum = this.lum; this.lum = t; o.view.lum = this.lum;
+
+    // 1. Wall luminance per column (R1-6 photoreceptors)
+    for (let s = 0; s < 2; s++) {
+      const lum = this.lum[s], rgb = o.view.rgb[s];
+      for (let c = 0; c < n; c++) {
+        const r = world.castRay(p.x, p.y, p.angle - AZ[s][c], EYE.range);
+        let b = 0.08;
+        if (r.cell) {
+          const base = WALL_LUM[r.cell] ?? 0.5;
+          const stripe = 0.8 + 0.2 * Math.sin(r.u * Math.PI * 6 + r.mx * 1.7 + r.my * 2.3);
+          b = base * stripe * (r.side ? 0.85 : 1) / (1 + 0.12 * r.dist);
+        }
+        lum[c] = b;
+        rgb[c * 3] = rgb[c * 3 + 1] = rgb[c * 3 + 2] = b;
+        o.lc10a[s][c] = 0; o.lc4[s][c] = 0; o.lplc2[s][c] = 0;
+      }
+      o.vpn[s].fill(0);
+    }
+
+    // 2. Objects
+    for (const e of world.entities) {
+      if (e.alive === false) continue;
+      const dx = e.x - p.x, dy = e.y - p.y, dist = Math.hypot(dx, dy);
+      if (dist > EYE.range || dist < 1e-3) continue;
+      const beta = wrapAngle(p.angle - Math.atan2(dy, dx));
+      if (Math.abs(beta) > EYE.span + EYE.inner + 0.3) continue; // behind the fly
+      if (!world.lineOfSight(p.x, p.y, e.x, e.y)) continue;
+      const alpha = Math.atan(e.radius / Math.max(dist, e.radius * 1.05)); // half width
+      const look = lookOf(e);
+      const tune = sizeTuning((2 * alpha) / DEG) * look.contrast;
+      // object-generated approach speed (efference copy removes self-motion)
+      const ux = -dx / dist, uy = -dy / dist;
+      const approach = (e.vx || 0) * ux + (e.vy || 0) * uy;
+      const invTTC = approach > 0 ? approach / dist : 0; // 1/s
+      const loomSpeed = clamp01((invTTC - 0.8) / 2.5);
+      const loomSize = approach > 0.5 ? clamp01((2 * alpha / DEG - 10) / 30) : 0;
+      for (let s = 0; s < 2; s++) {
+        const az = AZ[s], rgb = o.view.rgb[s];
+        for (let c = 0; c < n; c++) {
+          const lo = Math.max(beta - alpha, az[c] - COLW / 2), hi = Math.min(beta + alpha, az[c] + COLW / 2);
+          if (hi <= lo) continue;
+          const cov = (hi - lo) / COLW;
+          o.lc10a[s][c] += cov * tune;
+          o.lc4[s][c] += cov * loomSpeed;
+          o.lplc2[s][c] += cov * loomSize;
+          for (let k = 0; k < COLOR_CHANNELS.length; k++) o.vpn[s][k] += cov * look[COLOR_CHANNELS[k]];
+          const mix = clamp01(cov);
+          const col = e.kind === 'orb' ? (e.color === 'blue' ? [0.25, 0.45, 1] : [0.3, 1, 0.35]) : e.kind === 'fireball' ? [1, 0.6, 0.2] : [0.55, 0.25, 0.15];
+          for (let j = 0; j < 3; j++) rgb[c * 3 + j] = rgb[c * 3 + j] * (1 - mix) + col[j] * mix;
+          this.lum[s][c] = this.lum[s][c] * (1 - mix) + look.lum * mix;
+        }
+      }
+    }
+
+    // 3. Convert to firing rates (Hz)
+    for (let s = 0; s < 2; s++) {
+      for (let c = 0; c < n; c++) {
+        o.lc10a[s][c] = 140 * clamp01(o.lc10a[s][c]);
+        o.lc4[s][c] = 180 * clamp01(o.lc4[s][c]);
+        o.lplc2[s][c] = 200 * clamp01(o.lplc2[s][c]);
+      }
+      // Color PNs need a sizeable image: far-away objects barely drive them, so the
+      // mushroom body mostly sees what is close.
+      for (let k = 0; k < COLOR_CHANNELS.length; k++) o.vpn[s][k] = 160 * clamp01((o.vpn[s][k] - 0.3) / 1.5);
+    }
+
+    // 4. Horizontal optic flow: Hassenstein-Reichardt correlators between
+    // neighbouring columns. Columns run front to back, so a positive sum is
+    // front-to-back (progressive) motion, which HS cells of that eye prefer.
+    for (let s = 0; s < 2; s++) {
+      if (!this.primed) { o.hs[s] = 0; continue; }
+      const a = this.prevLum[s], b = this.lum[s];
+      let m = 0;
+      for (let c = 0; c < n - 1; c++) m += a[c] * b[c + 1] - b[c] * a[c + 1];
+      o.hs[s] = 120 * clamp01(m * 6);
+    }
+    this.primed = true;
+
+    // 5. Mechanosensory wall contact, front-left and front-right
+    for (let s = 0; s < 2; s++) {
+      let near = 9;
+      for (const deg of [15, 40, 65]) {
+        const b = (s === 0 ? deg : -deg) * DEG;
+        near = Math.min(near, world.castRay(p.x, p.y, p.angle - b, 2).dist);
+      }
+      o.mech[s] = near < 0.6 ? 220 : near < 0.9 ? 90 : 0;
+      let back = 9;
+      for (const deg of [110, 150]) {
+        const b = (s === 0 ? deg : -deg) * DEG;
+        back = Math.min(back, world.castRay(p.x, p.y, p.angle - b, 2).dist);
+      }
+      o.mechBack[s] = back < 0.45 ? 220 : 0;
+    }
+    return o;
+  }
+}
+
+// ---- connectome.js ----
+// A reduced, connectome-inspired wiring diagram of the fly circuits the game
+// needs. Cell types and their wiring motifs follow the published FlyWire /
+// MaleCNS literature; the neuron counts are scaled down and synapse counts are
+// set by hand so the network runs in a browser. This is not the 140k-neuron
+// connectome.
+//
+//   Pursuit   LC10a -> AOTU019 (GABA, central field, contralateral DNs)
+//                   -> AOTU025 (ACh, peripheral field, ipsilateral DNs)
+//                   -> DNa02 / DNa01 steering
+//   Escape    LC4, LPLC2 -> DNp01 giant fiber; LC4 -> contralateral DNa02
+//   Learning  vPN -> Kenyon cells (6 claws each) <-> APL (global inhibition)
+//             KC -> MBON-11 (γ1pedc, GABA, approach)  plastic, gated by PPL1-γ1pedc
+//             KC -> MBON-01 (γ5β'2a, Glu, avoidance) plastic, gated by PAM-γ5
+//             MBON-11 -| MBON-01 (feedforward inhibition)
+//             MBON-11 -| contralateral steering DNs     (turn toward)
+//             MBON-01 -> contralateral steering DNs, MDN (turn away, back off)
+//             MBON-01 -> LALi (GABA) -| ipsilateral AOTU, P9 (gate off pursuit)
+//   Reinforcement  nociceptors -> PPL1-γ1pedc (punishment)
+//                  sweet GRNs  -> PAM-γ5      (reward)
+
+
+
+const NT_SIGN = { ACh: 1, GABA: -1, Glu: -1, DA: 0 };
+const SIDES = ['L', 'R'];
+
+// input: Poisson-driven sensory/VPN populations. Others are LIF neurons.
+const CELL_TYPES = {
+  LC10a: { input: true, nt: 'ACh', perSide: EYE.cols * 2, region: 'Lobula', role: 'Small moving object detector' },
+  LC4: { input: true, nt: 'ACh', perSide: EYE.cols, region: 'Lobula', role: 'Looming speed' },
+  LPLC2: { input: true, nt: 'ACh', perSide: EYE.cols, region: 'Lobula plate', role: 'Looming size' },
+  HS: { input: true, nt: 'ACh', perSide: 3, region: 'Lobula plate', role: 'Horizontal optic flow' },
+  vPN: { input: true, nt: 'ACh', perSide: COLOR_CHANNELS.length * 6, region: 'Medulla', role: 'Color input to mushroom body' },
+  MECH: { input: true, nt: 'ACh', perSide: 4, region: 'VNC', role: 'Wall contact ahead' },
+  MECHb: { input: true, nt: 'ACh', perSide: 4, region: 'VNC', role: 'Wall contact behind' },
+  NOCI: { input: true, nt: 'ACh', perSide: 3, region: 'VNC', role: 'Pain (damage)' },
+  GRN: { input: true, nt: 'ACh', perSide: 3, region: 'SEZ', role: 'Sweet taste (reward)' },
+
+  AOTU019: { nt: 'GABA', perSide: 4, region: 'AOTU', role: 'Central-field pursuit, inhibits contralateral DNs' },
+  AOTU025: { nt: 'ACh', perSide: 4, region: 'AOTU', role: 'Peripheral-field pursuit, excites ipsilateral DNs' },
+  KC: { nt: 'ACh', perSide: 300, region: 'Mushroom body', role: 'Sparse visual code' },
+  APL: { nt: 'GABA', perSide: 2, region: 'Mushroom body', role: 'Global feedback inhibition' },
+  MBON11: { nt: 'GABA', perSide: 2, region: 'MB γ1pedc', role: 'Approach output (MBON-γ1pedc>α/β)' },
+  MBON01: { nt: 'Glu', sign: 1, perSide: 2, region: 'MB γ5β′2a', role: 'Avoidance output (MBON-γ5β′2a); excitatory (iGluR) in this model' },
+  LALi: { nt: 'GABA', perSide: 2, region: 'LAL', role: 'Premotor interneuron that gates off pursuit' },
+  PPL101: { nt: 'DA', perSide: 1, region: 'MB γ1pedc', role: 'Punishment dopamine (PPL1-γ1pedc)' },
+  PAM: { nt: 'DA', perSide: 3, region: 'MB γ5', role: 'Reward dopamine (PAM-γ5)' },
+  DNa02: { nt: 'ACh', perSide: 1, region: 'Descending', role: 'Steering (ipsilateral turn)' },
+  DNa01: { nt: 'ACh', perSide: 1, region: 'Descending', role: 'Steering (ipsilateral turn)' },
+  P9: { nt: 'ACh', perSide: 1, region: 'Descending', role: 'Forward walking' },
+  MDN: { nt: 'ACh', perSide: 2, region: 'Descending', role: 'Backward walking (moonwalker)' },
+  DNp01: { nt: 'ACh', perSide: 1, region: 'Descending', role: 'Giant fiber escape' },
+};
+
+// Spontaneous drive from outside the modelled circuit: Poisson events of
+// `w` mV at `rate` Hz onto every neuron of the type.
+const BACKGROUND = {
+  DNa02: { rate: 1500, w: 1.1 },
+  DNa01: { rate: 1500, w: 1.1 },
+  P9: { rate: 1700, w: 1.1 },
+  MBON11: { rate: 900, w: 1.0 },
+  MBON01: { rate: 900, w: 1.0 },
+};
+
+// Synapse counts per connection (weight = count x 0.275 mV, Shiu et al. 2024).
+const WIRING = {
+  lc10aTo019: 40, lc10aTo025: 45, lc10aToP9: 4,
+  aotu025ToDN: 14, aotu019ToDN: 22,
+  lc4ToGF: 30, lplc2ToGF: 30, lc4ToContraDN: 5,
+  hsToDN: 6,
+  mechToContraDN: 30, mechToMDN: 22, mechbToP9: 30,
+  pnToKC: 18, claws: 6,
+  kcToAPL: 10, aplToKC: 60,
+  kcToMBON: 10,
+  mbon11To01: 130, mbon11ToDN: 14,
+  mbon01ToLALi: 100, laliToAOTU: 200, laliToP9: 80, mbon01ToDN: 40, mbon01ToMDN: 110,
+  gfToMDN: 12,
+  nociToPPL: 30, grnToPAM: 30,
+};
+
+// Field profiles on the ipsilateral eccentricity e (degrees, 0 = straight ahead,
+// negative = across the midline into the binocular zone).
+const prof019 = (e) => (e < 10 ? Math.max(0, (e + 20) / 30) : e < 30 ? 1 : Math.max(0, 1 - (e - 30) / 20));
+const prof025 = (e) => Math.min(1, Math.max(0, (e - 25) / 25));
+
+function buildConnectome(rng, wiring = WIRING) {
+  const neurons = [];
+  const groups = {};
+  const typeNames = Object.keys(CELL_TYPES);
+  // inputs first so the simulator can skip their membrane equations
+  const order = [...typeNames.filter((t) => CELL_TYPES[t].input), ...typeNames.filter((t) => !CELL_TYPES[t].input)];
+  for (const type of order) {
+    const def = CELL_TYPES[type];
+    for (let s = 0; s < 2; s++) {
+      const key = `${type}_${SIDES[s]}`;
+      groups[key] = [];
+      for (let i = 0; i < def.perSide; i++) {
+        const n = { id: neurons.length, type, side: s, idx: i };
+        if (type === 'LC10a') n.col = Math.floor(i / 2);
+        if (type === 'LC4' || type === 'LPLC2') n.col = i;
+        if (type === 'vPN') n.channel = Math.floor(i / 6);
+        neurons.push(n);
+        groups[key].push(n.id);
+      }
+    }
+  }
+  const nInput = neurons.filter((n) => CELL_TYPES[n.type].input).length;
+
+  const pre = [], post = [], count = [];
+  const add = (a, b, c) => { if (c > 0) { pre.push(a); post.push(b); count.push(Math.round(c)); } };
+  const G = (type, s) => groups[`${type}_${SIDES[s]}`];
+  const W = wiring;
+
+  for (let s = 0; s < 2; s++) {
+    const o = 1 - s;
+    const az = columnAzimuths(s);
+    // Pursuit
+    for (const id of G('LC10a', s)) {
+      const a = az[neurons[id].col];
+      const e = (s === 0 ? a : -a) / DEG; // ipsilateral eccentricity
+      for (const t of G('AOTU019', s)) add(id, t, W.lc10aTo019 * prof019(e));
+      for (const t of G('AOTU025', s)) add(id, t, W.lc10aTo025 * prof025(e));
+      for (const t of G('P9', s)) add(id, t, W.lc10aToP9);
+    }
+    for (const id of G('AOTU025', s)) for (const t of [...G('DNa02', s), ...G('DNa01', s)]) add(id, t, W.aotu025ToDN);
+    for (const id of G('AOTU019', s)) for (const t of [...G('DNa02', o), ...G('DNa01', o)]) add(id, t, W.aotu019ToDN);
+    // Escape
+    for (const id of G('LC4', s)) {
+      for (const t of G('DNp01', s)) add(id, t, W.lc4ToGF);
+      for (const t of G('DNa02', o)) add(id, t, W.lc4ToContraDN);
+    }
+    for (const id of G('LPLC2', s)) for (const t of G('DNp01', s)) add(id, t, W.lplc2ToGF);
+    for (const id of G('DNp01', s)) for (const t of G('MDN', s)) add(id, t, W.gfToMDN);
+    // Optomotor
+    for (const id of G('HS', s)) for (const t of G('DNa02', s)) add(id, t, W.hsToDN);
+    // Wall contact
+    for (const id of G('MECH', s)) {
+      for (const t of [...G('DNa02', o), ...G('DNa01', o)]) add(id, t, W.mechToContraDN);
+      for (const t of G('MDN', s)) add(id, t, W.mechToMDN);
+    }
+    for (const id of G('MECHb', s)) for (const t of [...G('P9', 0), ...G('P9', 1)]) add(id, t, W.mechbToP9);
+    // Mushroom body: random claws, one hemisphere per eye
+    const pns = G('vPN', s);
+    for (const kc of G('KC', s)) {
+      for (let k = 0; k < W.claws; k++) add(pns[rng.int(pns.length)], kc, W.pnToKC * (0.7 + 0.6 * rng.next()));
+      for (const a of G('APL', s)) { add(kc, a, W.kcToAPL); add(a, kc, W.aplToKC); }
+      for (const m of G('MBON11', s)) add(kc, m, W.kcToMBON);
+      for (const m of G('MBON01', s)) add(kc, m, W.kcToMBON);
+    }
+    for (const m of G('MBON11', s)) {
+      for (const t of G('MBON01', s)) add(m, t, W.mbon11To01);
+      for (const t of [...G('DNa02', o), ...G('DNa01', o)]) add(m, t, W.mbon11ToDN);
+    }
+    for (const m of G('MBON01', s)) {
+      for (const t of G('LALi', s)) add(m, t, W.mbon01ToLALi);
+      for (const t of [...G('DNa02', o), ...G('DNa01', o)]) add(m, t, W.mbon01ToDN);
+      for (const t of G('MDN', s)) add(m, t, W.mbon01ToMDN);
+    }
+    for (const id of G('LALi', s)) {
+      for (const t of [...G('AOTU019', s), ...G('AOTU025', s)]) add(id, t, W.laliToAOTU);
+      for (const t of G('P9', s)) add(id, t, W.laliToP9);
+    }
+    // Reinforcement pathways reach both hemispheres
+    for (const id of G('NOCI', s)) for (const t of [...G('PPL101', 0), ...G('PPL101', 1)]) add(id, t, W.nociToPPL);
+    for (const id of G('GRN', s)) for (const t of [...G('PAM', 0), ...G('PAM', 1)]) add(id, t, W.grnToPAM);
+  }
+
+  return finalize({ neurons, groups, nInput, pre, post, count, scrambled: false });
+}
+
+function finalize(c) {
+  const N = c.neurons.length;
+  const sign = new Int8Array(N), isInput = new Uint8Array(N), typeIdx = new Uint8Array(N);
+  const typeNames = Object.keys(CELL_TYPES);
+  c.neurons.forEach((n, i) => {
+    const d = CELL_TYPES[n.type];
+    sign[i] = d.sign ?? NT_SIGN[d.nt];
+    isInput[i] = d.input ? 1 : 0;
+    typeIdx[i] = typeNames.indexOf(n.type);
+  });
+  return {
+    ...c, N, sign, isInput, typeIdx, typeNames,
+    pre: Int32Array.from(c.pre), post: Int32Array.from(c.post), count: Float32Array.from(c.count),
+  };
+}
+
+// Degree- and sign-preserving shuffle: every neuron keeps its number of input
+// and output synapses and its transmitter (Dale's law), but who talks to whom
+// is randomized. Sensory inputs and motor readouts stay where they are.
+function scrambleConnectome(conn, rng) {
+  const E = conn.pre.length;
+  const perm = rng.shuffle(Array.from({ length: E }, (_, i) => i));
+  const post = new Int32Array(E);
+  for (let i = 0; i < E; i++) post[i] = conn.post[perm[i]];
+  // remove self-loops by swapping with a random partner
+  for (let i = 0; i < E; i++) {
+    if (post[i] !== conn.pre[i]) continue;
+    for (let tries = 0; tries < 20; tries++) {
+      const j = rng.int(E);
+      if (post[j] !== conn.pre[i] && post[i] !== conn.pre[j]) { const t = post[i]; post[i] = post[j]; post[j] = t; break; }
+    }
+  }
+  return { ...conn, post, scrambled: true };
+}
+
+function connectomeSummary(conn) {
+  const byType = {};
+  for (const n of conn.neurons) byType[n.type] = (byType[n.type] || 0) + 1;
+  let syn = 0;
+  for (let i = 0; i < conn.count.length; i++) syn += conn.count[i];
+  return { neurons: conn.N, connections: conn.pre.length, synapses: syn, byType };
+}
+
+// ---- brain.js ----
+// Spiking simulator for the connectome.
+//
+// Neuron model: leaky integrate-and-fire with exponential synaptic current,
+// parameters from Shiu et al. 2024 (Nature 634:210):
+//   dv/dt = (v_rest - v + g) / tau_m,   dg/dt = -g / tau_syn
+//   a presynaptic spike adds  count x sign x 0.275 mV  to g after a 1.8 ms delay.
+//
+// Learning: three-factor rule at Kenyon cell -> MBON synapses. A KC keeps an
+// eligibility trace of its recent spikes; a compartment's dopamine neuron keeps a
+// dopamine trace. Dopamine plus an eligible KC depresses that KC's synapse
+// (LTD, Hige et al. 2015). Dopamine onto a silent KC's synapse lets it recover
+// toward baseline, and all synapses drift back slowly (forgetting).
+
+
+
+const LIF = { vRest: -52, vReset: -52, vTh: -45, tauM: 20, tauSyn: 5, tRef: 2.2, wSyn: 0.275, delay: 1.8 };
+
+const LEARNING = {
+  tauElig: 0.6, // s
+  tauDA: 0.3, // s
+  ltd: 0.12, // fractional depression per (dopamine spike x second) at full eligibility
+  eligCap: 8, // spikes in the trace that count as full eligibility
+  eligMin: 1.5, // below this a KC counts as silent
+  recover: 0.01, // dopamine-driven recovery of silent KCs' synapses, per (spike x second)
+  tauForget: 600, // s, passive return to baseline
+};
+
+class FlyBrain {
+  constructor(conn, { rng, dt = 0.5, plasticity = true, silenced = [], learning = {} } = {}) {
+    this.conn = conn;
+    this.rng = rng;
+    this.dt = dt;
+    this.plasticity = plasticity;
+    this.L = { ...LEARNING, ...learning };
+    const N = conn.N, E = conn.pre.length;
+    this.N = N;
+    this.nInput = conn.nInput;
+
+    // CSR adjacency by presynaptic neuron
+    const start = new Int32Array(N + 1);
+    for (let k = 0; k < E; k++) start[conn.pre[k] + 1]++;
+    for (let i = 0; i < N; i++) start[i + 1] += start[i];
+    const fill = start.slice(0, N);
+    this.outStart = start;
+    this.outPost = new Int32Array(E);
+    this.outW = new Float32Array(E);
+    const slotOf = new Int32Array(E);
+    for (let k = 0; k < E; k++) {
+      const i = conn.pre[k], s = fill[i]++;
+      this.outPost[s] = conn.post[k];
+      this.outW[s] = conn.count[k] * conn.sign[i] * LIF.wSyn;
+      slotOf[k] = s;
+    }
+
+    // Groups
+    this.groups = {};
+    for (const [k, ids] of Object.entries(conn.groups)) this.groups[k] = Int32Array.from(ids);
+    this.kcIds = Int32Array.from([...conn.groups.KC_L, ...conn.groups.KC_R]);
+    this.kcLocal = new Int32Array(N).fill(-1);
+    this.kcIds.forEach((id, j) => { this.kcLocal[id] = j; });
+
+    // Plastic synapses: KC -> MBON-11 gated by PPL1-γ1pedc, KC -> MBON-01 gated by PAM-γ5,
+    // using the dopamine neurons on the MBON's side. (Recomputed from the actual
+    // wiring, so a scrambled brain learns wherever such synapses happen to exist.)
+    const pl = { slot: [], kc: [], comp: [] };
+    for (let k = 0; k < E; k++) {
+      const a = conn.neurons[conn.pre[k]], b = conn.neurons[conn.post[k]];
+      if (a.type !== 'KC') continue;
+      if (b.type === 'MBON11') { pl.slot.push(slotOf[k]); pl.kc.push(this.kcLocal[a.id]); pl.comp.push(0 + b.side); }
+      else if (b.type === 'MBON01') { pl.slot.push(slotOf[k]); pl.kc.push(this.kcLocal[a.id]); pl.comp.push(2 + b.side); }
+    }
+    this.plSlot = Int32Array.from(pl.slot);
+    this.plKC = Int32Array.from(pl.kc);
+    this.plComp = Uint8Array.from(pl.comp);
+    this.plW0 = new Float32Array(this.plSlot.length);
+    for (let p = 0; p < this.plSlot.length; p++) this.plW0[p] = this.outW[this.plSlot[p]];
+    this.danGroups = [this.groups.PPL101_L, this.groups.PPL101_R, this.groups.PAM_L, this.groups.PAM_R];
+
+    // Which color each KC listens to (from its claws), for the memory readout
+    this.kcChannel = Array.from({ length: COLOR_CHANNELS.length }, () => new Float32Array(this.kcIds.length));
+    for (let k = 0; k < E; k++) {
+      const a = conn.neurons[conn.pre[k]], j = this.kcLocal[conn.post[k]];
+      if (a.type === 'vPN' && j >= 0) this.kcChannel[a.channel][j] += conn.count[k];
+    }
+
+    // Background drive and silencing
+    this.bgLambda = new Float32Array(N);
+    this.bgP0 = new Float32Array(N); // exp(-lambda)
+    this.bgW = new Float32Array(N);
+    this.silent = new Uint8Array(N);
+    for (const n of conn.neurons) {
+      const bg = BACKGROUND[n.type];
+      if (bg) { this.bgLambda[n.id] = bg.rate * dt / 1000; this.bgP0[n.id] = Math.exp(-this.bgLambda[n.id]); this.bgW[n.id] = bg.w; }
+    }
+    for (const id of silenced) this.silent[id] = 1;
+
+    // State
+    this.v = new Float32Array(N);
+    this.g = new Float32Array(N);
+    this.refr = new Float32Array(N);
+    this.rate = new Float32Array(N); // Hz, input neurons only
+    this.D = Math.max(1, Math.round(LIF.delay / dt));
+    this.R = this.D + 1;
+    this.ring = new Float32Array(this.R * N);
+    this.counts = new Uint16Array(N);
+    this.elig = new Float32Array(this.kcIds.length);
+    this.da = new Float32Array(4);
+    this.step = 0;
+    this.resetState();
+  }
+
+  resetState() {
+    this.v.fill(LIF.vRest);
+    this.g.fill(0);
+    this.refr.fill(0);
+    this.ring.fill(0);
+    this.rate.fill(0);
+    this.elig.fill(0);
+    this.da.fill(0);
+  }
+
+  resetWeights() {
+    for (let p = 0; p < this.plSlot.length; p++) this.outW[this.plSlot[p]] = this.plW0[p];
+  }
+
+  // Simulate `ms` milliseconds. Spike counts for the window end up in this.counts.
+  run(ms) {
+    const N = this.N, nIn = this.nInput, dt = this.dt, R = this.R, D = this.D;
+    const v = this.v, g = this.g, refr = this.refr, ring = this.ring, rate = this.rate;
+    const silent = this.silent, bgL = this.bgLambda, bgP0 = this.bgP0, bgW = this.bgW, counts = this.counts;
+    const outStart = this.outStart, outPost = this.outPost, outW = this.outW;
+    const rng = this.rng;
+    const { vRest, vReset, vTh, tRef } = LIF;
+    const kM = dt / LIF.tauM, decayG = Math.exp(-dt / LIF.tauSyn), pScale = dt / 1000;
+    counts.fill(0);
+    const steps = Math.max(1, Math.round(ms / dt));
+    for (let t = 0; t < steps; t++) {
+      const cur = (this.step % R) * N;
+      const fut = ((this.step + D) % R) * N;
+      // Poisson input neurons
+      for (let i = 0; i < nIn; i++) {
+        const r = rate[i];
+        if (r <= 0 || silent[i] || rng.next() >= r * pScale) continue;
+        counts[i]++;
+        for (let k = outStart[i], e = outStart[i + 1]; k < e; k++) ring[fut + outPost[k]] += outW[k];
+      }
+      // LIF neurons
+      for (let i = nIn; i < N; i++) {
+        let gi = g[i] + ring[cur + i];
+        ring[cur + i] = 0;
+        const lam = bgL[i];
+        if (lam > 0) {
+          // Poisson count by inversion (lambda < ~2 here)
+          let u = rng.next(), p = bgP0[i], s = p, n = 0;
+          while (u > s && n < 8) { n++; p *= lam / n; s += p; }
+          gi += n * bgW[i];
+        }
+        if (silent[i]) { g[i] = gi * decayG; v[i] = vRest; continue; }
+        if (refr[i] > 0) { refr[i] -= dt; v[i] = vReset; }
+        else {
+          let vi = v[i] + (vRest - v[i] + gi) * kM;
+          if (vi >= vTh) {
+            vi = vReset; refr[i] = tRef; counts[i]++;
+            for (let k = outStart[i], e = outStart[i + 1]; k < e; k++) ring[fut + outPost[k]] += outW[k];
+          }
+          v[i] = vi;
+        }
+        g[i] = gi * decayG;
+      }
+      this.step++;
+    }
+    return counts;
+  }
+
+  // Update traces and plastic weights after a window of `sec` seconds.
+  learn(sec) {
+    const L = this.L, counts = this.counts, elig = this.elig, da = this.da;
+    const dE = Math.exp(-sec / L.tauElig), dD = Math.exp(-sec / L.tauDA);
+    const kc = this.kcIds;
+    for (let j = 0; j < kc.length; j++) elig[j] = elig[j] * dE + counts[kc[j]];
+    for (let c = 0; c < 4; c++) {
+      const ids = this.danGroups[c];
+      let s = 0;
+      for (let k = 0; k < ids.length; k++) s += counts[ids[k]];
+      da[c] = da[c] * dD + s / ids.length;
+    }
+    if (!this.plasticity) return;
+    const outW = this.outW, slot = this.plSlot, pk = this.plKC, pc = this.plComp, w0 = this.plW0;
+    const fr = sec / L.tauForget, ltd = L.ltd, cap = L.eligCap, emin = L.eligMin, rec = L.recover;
+    for (let p = 0; p < slot.length; p++) {
+      let w = outW[slot[p]];
+      const D = da[pc[p]];
+      if (D > 0.02) {
+        const e = elig[pk[p]];
+        if (e > emin) w -= ltd * D * (e < cap ? (e - emin) / (cap - emin) : 1) * w * sec;
+        else if (w < w0[p]) w += rec * D * (w0[p] - w) * sec;
+      }
+      w += (w0[p] - w) * fr;
+      outW[slot[p]] = w;
+    }
+  }
+
+  setRate(key, values) {
+    const ids = this.groups[key];
+    if (typeof values === 'number') for (let k = 0; k < ids.length; k++) this.rate[ids[k]] = values;
+    else for (let k = 0; k < ids.length; k++) this.rate[ids[k]] = values[k];
+  }
+
+  groupCount(key) {
+    const ids = this.groups[key];
+    let s = 0;
+    for (let k = 0; k < ids.length; k++) s += this.counts[ids[k]];
+    return s;
+  }
+
+  // Learned value of each color channel per hemisphere: how strongly the KCs
+  // that listen to that color still drive MBON-11 (approach) and MBON-01
+  // (avoidance), relative to the naive weights. 1 = untouched.
+  memory() {
+    const out = {};
+    const n = this.kcIds.length, half = n / 2;
+    const sums = {};
+    for (let p = 0; p < this.plSlot.length; p++) {
+      const comp = this.plComp[p] < 2 ? 'approach' : 'avoid';
+      const j = this.plKC[p];
+      const side = j < half ? 0 : 1;
+      const ratio = this.outW[this.plSlot[p]] / this.plW0[p];
+      for (let c = 0; c < COLOR_CHANNELS.length; c++) {
+        const wgt = this.kcChannel[c][j];
+        if (wgt <= 0) continue;
+        const key = `${COLOR_CHANNELS[c]}|${comp}|${side}`;
+        const s = sums[key] || (sums[key] = [0, 0]);
+        s[0] += wgt * wgt * ratio; s[1] += wgt * wgt;
+      }
+    }
+    for (const c of COLOR_CHANNELS) {
+      out[c] = {};
+      for (const comp of ['approach', 'avoid']) {
+        const v = [0, 1].map((side) => { const s = sums[`${c}|${comp}|${side}`]; return s && s[1] > 0 ? s[0] / s[1] : 1; });
+        out[c][comp] = (v[0] + v[1]) / 2;
+      }
+      // positive = learned attraction, negative = learned aversion
+      out[c].valence = out[c].approach - out[c].avoid;
+    }
+    return out;
+  }
+}
+
+// ---- agent.js ----
+// Agents that play the world. FlyAgent closes the loop:
+//   world -> compound eye / optic lobe -> spiking brain -> descending neurons -> action
+// Game events reach the brain the way they would reach a fly: damage drives
+// nociceptors (-> PPL1 dopamine), healing and kills drive sweet-taste neurons
+// (-> PAM dopamine).
+
+
+
+
+
+
+// Descending-neuron rates (Hz, smoothed) to game controls.
+const READOUT = {
+  tau: 0.08, // s, smoothing of DN rates
+  turnGain: 1 / 70, // turn = gain x (left steering DNs - right steering DNs)
+  fwdGain: 1 / 28, // forward from P9
+  backGain: 1 / 18, // backward from MDN
+  strafeGain: 1 / 25, // sidestep away from the giant fiber that fired
+  fireMin: 12, // fire when both AOTU019 populations exceed this (target in the binocular zone)
+  fireSum: 40, // ... and together exceed this (Hz)
+};
+
+const MOTOR_GROUPS = ['DNa02', 'DNa01', 'P9', 'MDN', 'DNp01', 'AOTU019', 'AOTU025', 'MBON11', 'MBON01', 'LALi', 'PPL101', 'PAM', 'KC', 'APL'];
+
+class FlyAgent {
+  constructor({ seed = 1, silence = [], scramble = false, plasticity = true, dt = 0.5, learning = {}, readout = {} } = {}) {
+    this.kind = 'fly';
+    this.seed = seed;
+    // Each fly gets its own random Kenyon cell claws, like real flies.
+    let conn = buildConnectome(new RNG(hashSeed(seed, 'wiring')));
+    if (scramble) conn = scrambleConnectome(conn, new RNG(hashSeed(seed, 'scramble')));
+    this.conn = conn;
+    const silenced = conn.neurons.filter((n) => silence.includes(n.type)).map((n) => n.id);
+    this.brain = new FlyBrain(conn, { rng: new RNG(hashSeed(seed, 'noise')), dt, plasticity, silenced, learning });
+    this.eye = new OpticLobe();
+    this.R = { ...READOUT, ...readout };
+    this.ema = {};
+    for (const g of MOTOR_GROUPS) for (const s of SIDES) this.ema[`${g}_${s}`] = 0;
+    // per-input-neuron lookup into the optic lobe output
+    const col = (key) => Int32Array.from(this.brain.groups[key], (id) => conn.neurons[id].col);
+    const ch = (key) => Int32Array.from(this.brain.groups[key], (id) => conn.neurons[id].channel);
+    this.map = SIDES.map((s) => ({ lc10a: col(`LC10a_${s}`), lc4: col(`LC4_${s}`), lplc2: col(`LPLC2_${s}`), vpn: ch(`vPN_${s}`) }));
+    this.buf = {};
+    for (const [k, ids] of Object.entries(this.brain.groups)) this.buf[k] = new Float32Array(ids.length);
+    this.beginEpisode();
+  }
+
+  beginEpisode() {
+    this.brain.resetState();
+    this.eye.reset();
+    this.pain = 0;
+    this.sugar = 0;
+    for (const k in this.ema) this.ema[k] = 0;
+    this.lastAction = { forward: 0, turn: 0, strafe: 0, fire: false };
+  }
+
+  // ev: events returned by the previous world.step (or null)
+  act(world, ev) {
+    if (ev) {
+      this.pain += ev.damage / 10;
+      this.sugar += (ev.heal > 0 ? 1.2 : 0) + ev.kill * 1.0;
+    }
+    const o = this.eye.process(world);
+    const b = this.brain, buf = this.buf;
+    for (let s = 0; s < 2; s++) {
+      const S = SIDES[s], m = this.map[s];
+      const fillCols = (key, src, idx) => { const a = buf[key]; for (let i = 0; i < a.length; i++) a[i] = src[idx[i]]; b.setRate(key, a); };
+      fillCols(`LC10a_${S}`, o.lc10a[s], m.lc10a);
+      fillCols(`LC4_${S}`, o.lc4[s], m.lc4);
+      fillCols(`LPLC2_${S}`, o.lplc2[s], m.lplc2);
+      fillCols(`vPN_${S}`, o.vpn[s], m.vpn);
+      b.setRate(`HS_${S}`, o.hs[s]);
+      b.setRate(`MECH_${S}`, o.mech[s]);
+      b.setRate(`MECHb_${S}`, o.mechBack[s]);
+      b.setRate(`NOCI_${S}`, 250 * Math.min(1, this.pain));
+      b.setRate(`GRN_${S}`, 250 * Math.min(1, this.sugar));
+    }
+    b.run(TIC * 1000);
+    b.learn(TIC);
+    const decay = Math.exp(-TIC / 0.25);
+    this.pain *= decay;
+    this.sugar *= decay;
+
+    // smoothed firing rates of the motor-side populations
+    const a = 1 - Math.exp(-TIC / this.R.tau);
+    for (const k in this.ema) {
+      const n = b.groups[k].length;
+      this.ema[k] += a * (b.groupCount(k) / n / TIC - this.ema[k]);
+    }
+    const r = this.ema, R = this.R;
+    const turn = R.turnGain * (r.DNa02_L + r.DNa01_L - r.DNa02_R - r.DNa01_R);
+    const forward = R.fwdGain * (r.P9_L + r.P9_R) / 2 - R.backGain * (r.MDN_L + r.MDN_R) / 2;
+    const strafe = R.strafeGain * (r.DNp01_R - r.DNp01_L);
+    const fire = r.AOTU019_L > R.fireMin && r.AOTU019_R > R.fireMin && r.AOTU019_L + r.AOTU019_R > R.fireSum;
+    this.lastAction = { turn, forward, strafe, fire };
+    this.lastOptics = o;
+    return this.lastAction;
+  }
+
+  memory() { return this.brain.memory(); }
+}
+
+// Baseline: random walk with random trigger pulls. No brain, no learning.
+class RandomAgent {
+  constructor({ seed = 1 } = {}) {
+    this.kind = 'random';
+    this.rng = new RNG(hashSeed(seed, 'random-agent'));
+    this.beginEpisode();
+  }
+  beginEpisode() { this.turn = 0; this.hold = 0; }
+  act() {
+    const rng = this.rng;
+    if (--this.hold <= 0) { this.turn = rng.range(-1, 1); this.hold = 5 + rng.int(25); }
+    return { turn: this.turn, forward: rng.range(0.2, 1), strafe: 0, fire: rng.chance(0.08) };
+  }
+  memory() { return Object.fromEntries(COLOR_CHANNELS.map((c) => [c, { approach: 1, avoid: 1, valence: 0 }])); }
+}
+
+// ---- stats.js ----
+// Small statistics toolkit for the test engine. Permutation tests are the
+// primary inference (no distribution assumptions); t-tests are reported too.
+
+
+const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN);
+function sd(a) {
+  if (a.length < 2) return 0;
+  const m = mean(a);
+  return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1));
+}
+const sem = (a) => (a.length ? sd(a) / Math.sqrt(a.length) : NaN);
+
+// Regularized incomplete beta I_x(a, b) via continued fraction (Numerical Recipes).
+function lnGamma(z) {
+  const g = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let x = z, y = z, tmp = x + 5.5;
+  tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (let j = 0; j < 6; j++) ser += g[j] / ++y;
+  return -tmp + Math.log((2.5066282746310005 * ser) / x);
+}
+function betacf(a, b, x) {
+  const MAXIT = 200, EPS = 3e-14, FPMIN = 1e-300;
+  let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - (qab * x) / qap;
+  if (Math.abs(d) < FPMIN) d = FPMIN;
+  d = 1 / d;
+  let h = d;
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m;
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; h *= d * c;
+    aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < EPS) break;
+  }
+  return h;
+}
+function incBeta(x, a, b) {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  const bt = Math.exp(lnGamma(a + b) - lnGamma(a) - lnGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? (bt * betacf(a, b, x)) / a : 1 - (bt * betacf(b, a, 1 - x)) / b;
+}
+// Two-sided p-value of Student's t with df degrees of freedom.
+function tPValue(t, df) {
+  if (!isFinite(t)) return t === t ? 0 : NaN;
+  return incBeta(df / (df + t * t), df / 2, 0.5);
+}
+
+function oneSampleT(a, mu = 0) {
+  const n = a.length, s = sd(a);
+  if (n < 2) return { t: NaN, df: n - 1, p: NaN };
+  if (s === 0) { const same = mean(a) === mu; return { t: same ? 0 : Infinity, df: n - 1, p: same ? 1 : 0 }; }
+  const t = (mean(a) - mu) / (s / Math.sqrt(n));
+  return { t, df: n - 1, p: tPValue(t, n - 1) };
+}
+
+function welchT(a, b) {
+  const va = sd(a) ** 2 / a.length, vb = sd(b) ** 2 / b.length;
+  if (a.length < 2 || b.length < 2) return { t: NaN, df: NaN, p: NaN };
+  if (va + vb === 0) { const same = mean(a) === mean(b); return { t: same ? 0 : Infinity, df: a.length + b.length - 2, p: same ? 1 : 0 }; }
+  const t = (mean(a) - mean(b)) / Math.sqrt(va + vb);
+  const df = (va + vb) ** 2 / ((va * va) / (a.length - 1) + (vb * vb) / (b.length - 1));
+  return { t, df, p: tPValue(t, df) };
+}
+
+// Two-sided sign-flip permutation test of mean(a) = 0 (one-sample or paired differences).
+function signFlipTest(a, { n = 20000, seed = 1 } = {}) {
+  const k = a.length;
+  if (!k) return { p: NaN };
+  const obs = Math.abs(mean(a));
+  if (k <= 16) {
+    // exact enumeration
+    let ge = 0;
+    const total = 1 << k;
+    for (let m = 0; m < total; m++) {
+      let s = 0;
+      for (let i = 0; i < k; i++) s += m & (1 << i) ? -a[i] : a[i];
+      if (Math.abs(s / k) >= obs - 1e-12) ge++;
+    }
+    return { p: ge / total, exact: true };
+  }
+  const rng = new RNG(seed);
+  let ge = 0;
+  for (let r = 0; r < n; r++) {
+    let s = 0;
+    for (let i = 0; i < k; i++) s += rng.next() < 0.5 ? -a[i] : a[i];
+    if (Math.abs(s / k) >= obs - 1e-12) ge++;
+  }
+  return { p: (ge + 1) / (n + 1), exact: false };
+}
+
+// Two-sided permutation test of mean(a) = mean(b), independent samples.
+function permutationTest(a, b, { n = 20000, seed = 2 } = {}) {
+  const all = [...a, ...b], na = a.length;
+  const obs = Math.abs(mean(a) - mean(b));
+  const rng = new RNG(seed);
+  let ge = 0;
+  for (let r = 0; r < n; r++) {
+    rng.shuffle(all);
+    let sa = 0, sb = 0;
+    for (let i = 0; i < all.length; i++) (i < na ? (sa += all[i]) : (sb += all[i]));
+    if (Math.abs(sa / na - sb / (all.length - na)) >= obs - 1e-12) ge++;
+  }
+  return { p: (ge + 1) / (n + 1) };
+}
+
+function cohenD(a, b) {
+  const na = a.length, nb = b.length;
+  const sp = Math.sqrt(((na - 1) * sd(a) ** 2 + (nb - 1) * sd(b) ** 2) / (na + nb - 2));
+  return sp > 0 ? (mean(a) - mean(b)) / sp : 0;
+}
+
+function bootstrapCI(a, { n = 5000, seed = 3, level = 0.95 } = {}) {
+  if (!a.length) return [NaN, NaN];
+  const rng = new RNG(seed), ms = new Float64Array(n);
+  for (let r = 0; r < n; r++) {
+    let s = 0;
+    for (let i = 0; i < a.length; i++) s += a[rng.int(a.length)];
+    ms[r] = s / a.length;
+  }
+  ms.sort();
+  const lo = (1 - level) / 2;
+  return [ms[Math.floor(lo * (n - 1))], ms[Math.ceil((1 - lo) * (n - 1))]];
+}
+
+const fmtP = (p) => (!isFinite(p) ? 'n/a' : p < 0.001 ? '<0.001' : p.toFixed(3));
+const pEq = (p) => (!isFinite(p) ? 'p n/a' : p < 0.001 ? 'p<0.001' : `p=${p.toFixed(3)}`);
+
+// ---- experiment.js ----
+// The test engine: run flies through protocols, with controls, and decide who learned.
+//
+// Design (classic fly conditioning, adapted to the game):
+//  * Each subject is one fly: its own random Kenyon-cell wiring and noise seed.
+//  * Which orb color heals is counterbalanced across subjects (even = blue,
+//    odd = green). Any innate color bias cancels in the group mean, so a group
+//    preference for the healing color can only come from learning.
+//  * Every condition sees the same flies and the same worlds; only the
+//    manipulation differs, so comparisons are paired by subject.
+//  * Reversal: after acquisition the colors swap meaning. A fly that learned
+//    has to unlearn and relearn; fixed wiring cannot follow the swap.
+
+
+
+
+
+const CONDITIONS = {
+  intact: { label: 'Intact fly', about: 'Full model with dopamine-gated plasticity.' },
+  'no-dopamine': { label: 'Dopamine blocked', silence: ['PPL101', 'PAM'], about: 'PPL1 and PAM dopamine neurons silenced, so reinforcement never reaches the mushroom body.' },
+  'kc-block': { label: 'Kenyon cells blocked', silence: ['KC'], about: 'Mushroom body intrinsic neurons silenced: no learned output at all.' },
+  scrambled: { label: 'Scrambled wiring', scramble: true, about: 'Every synapse rewired at random, keeping each neuron’s in/out degree and transmitter.' },
+  'lc10a-lesion': { label: 'LC10a lesion', silence: ['LC10a'], about: 'Small-object detectors silenced: no innate pursuit or aiming.' },
+  random: { label: 'Random policy', random: true, about: 'No brain. Random turns, random trigger pulls.' },
+};
+
+const PROTOCOLS = {
+  learning: {
+    label: 'Valence learning + reversal', scenario: 'forage', subjects: 16, acquisition: 12, reversal: 6, block: 3,
+    conditions: ['intact', 'no-dopamine', 'kc-block', 'scrambled', 'random'],
+  },
+  combat: {
+    label: 'Imp combat', scenario: 'combat', subjects: 12, acquisition: 10, reversal: 0, block: 3,
+    conditions: ['intact', 'no-dopamine', 'lc10a-lesion', 'scrambled', 'random'],
+  },
+  quick: {
+    label: 'Quick learning check', scenario: 'forage', subjects: 6, acquisition: 6, reversal: 3, block: 3,
+    conditions: ['intact', 'no-dopamine', 'random'],
+  },
+};
+
+function makeAgent(condition, seed) {
+  const c = CONDITIONS[condition];
+  if (!c) throw new Error(`unknown condition ${condition}`);
+  if (c.random) return new RandomAgent({ seed });
+  return new FlyAgent({ seed, silence: c.silence || [], scramble: !!c.scramble });
+}
+
+function subjectSeed(baseSeed, subject) { return hashSeed(baseSeed, 'fly', subject); }
+function worldSeed(baseSeed, subject, ep) { return hashSeed(baseSeed, 'world', subject, ep); }
+const goodColorFor = (subject) => (subject % 2 === 0 ? 'blue' : 'green');
+
+function runEpisode(agent, world, onTic) {
+  agent.beginEpisode();
+  let ev = null;
+  while (!world.done) {
+    const action = agent.act(world, ev);
+    ev = world.step(action);
+    if (onTic) onTic(world, agent, action, ev);
+  }
+  const s = world.stats;
+  const n = s.good + s.bad;
+  return {
+    good: s.good, bad: s.bad, pi: n ? (s.good - s.bad) / n : 0,
+    kills: s.kills, shots: s.shots, hits: s.hits, damage: s.damage, healed: s.healed,
+    survived: +world.time.toFixed(2), died: !world.player.alive, distance: +s.distance.toFixed(1), bumps: s.bumps,
+    touches: s.touches,
+  };
+}
+
+// Run every episode of one subject under one condition.
+function runSubject({ protocol, condition, subject, baseSeed = 1, onEpisode }) {
+  const P = typeof protocol === 'string' ? PROTOCOLS[protocol] : protocol;
+  const agent = makeAgent(condition, subjectSeed(baseSeed, subject));
+  const firstGood = goodColorFor(subject);
+  const total = P.acquisition + P.reversal;
+  const episodes = [];
+  for (let ep = 0; ep < total; ep++) {
+    const phase = ep < P.acquisition ? 'acq' : 'rev';
+    const goodColor = phase === 'acq' ? firstGood : otherColor(firstGood);
+    const world = new World({ scenario: P.scenario, seed: worldSeed(baseSeed, subject, ep), goodColor });
+    const m = runEpisode(agent, world);
+    const mem = agent.memory();
+    m.ep = ep; m.phase = phase; m.goodColor = goodColor;
+    m.memory = Object.fromEntries(Object.entries(mem).map(([k, v]) => [k, +v.valence.toFixed(3)]));
+    episodes.push(m);
+    if (onEpisode) onEpisode(m);
+  }
+  return { condition, subject, firstGood, episodes };
+}
+
+function* tasksFor(P) {
+  for (const condition of P.conditions) for (let subject = 0; subject < P.subjects; subject++) yield { condition, subject };
+}
+
+// ---------- analysis ----------
+
+// Encounter-level analysis: every orb touch in order, binned.
+const TOUCH_BIN = 4;
+const TOUCH_BINS = 10;
+function piOfTouches(str) {
+  let g = 0, b = 0;
+  for (const ch of str) (ch === 'g' ? g++ : b++);
+  return g + b ? (g - b) / (g + b) : null;
+}
+function touchCurve(seqs) {
+  const out = [];
+  for (let k = 0; k < TOUCH_BINS; k++) {
+    const v = seqs.map((q) => piOfTouches(q.slice(k * TOUCH_BIN, (k + 1) * TOUCH_BIN))).filter((x) => x !== null);
+    out.push({ bin: k, from: k * TOUCH_BIN + 1, to: (k + 1) * TOUCH_BIN, mean: mean(v), sem: sem(v), n: v.length });
+  }
+  return out;
+}
+// paired values where both exist
+function pairs(a, b) {
+  const d = [];
+  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== null && b[i] !== null) d.push(a[i] - b[i]);
+  return d;
+}
+
+// Pooled preference index over a set of episodes: (good - bad) / (good + bad)
+function blockPI(eps) {
+  let g = 0, b = 0;
+  for (const e of eps) { g += e.good; b += e.bad; }
+  return g + b ? (g - b) / (g + b) : 0;
+}
+const per = (eps, f) => mean(eps.map(f));
+
+function analyze(P, results, { alpha = 0.05 } = {}) {
+  const B = P.block;
+  const byCond = {};
+  for (const r of results) (byCond[r.condition] ||= []).push(r);
+  for (const k in byCond) byCond[k].sort((a, b) => a.subject - b.subject);
+  const total = P.acquisition + P.reversal;
+  const out = { protocol: P, conditions: {}, comparisons: [], verdicts: [] };
+
+  for (const cond of P.conditions) {
+    const subs = byCond[cond] || [];
+    if (!subs.length) continue;
+    const curve = [];
+    for (let ep = 0; ep < total; ep++) {
+      const v = subs.map((s) => s.episodes[ep]?.pi).filter((x) => x !== undefined);
+      curve.push({ ep, mean: mean(v), sem: sem(v) });
+    }
+    const acq = (s) => s.episodes.slice(0, P.acquisition);
+    const rev = (s) => s.episodes.slice(P.acquisition);
+    const seqAcq = subs.map((s) => acq(s).map((e) => e.touches || '').join(''));
+    const seqRev = subs.map((s) => rev(s).map((e) => e.touches || '').join(''));
+    const early = subs.map((s) => blockPI(acq(s).slice(0, B)));
+    const late = subs.map((s) => blockPI(acq(s).slice(-B)));
+    const all = subs.map((s) => blockPI(acq(s)));
+    const c = {
+      label: CONDITIONS[cond].label, about: CONDITIONS[cond].about, n: subs.length, curve,
+      early: { mean: mean(early), sem: sem(early), values: early },
+      late: { mean: mean(late), sem: sem(late), values: late, ci: bootstrapCI(late), perm: signFlipTest(late), t: oneSampleT(late) },
+      overall: { mean: mean(all), sem: sem(all), values: all },
+      learningIndex: (() => { const d = late.map((x, i) => x - early[i]); return { mean: mean(d), sem: sem(d), perm: signFlipTest(d) }; })(),
+      pickups: per(subs.flatMap(acq), (e) => e.good + e.bad),
+      kills: per(subs.flatMap(acq), (e) => e.kills),
+      accuracy: (() => { const sh = subs.flatMap(acq).reduce((s, e) => s + e.shots, 0); const h = subs.flatMap(acq).reduce((s, e) => s + e.hits, 0); return sh ? h / sh : 0; })(),
+      damage: per(subs.flatMap(acq), (e) => e.damage),
+      survived: per(subs.flatMap(acq), (e) => e.survived),
+      deaths: per(subs.flatMap(acq), (e) => (e.died ? 1 : 0)),
+      killsEarly: mean(subs.map((s) => per(acq(s).slice(0, B), (e) => e.kills))),
+      killsLate: mean(subs.map((s) => per(acq(s).slice(-B), (e) => e.kills))),
+      damageEarly: mean(subs.map((s) => per(acq(s).slice(0, B), (e) => e.damage))),
+      damageLate: mean(subs.map((s) => per(acq(s).slice(-B), (e) => e.damage))),
+      damageLateValues: subs.map((s) => per(acq(s).slice(-B), (e) => e.damage)),
+      killsLateValues: subs.map((s) => per(acq(s).slice(-B), (e) => e.kills)),
+    };
+    const naive = seqAcq.map((q) => piOfTouches(q.slice(0, TOUCH_BIN)));
+    const naiveV = naive.filter((x) => x !== null);
+    c.naive = { mean: mean(naiveV), sem: sem(naiveV), n: naiveV.length, values: naive, perm: signFlipTest(naiveV) };
+    c.touchCurve = { acq: touchCurve(seqAcq) };
+    if (P.reversal > 0) {
+      c.touchCurve.rev = touchCurve(seqRev);
+      const swapT = seqRev.map((q) => piOfTouches(q.slice(0, TOUCH_BIN)));
+      const swapV = swapT.filter((x) => x !== null);
+      const carry = pairs(late, swapT);
+      const revFirst = subs.map((s) => blockPI(rev(s).slice(0, Math.min(B, P.reversal))));
+      const revLast = subs.map((s) => blockPI(rev(s).slice(-Math.min(B, P.reversal))));
+      const drop = revFirst.map((x, i) => late[i] - x);
+      c.reversal = {
+        firstTouches: { mean: mean(swapV), sem: sem(swapV), n: swapV.length, values: swapT, perm: signFlipTest(swapV) },
+        carryOver: { mean: mean(carry), sem: sem(carry), n: carry.length, perm: signFlipTest(carry) },
+        first: { mean: mean(revFirst), sem: sem(revFirst), values: revFirst },
+        last: { mean: mean(revLast), sem: sem(revLast), values: revLast, perm: signFlipTest(revLast) },
+        drop: { mean: mean(drop), sem: sem(drop), perm: signFlipTest(drop) },
+      };
+    }
+    out.conditions[cond] = c;
+  }
+
+  // Compare every condition with the intact fly, paired by subject.
+  const ref = out.conditions.intact;
+  if (ref) {
+    for (const cond of P.conditions) {
+      if (cond === 'intact' || !out.conditions[cond]) continue;
+      const o = out.conditions[cond];
+      const n = Math.min(ref.late.values.length, o.late.values.length);
+      const d = ref.late.values.slice(0, n).map((x, i) => x - o.late.values[i]);
+      const dmg = ref.damageLateValues.slice(0, n).map((x, i) => x - o.damageLateValues[i]);
+      const kil = ref.killsLateValues.slice(0, n).map((x, i) => x - o.killsLateValues[i]);
+      out.comparisons.push({
+        a: 'intact', b: cond, metric: 'late PI', diff: mean(d), sem: sem(d), perm: signFlipTest(d),
+        d: cohenD(ref.late.values, o.late.values),
+        damageDiff: mean(dmg), damagePerm: signFlipTest(dmg), killsDiff: mean(kil), killsPerm: signFlipTest(kil),
+      });
+    }
+  }
+
+  // Verdict per condition
+  for (const cond of P.conditions) {
+    const c = out.conditions[cond];
+    if (!c) continue;
+    let verdict, why;
+    if (P.scenario === 'combat') {
+      const cmp = out.comparisons.find((x) => x.b === cond);
+      verdict = c.kills > 0.5 ? 'Fights' : 'Does not fight';
+      why = `${c.kills.toFixed(2)} kills/episode at ${(c.accuracy * 100).toFixed(0)}% accuracy, ${c.damage.toFixed(0)} damage taken`;
+      if (cmp) { const d = -cmp.killsDiff; why += `; ${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(2)} kills/episode vs intact (${pEq(cmp.killsPerm.p)})`; }
+    } else {
+      const learned = c.late.mean > 0 && c.late.perm.p < alpha;
+      // Re-learning: the old memory shows up right after the swap (preference
+      // falls below the trained level) and the new preference is in place by the end.
+      const reverses = c.reversal ? c.reversal.carryOver.mean > 0 && c.reversal.carryOver.perm.p < alpha
+        && c.reversal.last.mean > 0 && c.reversal.last.perm.p < alpha : null;
+      if (learned && reverses) verdict = 'Learns and re-learns';
+      else if (learned) verdict = 'Learns';
+      else verdict = 'No evidence of learning';
+      why = `late PI ${c.late.mean.toFixed(2)} ± ${c.late.sem.toFixed(2)} (${pEq(c.late.perm.p)})`;
+      if (c.reversal) why += `; first ${TOUCH_BIN} touches after the swap ${c.reversal.firstTouches.mean.toFixed(2)} (drop ${pEq(c.reversal.carryOver.perm.p)}), last block ${c.reversal.last.mean.toFixed(2)} (${pEq(c.reversal.last.perm.p)})`;
+    }
+    out.verdicts.push({ condition: cond, label: c.label, verdict, why });
+  }
+  return out;
+}
+
+// Drop per-fly arrays so the analysis is small enough to embed in the web page.
+function slimAnalysis(A) {
+  return JSON.parse(JSON.stringify(A, (k, v) => (k === 'values' || k.endsWith('Values') ? undefined : typeof v === 'number' ? +v.toPrecision(4) : v)));
+}
+
+const SPARK = ' ▁▂▃▄▅▆▇█';
+function sparkline(values, lo = -1, hi = 1) {
+  return values.map((v) => SPARK[Math.max(0, Math.min(8, Math.round(((v - lo) / (hi - lo)) * 8)))]).join('');
+}
+const f2 = (x) => (isFinite(x) ? (x >= 0 ? ' ' : '') + x.toFixed(2) : ' n/a');
+
+function reportMarkdown(A, meta = {}) {
+  const P = A.protocol, L = [];
+  L.push(`## ${P.label}`);
+  L.push('');
+  L.push(`Scenario \`${P.scenario}\`, ${P.subjects} flies per condition, ${P.acquisition} acquisition episodes` + (P.reversal ? ` then ${P.reversal} reversal episodes` : '') + `, blocks of ${P.block}.` + (meta.seed !== undefined ? ` Base seed ${meta.seed}.` : ''));
+  L.push('');
+  L.push('| Condition | Verdict | Evidence |');
+  L.push('|---|---|---|');
+  for (const v of A.verdicts) L.push(`| ${v.label} | **${v.verdict}** | ${v.why} |`);
+  L.push('');
+  if (P.scenario !== 'combat') {
+    L.push('Preference index PI = (healing orbs − burning orbs) / all orbs touched, scored against whichever color currently heals. 0 = no preference, 1 = only healing orbs.');
+    L.push('');
+    L.push(`| Condition | First ${TOUCH_BIN} touches | Late PI | 95% CI | Orbs/episode` + (P.reversal ? ` | First ${TOUCH_BIN} touches after swap | Last block after swap` : '') + ' |');
+    L.push('|---|---|---|---|---|' + (P.reversal ? '---|---|' : ''));
+    const pm = (x) => `${f2(x.mean)} ± ${(x.sem || 0).toFixed(2)}`;
+    for (const c of Object.values(A.conditions)) {
+      L.push(`| ${c.label} | ${pm(c.naive)} | ${pm(c.late)} | [${c.late.ci[0].toFixed(2)}, ${c.late.ci[1].toFixed(2)}] | ${c.pickups.toFixed(1)}` + (c.reversal ? ` | ${pm(c.reversal.firstTouches)} | ${pm(c.reversal.last)}` : '') + ' |');
+    }
+    L.push('');
+    L.push(`Learning curves by encounter (mean PI over successive bins of ${TOUCH_BIN} orb touches, −1 to +1` + (P.reversal ? '; | marks the color swap' : '') + '):');
+    L.push('');
+    L.push('```');
+    for (const c of Object.values(A.conditions)) {
+      const line = (cv) => sparkline(cv.map((x) => (isFinite(x.mean) ? x.mean : 0)));
+      L.push(`${c.label.padEnd(22)} ${line(c.touchCurve.acq)}${c.touchCurve.rev ? '|' + line(c.touchCurve.rev) : ''}`);
+    }
+    L.push('```');
+    L.push('');
+    L.push('Learning curves by episode:');
+    L.push('');
+    L.push('```');
+    for (const c of Object.values(A.conditions)) {
+      const sp = sparkline(c.curve.map((x) => x.mean));
+      L.push(`${c.label.padEnd(22)} ${P.reversal ? sp.slice(0, P.acquisition) + '|' + sp.slice(P.acquisition) : sp}`);
+    }
+    L.push('```');
+    L.push('');
+    if (A.comparisons.length) {
+      L.push('Intact vs each control (late PI, paired by fly):');
+      L.push('');
+      L.push('| Comparison | Δ late PI | p (permutation) | Cohen’s d |');
+      L.push('|---|---|---|---|');
+      for (const c of A.comparisons) L.push(`| intact − ${A.conditions[c.b].label} | ${f2(c.diff)} ± ${c.sem.toFixed(2)} | ${fmtP(c.perm.p)} | ${c.d.toFixed(2)} |`);
+      L.push('');
+    }
+  } else {
+    L.push('| Condition | Kills/episode | Accuracy | Damage/episode | Survival (s) | Deaths/episode | Kills early→late | Damage early→late |');
+    L.push('|---|---|---|---|---|---|---|---|');
+    for (const c of Object.values(A.conditions)) {
+      L.push(`| ${c.label} | ${c.kills.toFixed(2)} | ${(c.accuracy * 100).toFixed(0)}% | ${c.damage.toFixed(1)} | ${c.survived.toFixed(1)} | ${c.deaths.toFixed(2)} | ${c.killsEarly.toFixed(2)} → ${c.killsLate.toFixed(2)} | ${c.damageEarly.toFixed(0)} → ${c.damageLate.toFixed(0)} |`);
+    }
+    L.push('');
+    if (A.comparisons.length) {
+      L.push('Intact vs each control in the last block (paired by fly):');
+      L.push('');
+      L.push('| Comparison | Δ kills/episode | p | Δ damage/episode | p |');
+      L.push('|---|---|---|---|---|');
+      for (const c of A.comparisons) L.push(`| intact − ${A.conditions[c.b].label} | ${f2(c.killsDiff)} | ${fmtP(c.killsPerm.p)} | ${f2(c.damageDiff)} | ${fmtP(c.damagePerm.p)} |`);
+      L.push('');
+    }
+  }
+  return L.join('\n');
+}
+
+return { hashSeed, RNG, WALL_STYLE, MAPS, TIC_RATE, TIC, DEG, SCENARIOS, ORB_COLORS, otherColor, PLAYER, IMP, PISTOL, ORB, wrapAngle, World, EYE, COLOR_CHANNELS, lookOf, columnAzimuths, OpticLobe, NT_SIGN, SIDES, CELL_TYPES, BACKGROUND, WIRING, buildConnectome, scrambleConnectome, connectomeSummary, LIF, LEARNING, FlyBrain, READOUT, FlyAgent, RandomAgent, mean, sd, sem, incBeta, tPValue, oneSampleT, welchT, signFlipTest, permutationTest, cohenD, bootstrapCI, fmtP, pEq, CONDITIONS, PROTOCOLS, makeAgent, subjectSeed, worldSeed, goodColorFor, runEpisode, runSubject, tasksFor, TOUCH_BIN, TOUCH_BINS, analyze, slimAnalysis, reportMarkdown };
+})();</script>
+<script>(function () {
+// Doom-style renderer for the browser: raycast walls, floor and ceiling,
+// billboard sprites, a pistol, and a status bar with a fly's face.
+// All art is generated procedurally at startup.
+
+const VIEW_W = 320, VIEW_H = 168, SCALE = 3, BAR_H = 32;
+const FOV = 75 * Math.PI / 180;
+const TAN = Math.tan(FOV / 2);
+const PROJ = (VIEW_W / 2) / TAN;
+
+const rgba = (r, g, b, a = 255) => ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
+const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+
+function seeded(seed) { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); }
+
+// ---------- textures (64x64, Uint32 RGBA) ----------
+function makeTexture(kind) {
+  const N = 64, t = new Uint32Array(N * N), r = seeded(kind.charCodeAt(0) * 977);
+  const put = (x, y, c) => { t[(y & 63) * N + (x & 63)] = c; };
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const n = r() * 0.18 - 0.09;
+    let R, G, B;
+    if (kind === 'T') { // tech panel: grey plates, dark seams, rivets, a lit strip
+      const seam = (x % 32 === 0) || (y % 16 === 0);
+      const v = 0.55 + n + (y % 16 < 2 ? 0.08 : 0);
+      R = G = B = seam ? 0.28 : v; B += 0.04;
+      if ((x % 32 === 4 || x % 32 === 27) && (y % 16 === 4 || y % 16 === 11)) R = G = B = 0.85;
+      if (y >= 40 && y < 44 && x > 8 && x < 56) { R = 0.9; G = 0.75; B = 0.35; }
+    } else if (kind === 'B') { // brown stone bricks
+      const row = Math.floor(y / 12), off = row % 2 ? 16 : 0;
+      const mortar = y % 12 === 0 || (x + off) % 32 === 0;
+      const v = 0.45 + n + Math.sin((x + row * 7) * 0.9) * 0.03;
+      [R, G, B] = mortar ? [0.22, 0.17, 0.12] : [v * 1.05, v * 0.74, v * 0.5];
+    } else if (kind === '#') { // steel pillar: vertical ribs
+      const rib = Math.sin(x / 64 * Math.PI * 8);
+      const v = 0.45 + rib * 0.12 + n * 0.6;
+      [R, G, B] = [v * 0.92, v * 0.96, v * 1.08];
+      if (y % 32 < 2) [R, G, B] = [0.2, 0.2, 0.24];
+    } else if (kind === 'S') { // slime-streaked stone
+      const v = 0.38 + n;
+      [R, G, B] = [v * 0.9, v * 0.85, v * 0.65];
+      const drip = Math.sin(x * 0.7) * 6 + 20 + (x % 7) * 3;
+      if (y < drip && (x % 9 < 4)) [R, G, B] = [0.25, 0.55 + n, 0.18];
+    } else if (kind === 'floor') { // grey-brown tiles with cracks
+      const seam = x % 32 === 0 || y % 32 === 0;
+      const v = 0.36 + n * 0.8;
+      [R, G, B] = seam ? [0.2, 0.18, 0.16] : [v * 1.02, v * 0.95, v * 0.85];
+    } else { // ceiling: dark panels with a light
+      const seam = x % 16 === 0 || y % 16 === 0;
+      const v = 0.26 + n * 0.5;
+      [R, G, B] = seam ? [0.15, 0.15, 0.17] : [v, v, v * 1.1];
+      if (x > 20 && x < 44 && y > 26 && y < 38) [R, G, B] = [0.95, 0.92, 0.8];
+    }
+    put(x, y, rgba(clamp(R * 255, 0, 255) | 0, clamp(G * 255, 0, 255) | 0, clamp(B * 255, 0, 255) | 0));
+  }
+  return t;
+}
+
+// ---------- sprites (drawn with canvas, read back as pixels) ----------
+function spriteFrom(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  draw(g, w, h);
+  const d = g.getImageData(0, 0, w, h);
+  return { w, h, px: new Uint32Array(d.data.buffer.slice(0)) };
+}
+function drawImp(g, w, h, pose) {
+  const body = '#7a4a2a', dark = '#4a2a16', light = '#a8703f';
+  if (pose === 'dead') {
+    g.fillStyle = '#6a1010'; g.fillRect(4, h - 10, w - 8, 8);
+    g.fillStyle = body; g.fillRect(8, h - 14, w - 16, 7);
+    g.fillStyle = '#ff3a1a'; g.fillRect(12, h - 12, 2, 2); g.fillRect(20, h - 12, 2, 2);
+    return;
+  }
+  const cx = w / 2;
+  // legs
+  g.fillStyle = dark; g.fillRect(cx - 9, h - 18, 6, 18); g.fillRect(cx + 3, h - 18, 6, 18);
+  // torso
+  g.fillStyle = body; g.fillRect(cx - 11, h - 40, 22, 24);
+  g.fillStyle = light; g.fillRect(cx - 7, h - 36, 14, 4); g.fillRect(cx - 6, h - 30, 12, 3);
+  // spikes on shoulders
+  g.fillStyle = '#d8c8a0';
+  for (const sx of [-12, -8, 8, 12]) { g.beginPath(); g.moveTo(cx + sx - 2, h - 40); g.lineTo(cx + sx, h - 47); g.lineTo(cx + sx + 2, h - 40); g.fill(); }
+  // head
+  g.fillStyle = body; g.fillRect(cx - 7, h - 52, 14, 13);
+  g.fillStyle = '#ff3a1a'; g.fillRect(cx - 5, h - 48, 3, 3); g.fillRect(cx + 2, h - 48, 3, 3);
+  g.fillStyle = '#2a0a04'; g.fillRect(cx - 4, h - 43, 8, 2);
+  // arms
+  g.fillStyle = body;
+  if (pose === 'attack') {
+    g.fillRect(cx - 17, h - 56, 6, 20); g.fillRect(cx + 11, h - 56, 6, 20);
+    const gr = g.createRadialGradient(cx, h - 58, 1, cx, h - 58, 8);
+    gr.addColorStop(0, '#fff3b0'); gr.addColorStop(0.5, '#ff8a20'); gr.addColorStop(1, 'rgba(255,60,0,0)');
+    g.fillStyle = gr; g.fillRect(cx - 9, h - 66, 18, 16);
+  } else {
+    g.fillRect(cx - 17, h - 40, 6, 20); g.fillRect(cx + 11, h - 40, 6, 20);
+  }
+  if (pose === 'pain') { g.fillStyle = 'rgba(255,40,40,0.45)'; g.fillRect(cx - 12, h - 52, 24, 52); }
+}
+function makeSprites() {
+  const s = {};
+  for (const pose of ['idle', 'attack', 'pain', 'dead']) s['imp_' + pose] = spriteFrom(40, 60, (g, w, h) => drawImp(g, w, h, pose));
+  const orb = (c1, c2) => (g, w, h) => {
+    const gr = g.createRadialGradient(w * 0.4, h * 0.38, 1, w / 2, h / 2, w / 2);
+    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.25, c1); gr.addColorStop(0.8, c2); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(w / 2, h / 2, w / 2 - 1, 0, 7); g.fill();
+  };
+  s.orb_blue = spriteFrom(24, 24, orb('#7fb0ff', '#1f3fd8'));
+  s.orb_green = spriteFrom(24, 24, orb('#8dff9a', '#119a2a'));
+  s.fireball = spriteFrom(20, 20, (g, w, h) => {
+    const gr = g.createRadialGradient(w / 2, h / 2, 1, w / 2, h / 2, w / 2);
+    gr.addColorStop(0, '#fffbd0'); gr.addColorStop(0.35, '#ffb030'); gr.addColorStop(0.7, '#e2401a'); gr.addColorStop(1, 'rgba(120,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+  const burst = (cols) => (g, w, h) => {
+    const r = seeded(cols.length * 31);
+    for (let i = 0; i < 28; i++) { g.fillStyle = cols[i % cols.length]; const a = r() * 7, d = r() * w / 2; g.fillRect(w / 2 + Math.cos(a) * d - 1, h / 2 + Math.sin(a) * d - 1, 2, 2); }
+  };
+  s.puff = spriteFrom(10, 10, burst(['#d8d0c0', '#9a9488']));
+  s.blood = spriteFrom(12, 12, burst(['#c01010', '#7a0606']));
+  s.boom = spriteFrom(26, 26, burst(['#ffd040', '#ff7020', '#ffffff']));
+  s.heal = spriteFrom(22, 22, burst(['#ffffff', '#ffe680', '#b8ffcc']));
+  s.burn = spriteFrom(22, 22, burst(['#b6ff3a', '#3a8a10', '#ffffff']));
+  return s;
+}
+
+// pistol, drawn at full resolution
+function drawPistol(g, x, y, s, flash) {
+  if (flash) {
+    const gr = g.createRadialGradient(x, y - 40 * s, 2, x, y - 40 * s, 26 * s);
+    gr.addColorStop(0, '#fffde0'); gr.addColorStop(0.4, '#ffc040'); gr.addColorStop(1, 'rgba(255,120,0,0)');
+    g.fillStyle = gr; g.fillRect(x - 30 * s, y - 70 * s, 60 * s, 60 * s);
+  }
+  g.fillStyle = '#2b2b30'; g.fillRect(x - 6 * s, y - 40 * s, 12 * s, 26 * s);
+  g.fillStyle = '#4a4a52'; g.fillRect(x - 5 * s, y - 40 * s, 3 * s, 24 * s);
+  g.fillStyle = '#c99a72'; // hand
+  g.fillRect(x - 12 * s, y - 16 * s, 24 * s, 16 * s);
+  g.fillStyle = '#a77a55'; g.fillRect(x - 12 * s, y - 16 * s, 24 * s, 3 * s);
+}
+
+// The fly's face for the status bar. look: -1..1, hurt: 0..1, hp: 0..200
+function drawFlyFace(g, cx, cy, s, look, hurt, hp) {
+  g.save();
+  g.translate(cx, cy);
+  // antennae
+  g.strokeStyle = '#3a2a1a'; g.lineWidth = 2 * s;
+  g.beginPath(); g.moveTo(-4 * s, -12 * s); g.lineTo(-8 * s, -20 * s); g.moveTo(4 * s, -12 * s); g.lineTo(8 * s, -20 * s); g.stroke();
+  // head capsule
+  g.fillStyle = hp < 40 ? '#8a5a40' : '#a8784e';
+  g.beginPath(); g.ellipse(0, 0, 16 * s, 14 * s, 0, 0, 7); g.fill();
+  // compound eyes
+  for (const side of [-1, 1]) {
+    const ex = side * 10 * s + look * 2 * s;
+    const gr = g.createRadialGradient(ex - 2 * s, -3 * s, 1, ex, 0, 10 * s);
+    const c = hurt > 0.5 ? ['#ffd0d0', '#ff4040'] : ['#ff8070', '#a01810'];
+    gr.addColorStop(0, c[0]); gr.addColorStop(1, c[1]);
+    g.fillStyle = gr;
+    g.beginPath(); g.ellipse(ex, 0, 9 * s, (hurt > 0.5 ? 7 : 11) * s, 0, 0, 7); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.18)'; // ommatidia hint
+    for (let i = -3; i <= 3; i++) for (let j = -4; j <= 4; j++) if ((i + j) % 2 === 0) g.fillRect(ex + i * 2.4 * s, j * 2.4 * s, 0.9 * s, 0.9 * s);
+  }
+  // mouthparts
+  g.fillStyle = '#5a3a22'; g.fillRect(-3 * s, 9 * s, 6 * s, 6 * s);
+  if (hp < 60) { g.fillStyle = '#b01010'; g.fillRect(-12 * s, 6 * s, 4 * s, 2 * s); g.fillRect(9 * s, -9 * s, 3 * s, 2 * s); }
+  g.restore();
+}
+
+class Renderer {
+  constructor(canvas) {
+    this.cv = canvas;
+    canvas.width = VIEW_W * SCALE;
+    canvas.height = (VIEW_H + BAR_H) * SCALE;
+    this.g = canvas.getContext('2d');
+    this.view = document.createElement('canvas');
+    this.view.width = VIEW_W; this.view.height = VIEW_H;
+    this.vg = this.view.getContext('2d');
+    this.img = this.vg.createImageData(VIEW_W, VIEW_H);
+    this.px = new Uint32Array(this.img.data.buffer);
+    this.z = new Float32Array(VIEW_W);
+    this.tex = {};
+    for (const k of ['T', 'B', '#', 'S', 'floor', 'ceil']) this.tex[k] = makeTexture(k);
+    this.sprites = makeSprites();
+    this.bob = 0;
+  }
+
+  shade(c, f) {
+    const r = (c & 255) * f, g = ((c >> 8) & 255) * f, b = ((c >> 16) & 255) * f;
+    return ((255 << 24) | ((b > 255 ? 255 : b) << 16) | ((g > 255 ? 255 : g) << 8) | (r > 255 ? 255 : r)) >>> 0;
+  }
+
+  draw(world, info = {}) {
+    const p = world.player, px = this.px, W = VIEW_W, H = VIEW_H, half = H / 2;
+    const dirX = Math.cos(p.angle), dirY = Math.sin(p.angle);
+    const plX = Math.sin(p.angle) * TAN, plY = -Math.cos(p.angle) * TAN; // points left
+    px.fill(0xff0a0a0a);
+    // floor & ceiling
+    const fl = this.tex.floor, ce = this.tex.ceil;
+    const r0x = dirX + plX, r0y = dirY + plY, r1x = dirX - plX, r1y = dirY - plY;
+    for (let y = half + 1; y < H; y++) {
+      const rowDist = (0.5 * PROJ) / (y - half);
+      const sx = rowDist * (r1x - r0x) / W, sy = rowDist * (r1y - r0y) / W;
+      let fx = p.x + rowDist * r0x, fy = p.y + rowDist * r0y;
+      const light = clamp(1.25 - rowDist / 11, 0.12, 1);
+      const yc = H - 1 - y + 0; // mirrored ceiling row
+      for (let x = 0; x < W; x++) {
+        const tx = ((fx * 64) | 0) & 63, ty = ((fy * 64) | 0) & 63;
+        px[y * W + x] = this.shade(fl[ty * 64 + tx], light);
+        px[yc * W + x] = this.shade(ce[ty * 64 + tx], light * 0.9);
+        fx += sx; fy += sy;
+      }
+    }
+    // walls
+    for (let x = 0; x < W; x++) {
+      const k = 1 - 2 * (x + 0.5) / W;
+      const rx = dirX + plX * k, ry = dirY + plY * k;
+      let mx = Math.floor(p.x), my = Math.floor(p.y);
+      const ddx = Math.abs(1 / rx), ddy = Math.abs(1 / ry);
+      let stepX, stepY, sdx, sdy;
+      if (rx < 0) { stepX = -1; sdx = (p.x - mx) * ddx; } else { stepX = 1; sdx = (mx + 1 - p.x) * ddx; }
+      if (ry < 0) { stepY = -1; sdy = (p.y - my) * ddy; } else { stepY = 1; sdy = (my + 1 - p.y) * ddy; }
+      let side = 0, cell = 0, dist = 30;
+      for (let i = 0; i < 80; i++) {
+        if (sdx < sdy) { dist = sdx; sdx += ddx; mx += stepX; side = 0; } else { dist = sdy; sdy += ddy; my += stepY; side = 1; }
+        cell = world.cellAt(mx, my);
+        if (cell) break;
+      }
+      this.z[x] = dist;
+      let u = side === 0 ? p.y + dist * ry : p.x + dist * rx;
+      u -= Math.floor(u);
+      const t = this.tex[String.fromCharCode(cell)] || this.tex.T;
+      const tx = (u * 64) | 0;
+      const lineH = PROJ / dist;
+      const top = half - lineH / 2;
+      const y0 = Math.max(0, Math.floor(top)), y1 = Math.min(H, Math.ceil(top + lineH));
+      const light = clamp(1.3 - dist / 12, 0.12, 1) * (side ? 0.8 : 1);
+      for (let y = y0; y < y1; y++) {
+        const ty = (((y - top) / lineH) * 64) & 63;
+        px[y * W + x] = this.shade(t[ty * 64 + tx], light);
+      }
+    }
+    // sprites
+    const list = [];
+    for (const e of world.entities) {
+      let key, wz = 0, hgt;
+      if (e.kind === 'imp') {
+        if (!e.alive) { if (world.time - (e.diedAt ?? -9) > IMP_CORPSE) continue; key = 'imp_dead'; }
+        else key = e.pain > 0 ? 'imp_pain' : world.time - e.attackAt < 0.35 ? 'imp_attack' : 'imp_idle';
+        hgt = 0.95;
+      } else if (e.kind === 'orb') { if (!e.alive) continue; key = 'orb_' + e.color; hgt = 0.32; wz = 0.18 + 0.05 * Math.sin(world.time * 3 + e.id); }
+      else if (e.kind === 'fireball') { key = 'fireball'; hgt = 0.34; wz = 0.3; }
+      list.push({ x: e.x, y: e.y, key, hgt, wz });
+    }
+    for (const f of world.fx) list.push({ x: f.x, y: f.y, key: f.kind, hgt: f.kind === 'boom' ? 0.6 : 0.3, wz: f.kind === 'boom' ? 0.2 : 0.35 });
+    for (const s of list) {
+      const dx = s.x - p.x, dy = s.y - p.y;
+      s.f = dx * dirX + dy * dirY;
+      s.l = dx * Math.sin(p.angle) - dy * Math.cos(p.angle);
+    }
+    list.sort((a, b) => b.f - a.f);
+    for (const s of list) {
+      if (s.f < 0.15) continue;
+      const spr = this.sprites[s.key];
+      if (!spr) continue;
+      const sxc = W / 2 - (s.l / s.f) * PROJ;
+      const sh = (s.hgt / s.f) * PROJ, sw = sh * spr.w / spr.h;
+      const floorY = half + (0.5 / s.f) * PROJ;
+      const bottom = floorY - (s.wz / s.f) * PROJ;
+      const top = bottom - sh, left = sxc - sw / 2;
+      const x0 = Math.max(0, Math.floor(left)), x1 = Math.min(W, Math.ceil(left + sw));
+      const y0 = Math.max(0, Math.floor(top)), y1 = Math.min(H, Math.ceil(bottom));
+      const light = s.key.startsWith('orb') || s.key === 'fireball' || s.key === 'boom' || s.key === 'heal' || s.key === 'burn' ? 1 : clamp(1.3 - s.f / 12, 0.15, 1);
+      for (let x = x0; x < x1; x++) {
+        if (this.z[x] < s.f) continue;
+        const tx = (((x - left) / sw) * spr.w) | 0;
+        for (let y = y0; y < y1; y++) {
+          const ty = (((y - top) / sh) * spr.h) | 0;
+          const c = spr.px[ty * spr.w + tx];
+          if ((c >>> 24) < 128) continue;
+          px[y * W + x] = this.shade(c, light);
+        }
+      }
+    }
+    this.vg.putImageData(this.img, 0, 0);
+
+    // compose at full resolution
+    const g = this.g, S = SCALE;
+    g.imageSmoothingEnabled = false;
+    g.drawImage(this.view, 0, 0, W * S, H * S);
+    // pistol with bob
+    const speed = Math.hypot(p.vx, p.vy);
+    this.bob += speed * 0.05;
+    const flash = world.lastShot && world.time - world.lastShot.t < 0.09;
+    drawPistol(g, W * S / 2 + Math.sin(this.bob) * 10, H * S + Math.abs(Math.cos(this.bob)) * 8 + 6, 2.4, flash);
+    // damage / heal tint
+    const sinceHurt = world.time - p.hurtAt, sinceHeal = world.time - p.healAt;
+    if (p.hurtAt >= 0 && sinceHurt < 0.35) { g.fillStyle = `rgba(200,20,10,${0.4 * (1 - sinceHurt / 0.35)})`; g.fillRect(0, 0, W * S, H * S); }
+    if (p.healAt >= 0 && sinceHeal < 0.35) { g.fillStyle = `rgba(255,230,120,${0.25 * (1 - sinceHeal / 0.35)})`; g.fillRect(0, 0, W * S, H * S); }
+    if (!p.alive) { g.fillStyle = 'rgba(120,0,0,0.45)'; g.fillRect(0, 0, W * S, H * S); }
+    if (info.banner) {
+      g.fillStyle = 'rgba(10,8,6,0.72)'; g.fillRect(0, H * S / 2 - 34, W * S, 68);
+      g.fillStyle = '#f3e6cf'; g.font = `700 34px ${FONT_DISPLAY}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(info.banner, W * S / 2, H * S / 2 + 2);
+    }
+    this.drawBar(world, info);
+  }
+
+  drawBar(world, info) {
+    const g = this.g, S = SCALE, W = VIEW_W * S, y0 = VIEW_H * S, h = BAR_H * S, p = world.player;
+    g.fillStyle = '#3a342d'; g.fillRect(0, y0, W, h);
+    g.fillStyle = '#2a2520'; for (let i = 0; i < W; i += 6) g.fillRect(i, y0 + ((i * 7) % 11), 3, 2);
+    g.fillStyle = '#5a5146'; g.fillRect(0, y0, W, 3);
+    const cells = [
+      { label: 'HEALTH', value: String(Math.max(0, Math.round(p.health))), w: 190 },
+      { label: 'AMMO', value: String(p.ammo), w: 150 },
+      { label: 'FACE', w: 140 },
+      { label: 'KILLS', value: String(world.stats.kills), w: 130 },
+      { label: 'ORBS +/−', value: `${world.stats.good}/${world.stats.bad}`, w: 190 },
+      { label: 'TIME', value: (world.duration - world.time).toFixed(0), w: W - 800 },
+    ];
+    let x = 0;
+    g.textAlign = 'center';
+    for (const c of cells) {
+      g.fillStyle = '#26211c'; g.fillRect(x + 4, y0 + 8, c.w - 8, h - 14);
+      if (c.label === 'FACE') {
+        const hurt = p.hurtAt >= 0 ? clamp(1 - (world.time - p.hurtAt) / 0.5, 0, 1) : 0;
+        drawFlyFace(g, x + c.w / 2, y0 + h / 2 + 6, 2.2, clamp(info.turn || 0, -1, 1), hurt, p.health);
+      } else {
+        g.fillStyle = '#d23a20'; g.font = `800 46px ${FONT_DISPLAY}`; g.textBaseline = 'alphabetic';
+        g.fillText(c.value, x + c.w / 2, y0 + h - 30);
+        g.fillStyle = '#c9b89c'; g.font = `600 15px ${FONT_BODY}`;
+        g.fillText(c.label, x + c.w / 2, y0 + h - 12);
+      }
+      x += c.w;
+    }
+  }
+}
+
+const IMP_CORPSE = 2.5;
+const FONT_DISPLAY = '"Big Shoulders Display", Impact, "Arial Narrow", sans-serif';
+const FONT_BODY = '"Libre Franklin", "Segoe UI", system-ui, sans-serif';
+
+// Compound-eye mosaic: 32 columns of hexagonal facets coloured by what each
+// ommatidial column sees. Left eye on the left (130° → -10°), right eye on the right.
+function drawEyes(canvas, optics) {
+  const g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+  g.fillStyle = '#100d0b'; g.fillRect(0, 0, W, H);
+  if (!optics) return;
+  const n = optics.view.rgb[0].length / 3, rows = 7, gap = 18;
+  const colW = (W - gap) / (2 * n), r = Math.min(colW * 0.56, (H - 8) / (rows * 1.7));
+  for (let s = 0; s < 2; s++) {
+    const rgb = optics.view.rgb[s];
+    for (let i = 0; i < n; i++) {
+      // left eye drawn far-left = most lateral (column n-1); right eye mirrored
+      const c = s === 0 ? n - 1 - i : i;
+      const cx = (s === 0 ? 0 : (W + gap) / 2) + (i + 0.5) * colW;
+      const R = rgb[c * 3] * 255, G = rgb[c * 3 + 1] * 255, B = rgb[c * 3 + 2] * 255;
+      for (let j = 0; j < rows; j++) {
+        const cy = 6 + r + j * r * 1.65 + (i % 2) * r * 0.82;
+        if (cy + r > H) continue;
+        const f = 0.75 + 0.25 * Math.sin(j * 1.3 + i);
+        g.fillStyle = `rgb(${(R * f) | 0},${(G * f) | 0},${(B * f) | 0})`;
+        g.beginPath();
+        for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; g.lineTo(cx + Math.cos(a) * r * 0.92, cy + Math.sin(a) * r * 0.92); }
+        g.fill();
+      }
+    }
+  }
+}
+
+window.Renderer = Renderer;
+window.drawEyes = drawEyes;
+})();</script>
+<script>
+const REFERENCE = {"learning":{"protocol":{"label":"Valence learning + reversal","scenario":"forage","subjects":16,"acquisition":12,"reversal":6,"block":3,"conditions":["intact","no-dopamine","kc-block","scrambled","random"]},"conditions":{"intact":{"label":"Intact fly","about":"Full model with dopamine-gated plasticity.","n":16,"curve":[{"ep":0,"mean":0.1516,"sem":0.0841},{"ep":1,"mean":0.2701,"sem":0.0741},{"ep":2,"mean":0.3263,"sem":0.08173},{"ep":3,"mean":0.3163,"sem":0.05424},{"ep":4,"mean":0.3502,"sem":0.1293},{"ep":5,"mean":0.3709,"sem":0.07761},{"ep":6,"mean":0.2854,"sem":0.0875},{"ep":7,"mean":0.2806,"sem":0.1057},{"ep":8,"mean":0.3313,"sem":0.08776},{"ep":9,"mean":0.3874,"sem":0.09628},{"ep":10,"mean":0.2659,"sem":0.05149},{"ep":11,"mean":0.1831,"sem":0.09817},{"ep":12,"mean":-0.06579,"sem":0.09784},{"ep":13,"mean":0.2128,"sem":0.1151},{"ep":14,"mean":0.2144,"sem":0.1164},{"ep":15,"mean":0.4793,"sem":0.09354},{"ep":16,"mean":0.4311,"sem":0.0938},{"ep":17,"mean":0.3032,"sem":0.07352}],"early":{"mean":0.2627,"sem":0.03135},"late":{"mean":0.2863,"sem":0.04153,"ci":[0.2048,0.3578],"perm":{"p":0.0001221,"exact":true},"t":{"t":6.894,"df":15,"p":0.00000511}},"overall":{"mean":0.2875,"sem":0.02003},"learningIndex":{"mean":0.02362,"sem":0.05014,"perm":{"p":0.6379,"exact":true}},"pickups":11.31,"kills":0,"accuracy":0,"damage":48.56,"survived":40,"deaths":0,"killsEarly":0,"killsLate":0,"damageEarly":58.25,"damageLate":47.5,"naive":{"mean":0.25,"sem":0.06455,"n":16,"perm":{"p":0.007813,"exact":true}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":0.25,"sem":0.06455,"n":16},{"bin":1,"from":5,"to":8,"mean":0.3438,"sem":0.1183,"n":16},{"bin":2,"from":9,"to":12,"mean":0.2188,"sem":0.09093,"n":16},{"bin":3,"from":13,"to":16,"mean":0.3438,"sem":0.1092,"n":16},{"bin":4,"from":17,"to":20,"mean":0.0625,"sem":0.08985,"n":16},{"bin":5,"from":21,"to":24,"mean":0.2813,"sem":0.1017,"n":16},{"bin":6,"from":25,"to":28,"mean":0.3125,"sem":0.08985,"n":16},{"bin":7,"from":29,"to":32,"mean":0.4063,"sem":0.1226,"n":16},{"bin":8,"from":33,"to":36,"mean":0.4688,"sem":0.09649,"n":16},{"bin":9,"from":37,"to":40,"mean":0.125,"sem":0.1331,"n":16}],"rev":[{"bin":0,"from":1,"to":4,"mean":-0.3125,"sem":0.1106,"n":16},{"bin":1,"from":5,"to":8,"mean":0.0625,"sem":0.1281,"n":16},{"bin":2,"from":9,"to":12,"mean":0.4063,"sem":0.1226,"n":16},{"bin":3,"from":13,"to":16,"mean":0.3125,"sem":0.1008,"n":16},{"bin":4,"from":17,"to":20,"mean":0.25,"sem":0.06455,"n":16},{"bin":5,"from":21,"to":24,"mean":0.0625,"sem":0.1281,"n":16},{"bin":6,"from":25,"to":28,"mean":0.2188,"sem":0.1115,"n":16},{"bin":7,"from":29,"to":32,"mean":0.3125,"sem":0.1106,"n":16},{"bin":8,"from":33,"to":36,"mean":0.5625,"sem":0.1106,"n":16},{"bin":9,"from":37,"to":40,"mean":0.4063,"sem":0.08189,"n":16}]},"reversal":{"firstTouches":{"mean":-0.3125,"sem":0.1106,"n":16,"perm":{"p":0.02734,"exact":true}},"carryOver":{"mean":0.5988,"sem":0.1196,"n":16,"perm":{"p":0.0003052,"exact":true}},"first":{"mean":0.1259,"sem":0.08537},"last":{"mean":0.356,"sem":0.03888,"perm":{"p":0.00003052,"exact":true}},"drop":{"mean":0.1604,"sem":0.09237,"perm":{"p":0.07306,"exact":true}}}},"no-dopamine":{"label":"Dopamine blocked","about":"PPL1 and PAM dopamine neurons silenced, so reinforcement never reaches the mushroom body.","n":16,"curve":[{"ep":0,"mean":0.00687,"sem":0.02415},{"ep":1,"mean":0.01046,"sem":0.05176},{"ep":2,"mean":-0.03842,"sem":0.05123},{"ep":3,"mean":-0.07098,"sem":0.05664},{"ep":4,"mean":0.02022,"sem":0.05097},{"ep":5,"mean":0.03513,"sem":0.0478},{"ep":6,"mean":-0.01712,"sem":0.06364},{"ep":7,"mean":0.01585,"sem":0.04268},{"ep":8,"mean":-0.02809,"sem":0.07175},{"ep":9,"mean":0.02856,"sem":0.0541},{"ep":10,"mean":-0.02372,"sem":0.04356},{"ep":11,"mean":-0.03545,"sem":0.0513},{"ep":12,"mean":-0.002813,"sem":0.03582},{"ep":13,"mean":0.01431,"sem":0.04342},{"ep":14,"mean":-0.03812,"sem":0.0387},{"ep":15,"mean":0.08316,"sem":0.0657},{"ep":16,"mean":0.06355,"sem":0.0468},{"ep":17,"mean":0.06265,"sem":0.03919}],"early":{"mean":-0.003084,"sem":0.02694},"late":{"mean":-0.01542,"sem":0.02702,"ci":[-0.06617,0.03437],"perm":{"p":0.5729,"exact":true},"t":{"t":-0.5706,"df":15,"p":0.5767}},"overall":{"mean":-0.006721,"sem":0.01131},"learningIndex":{"mean":-0.01233,"sem":0.0373,"perm":{"p":0.7419,"exact":true}},"pickups":17.1,"kills":0,"accuracy":0,"damage":103.4,"survived":39.88,"deaths":0.01563,"killsEarly":0,"killsLate":0,"damageEarly":105.3,"damageLate":105.8,"naive":{"mean":0,"sem":0.1021,"n":16,"perm":{"p":1,"exact":true}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":0,"sem":0.1021,"n":16},{"bin":1,"from":5,"to":8,"mean":-0.09375,"sem":0.1138,"n":16},{"bin":2,"from":9,"to":12,"mean":0.09375,"sem":0.09375,"n":16},{"bin":3,"from":13,"to":16,"mean":0,"sem":0.1118,"n":16},{"bin":4,"from":17,"to":20,"mean":0.1875,"sem":0.1197,"n":16},{"bin":5,"from":21,"to":24,"mean":-0.0625,"sem":0.07739,"n":16},{"bin":6,"from":25,"to":28,"mean":0.03125,"sem":0.08501,"n":16},{"bin":7,"from":29,"to":32,"mean":-0.0625,"sem":0.08985,"n":16},{"bin":8,"from":33,"to":36,"mean":-0.09375,"sem":0.1138,"n":16},{"bin":9,"from":37,"to":40,"mean":0.0625,"sem":0.1008,"n":16}],"rev":[{"bin":0,"from":1,"to":4,"mean":0,"sem":0.1208,"n":16},{"bin":1,"from":5,"to":8,"mean":0.03125,"sem":0.09649,"n":16},{"bin":2,"from":9,"to":12,"mean":0.09375,"sem":0.1138,"n":16},{"bin":3,"from":13,"to":16,"mean":-0.03125,"sem":0.08501,"n":16},{"bin":4,"from":17,"to":20,"mean":-0.09375,"sem":0.1309,"n":16},{"bin":5,"from":21,"to":24,"mean":0.09375,"sem":0.1386,"n":16},{"bin":6,"from":25,"to":28,"mean":-0.03125,"sem":0.09649,"n":16},{"bin":7,"from":29,"to":32,"mean":0.03125,"sem":0.07172,"n":16},{"bin":8,"from":33,"to":36,"mean":0,"sem":0.1208,"n":16},{"bin":9,"from":37,"to":40,"mean":-0.03125,"sem":0.09649,"n":16}]},"reversal":{"firstTouches":{"mean":0,"sem":0.1208,"n":16,"perm":{"p":1,"exact":true}},"carryOver":{"mean":-0.01542,"sem":0.1218,"n":16,"perm":{"p":0.9013,"exact":true}},"first":{"mean":-0.005875,"sem":0.02395},"last":{"mean":0.06908,"sem":0.02622,"perm":{"p":0.01965,"exact":true}},"drop":{"mean":-0.009544,"sem":0.03443,"perm":{"p":0.8011,"exact":true}}}},"kc-block":{"label":"Kenyon cells blocked","about":"Mushroom body intrinsic neurons silenced: no learned output at all.","n":16,"curve":[{"ep":0,"mean":0.02621,"sem":0.04246},{"ep":1,"mean":0.1396,"sem":0.04094},{"ep":2,"mean":-0.0368,"sem":0.05516},{"ep":3,"mean":0.03676,"sem":0.05418},{"ep":4,"mean":-0.01734,"sem":0.04973},{"ep":5,"mean":0.009277,"sem":0.04206},{"ep":6,"mean":-0.06123,"sem":0.05463},{"ep":7,"mean":0.004068,"sem":0.05401},{"ep":8,"mean":0.08753,"sem":0.04079},{"ep":9,"mean":0.03682,"sem":0.03647},{"ep":10,"mean":-0.005099,"sem":0.05507},{"ep":11,"mean":0.0546,"sem":0.04116},{"ep":12,"mean":-0.05876,"sem":0.06246},{"ep":13,"mean":0.01563,"sem":0.03324},{"ep":14,"mean":-0.0683,"sem":0.06064},{"ep":15,"mean":-0.01049,"sem":0.03899},{"ep":16,"mean":0.09108,"sem":0.03892},{"ep":17,"mean":0.009867,"sem":0.04756}],"early":{"mean":0.04513,"sem":0.02386},"late":{"mean":0.03229,"sem":0.0251,"ci":[-0.01567,0.07815],"perm":{"p":0.2118,"exact":true},"t":{"t":1.287,"df":15,"p":0.2177}},"overall":{"mean":0.02445,"sem":0.0179},"learningIndex":{"mean":-0.01284,"sem":0.03376,"perm":{"p":0.7097,"exact":true}},"pickups":17.41,"kills":0,"accuracy":0,"damage":101.8,"survived":39.95,"deaths":0.005208,"killsEarly":0,"killsLate":0,"damageEarly":97.75,"damageLate":102.8,"naive":{"mean":0.03125,"sem":0.1067,"n":16,"perm":{"p":1,"exact":true}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":0.03125,"sem":0.1067,"n":16},{"bin":1,"from":5,"to":8,"mean":0.03125,"sem":0.09649,"n":16},{"bin":2,"from":9,"to":12,"mean":0.1563,"sem":0.1183,"n":16},{"bin":3,"from":13,"to":16,"mean":0.0625,"sem":0.1281,"n":16},{"bin":4,"from":17,"to":20,"mean":-0.0625,"sem":0.08985,"n":16},{"bin":5,"from":21,"to":24,"mean":0.1875,"sem":0.1106,"n":16},{"bin":6,"from":25,"to":28,"mean":0.125,"sem":0.08539,"n":16},{"bin":7,"from":29,"to":32,"mean":0.09375,"sem":0.09375,"n":16},{"bin":8,"from":33,"to":36,"mean":0.09375,"sem":0.1226,"n":16},{"bin":9,"from":37,"to":40,"mean":0.03125,"sem":0.1067,"n":16}],"rev":[{"bin":0,"from":1,"to":4,"mean":-0.09375,"sem":0.1309,"n":16},{"bin":1,"from":5,"to":8,"mean":-0.125,"sem":0.08539,"n":16},{"bin":2,"from":9,"to":12,"mean":0.0625,"sem":0.08985,"n":16},{"bin":3,"from":13,"to":16,"mean":0.03125,"sem":0.08501,"n":16},{"bin":4,"from":17,"to":20,"mean":0,"sem":0.09129,"n":16},{"bin":5,"from":21,"to":24,"mean":0,"sem":0.09129,"n":16},{"bin":6,"from":25,"to":28,"mean":-0.0625,"sem":0.1106,"n":16},{"bin":7,"from":29,"to":32,"mean":0.03125,"sem":0.08501,"n":16},{"bin":8,"from":33,"to":36,"mean":0.0625,"sem":0.1197,"n":16},{"bin":9,"from":37,"to":40,"mean":0,"sem":0.1118,"n":16}]},"reversal":{"firstTouches":{"mean":-0.09375,"sem":0.1309,"n":16,"perm":{"p":0.6367,"exact":true}},"carryOver":{"mean":0.126,"sem":0.1437,"n":16,"perm":{"p":0.3854,"exact":true}},"first":{"mean":-0.02928,"sem":0.02229},"last":{"mean":0.03292,"sem":0.02621,"perm":{"p":0.2358,"exact":true}},"drop":{"mean":0.06158,"sem":0.0387,"perm":{"p":0.1318,"exact":true}}}},"scrambled":{"label":"Scrambled wiring","about":"Every synapse rewired at random, keeping each neuron’s in/out degree and transmitter.","n":16,"curve":[{"ep":0,"mean":0.04167,"sem":0.1455},{"ep":1,"mean":-0.125,"sem":0.1548},{"ep":2,"mean":-0.1042,"sem":0.1281},{"ep":3,"mean":-0.1131,"sem":0.1279},{"ep":4,"mean":-0.09375,"sem":0.1138},{"ep":5,"mean":0.0625,"sem":0.1147},{"ep":6,"mean":0.125,"sem":0.125},{"ep":7,"mean":0.02083,"sem":0.1308},{"ep":8,"mean":0.0625,"sem":0.1434},{"ep":9,"mean":0.125,"sem":0.125},{"ep":10,"mean":0,"sem":0.1581},{"ep":11,"mean":-0.1125,"sem":0.1154},{"ep":12,"mean":0.125,"sem":0.125},{"ep":13,"mean":-0.1875,"sem":0.1638},{"ep":14,"mean":-0.02976,"sem":0.131},{"ep":15,"mean":0.025,"sem":0.1493},{"ep":16,"mean":-0.07813,"sem":0.1111},{"ep":17,"mean":0.02083,"sem":0.09363}],"early":{"mean":-0.1616,"sem":0.1631},"late":{"mean":0.09583,"sem":0.1543,"ci":[-0.1833,0.3958],"perm":{"p":0.6094,"exact":true},"t":{"t":0.621,"df":15,"p":0.5439}},"overall":{"mean":0.03356,"sem":0.1441},"learningIndex":{"mean":0.2574,"sem":0.1236,"perm":{"p":0.06641,"exact":true}},"pickups":0.6771,"kills":0,"accuracy":0,"damage":4.5,"survived":40,"deaths":0,"killsEarly":0,"killsLate":0,"damageEarly":4.5,"damageLate":5,"naive":{"mean":-0.01282,"sem":0.2019,"n":13,"perm":{"p":1,"exact":true}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":-0.01282,"sem":0.2019,"n":13},{"bin":1,"from":5,"to":8,"mean":-0.25,"sem":0.3354,"n":6},{"bin":2,"from":9,"to":12,"mean":0.08333,"sem":0.2386,"n":6},{"bin":3,"from":13,"to":16,"mean":-0.3,"sem":0.3,"n":5},{"bin":4,"from":17,"to":20,"mean":-0.1667,"sem":0.6009,"n":3},{"bin":5,"from":21,"to":24,"mean":0.1667,"sem":0.1667,"n":3},{"bin":6,"from":25,"to":28,"mean":0,"sem":0,"n":1},{"bin":7,"from":29,"to":32,"mean":-1,"sem":0,"n":1},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}],"rev":[{"bin":0,"from":1,"to":4,"mean":0,"sem":0.2468,"n":13},{"bin":1,"from":5,"to":8,"mean":-0.2,"sem":0.255,"n":5},{"bin":2,"from":9,"to":12,"mean":-0.2,"sem":0.4062,"n":5},{"bin":3,"from":13,"to":16,"mean":0,"sem":0.4564,"n":4},{"bin":4,"from":17,"to":20,"mean":0,"sem":1,"n":2},{"bin":5,"from":21,"to":24,"mean":null,"sem":null,"n":0},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}]},"reversal":{"firstTouches":{"mean":0,"sem":0.2468,"n":13,"perm":{"p":1,"exact":true}},"carryOver":{"mean":0.04103,"sem":0.3416,"n":13,"perm":{"p":0.9121,"exact":true}},"first":{"mean":-0.06548,"sem":0.1389},"last":{"mean":-0.07922,"sem":0.1762,"perm":{"p":0.6582,"exact":true}},"drop":{"mean":0.1613,"sem":0.2451,"perm":{"p":0.5313,"exact":true}}}},"random":{"label":"Random policy","about":"No brain. Random turns, random trigger pulls.","n":16,"curve":[{"ep":0,"mean":0.4167,"sem":0.1378},{"ep":1,"mean":0.1042,"sem":0.1844},{"ep":2,"mean":0.07292,"sem":0.1741},{"ep":3,"mean":-0.1479,"sem":0.1334},{"ep":4,"mean":-0.2396,"sem":0.2097},{"ep":5,"mean":-0.08333,"sem":0.1708},{"ep":6,"mean":-0.175,"sem":0.1887},{"ep":7,"mean":0.1667,"sem":0.1667},{"ep":8,"mean":0.3125,"sem":0.1505},{"ep":9,"mean":0.25,"sem":0.1443},{"ep":10,"mean":-0.2083,"sem":0.2083},{"ep":11,"mean":0,"sem":0.199},{"ep":12,"mean":-0.2917,"sem":0.1577},{"ep":13,"mean":-0.1229,"sem":0.1334},{"ep":14,"mean":0.05208,"sem":0.1746},{"ep":15,"mean":-0.08333,"sem":0.1475},{"ep":16,"mean":0.1938,"sem":0.1582},{"ep":17,"mean":-0.1979,"sem":0.1546}],"early":{"mean":0.2052,"sem":0.1327},"late":{"mean":0.02202,"sem":0.1778,"ci":[-0.3187,0.3646],"perm":{"p":0.9066,"exact":true},"t":{"t":0.1239,"df":15,"p":0.903}},"overall":{"mean":0.01351,"sem":0.06857},"learningIndex":{"mean":-0.1831,"sem":0.1485,"perm":{"p":0.2366,"exact":true}},"pickups":1.365,"kills":0,"accuracy":0,"damage":8.125,"survived":40,"deaths":0,"killsEarly":0,"killsLate":0,"damageEarly":7,"damageLate":8.25,"naive":{"mean":0.1563,"sem":0.1092,"n":16,"perm":{"p":0.2734,"exact":true}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":0.1563,"sem":0.1092,"n":16},{"bin":1,"from":5,"to":8,"mean":0.0625,"sem":0.136,"n":16},{"bin":2,"from":9,"to":12,"mean":-0.09375,"sem":0.1386,"n":16},{"bin":3,"from":13,"to":16,"mean":0.1667,"sem":0.1498,"n":13},{"bin":4,"from":17,"to":20,"mean":-0.4259,"sem":0.2821,"n":9},{"bin":5,"from":21,"to":24,"mean":-0.5,"sem":0.5,"n":2},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}],"rev":[{"bin":0,"from":1,"to":4,"mean":0,"sem":0.1118,"n":16},{"bin":1,"from":5,"to":8,"mean":-0.07143,"sem":0.1373,"n":14},{"bin":2,"from":9,"to":12,"mean":0.07143,"sem":0.2542,"n":7},{"bin":3,"from":13,"to":16,"mean":-1,"sem":0,"n":2},{"bin":4,"from":17,"to":20,"mean":null,"sem":null,"n":0},{"bin":5,"from":21,"to":24,"mean":null,"sem":null,"n":0},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}]},"reversal":{"firstTouches":{"mean":0,"sem":0.1118,"n":16,"perm":{"p":1,"exact":true}},"carryOver":{"mean":0.02202,"sem":0.1886,"n":16,"perm":{"p":0.9133,"exact":true}},"first":{"mean":-0.1188,"sem":0.1356},"last":{"mean":0.169,"sem":0.1426,"perm":{"p":0.2646,"exact":true}},"drop":{"mean":0.1408,"sem":0.1901,"perm":{"p":0.4644,"exact":true}}}}},"comparisons":[{"a":"intact","b":"no-dopamine","metric":"late PI","diff":0.3017,"sem":0.03487,"perm":{"p":0.00003052,"exact":true},"d":2.153,"damageDiff":-58.25,"damagePerm":{"p":0.00003052,"exact":true},"killsDiff":0,"killsPerm":{"p":1,"exact":true}},{"a":"intact","b":"kc-block","metric":"late PI","diff":0.254,"sem":0.0467,"perm":{"p":0.0002747,"exact":true},"d":1.851,"damageDiff":-55.25,"damagePerm":{"p":0.00003052,"exact":true},"killsDiff":0,"killsPerm":{"p":1,"exact":true}},{"a":"intact","b":"scrambled","metric":"late PI","diff":0.1905,"sem":0.1408,"perm":{"p":0.1925,"exact":true},"d":0.4214,"damageDiff":42.5,"damagePerm":{"p":0.00006104,"exact":true},"killsDiff":0,"killsPerm":{"p":1,"exact":true}},{"a":"intact","b":"random","metric":"late PI","diff":0.2643,"sem":0.1816,"perm":{"p":0.1649,"exact":true},"d":0.5118,"damageDiff":39.25,"damagePerm":{"p":0.00003052,"exact":true},"killsDiff":0,"killsPerm":{"p":1,"exact":true}}],"verdicts":[{"condition":"intact","label":"Intact fly","verdict":"Learns and re-learns","why":"late PI 0.29 ± 0.04 (p<0.001); first 4 touches after the swap -0.31 (drop p<0.001), last block 0.36 (p<0.001)"},{"condition":"no-dopamine","label":"Dopamine blocked","verdict":"No evidence of learning","why":"late PI -0.02 ± 0.03 (p=0.573); first 4 touches after the swap 0.00 (drop p=0.901), last block 0.07 (p=0.020)"},{"condition":"kc-block","label":"Kenyon cells blocked","verdict":"No evidence of learning","why":"late PI 0.03 ± 0.03 (p=0.212); first 4 touches after the swap -0.09 (drop p=0.385), last block 0.03 (p=0.236)"},{"condition":"scrambled","label":"Scrambled wiring","verdict":"No evidence of learning","why":"late PI 0.10 ± 0.15 (p=0.609); first 4 touches after the swap 0.00 (drop p=0.912), last block -0.08 (p=0.658)"},{"condition":"random","label":"Random policy","verdict":"No evidence of learning","why":"late PI 0.02 ± 0.18 (p=0.907); first 4 touches after the swap 0.00 (drop p=0.913), last block 0.17 (p=0.265)"}]},"combat":{"protocol":{"label":"Imp combat","scenario":"combat","subjects":12,"acquisition":10,"reversal":0,"block":3,"conditions":["intact","no-dopamine","lc10a-lesion","scrambled","random"]},"conditions":{"intact":{"label":"Intact fly","about":"Full model with dopamine-gated plasticity.","n":12,"curve":[{"ep":0,"mean":0,"sem":0},{"ep":1,"mean":0,"sem":0},{"ep":2,"mean":0,"sem":0},{"ep":3,"mean":0,"sem":0},{"ep":4,"mean":0,"sem":0},{"ep":5,"mean":0,"sem":0},{"ep":6,"mean":0,"sem":0},{"ep":7,"mean":0,"sem":0},{"ep":8,"mean":0,"sem":0},{"ep":9,"mean":0,"sem":0}],"early":{"mean":0,"sem":0},"late":{"mean":0,"sem":0,"ci":[0,0],"perm":{"p":1,"exact":true},"t":{"t":0,"df":11,"p":1}},"overall":{"mean":0,"sem":0},"learningIndex":{"mean":0,"sem":0,"perm":{"p":1,"exact":true}},"pickups":0,"kills":0.2417,"accuracy":0.5772,"damage":89.11,"survived":34.38,"deaths":0.6333,"killsEarly":0.3611,"killsLate":0.2222,"damageEarly":85.42,"damageLate":93.92,"naive":{"mean":null,"sem":null,"n":0,"perm":{"p":null}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":null,"sem":null,"n":0},{"bin":1,"from":5,"to":8,"mean":null,"sem":null,"n":0},{"bin":2,"from":9,"to":12,"mean":null,"sem":null,"n":0},{"bin":3,"from":13,"to":16,"mean":null,"sem":null,"n":0},{"bin":4,"from":17,"to":20,"mean":null,"sem":null,"n":0},{"bin":5,"from":21,"to":24,"mean":null,"sem":null,"n":0},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}]}},"no-dopamine":{"label":"Dopamine blocked","about":"PPL1 and PAM dopamine neurons silenced, so reinforcement never reaches the mushroom body.","n":12,"curve":[{"ep":0,"mean":0,"sem":0},{"ep":1,"mean":0,"sem":0},{"ep":2,"mean":0,"sem":0},{"ep":3,"mean":0,"sem":0},{"ep":4,"mean":0,"sem":0},{"ep":5,"mean":0,"sem":0},{"ep":6,"mean":0,"sem":0},{"ep":7,"mean":0,"sem":0},{"ep":8,"mean":0,"sem":0},{"ep":9,"mean":0,"sem":0}],"early":{"mean":0,"sem":0},"late":{"mean":0,"sem":0,"ci":[0,0],"perm":{"p":1,"exact":true},"t":{"t":0,"df":11,"p":1}},"overall":{"mean":0,"sem":0},"learningIndex":{"mean":0,"sem":0,"perm":{"p":1,"exact":true}},"pickups":0,"kills":1.967,"accuracy":0.7064,"damage":88.68,"survived":34.89,"deaths":0.55,"killsEarly":1.917,"killsLate":2.167,"damageEarly":86.47,"damageLate":89.39,"naive":{"mean":null,"sem":null,"n":0,"perm":{"p":null}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":null,"sem":null,"n":0},{"bin":1,"from":5,"to":8,"mean":null,"sem":null,"n":0},{"bin":2,"from":9,"to":12,"mean":null,"sem":null,"n":0},{"bin":3,"from":13,"to":16,"mean":null,"sem":null,"n":0},{"bin":4,"from":17,"to":20,"mean":null,"sem":null,"n":0},{"bin":5,"from":21,"to":24,"mean":null,"sem":null,"n":0},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}]}},"lc10a-lesion":{"label":"LC10a lesion","about":"Small-object detectors silenced: no innate pursuit or aiming.","n":12,"curve":[{"ep":0,"mean":0,"sem":0},{"ep":1,"mean":0,"sem":0},{"ep":2,"mean":0,"sem":0},{"ep":3,"mean":0,"sem":0},{"ep":4,"mean":0,"sem":0},{"ep":5,"mean":0,"sem":0},{"ep":6,"mean":0,"sem":0},{"ep":7,"mean":0,"sem":0},{"ep":8,"mean":0,"sem":0},{"ep":9,"mean":0,"sem":0}],"early":{"mean":0,"sem":0},"late":{"mean":0,"sem":0,"ci":[0,0],"perm":{"p":1,"exact":true},"t":{"t":0,"df":11,"p":1}},"overall":{"mean":0,"sem":0},"learningIndex":{"mean":0,"sem":0,"perm":{"p":1,"exact":true}},"pickups":0,"kills":0,"accuracy":0,"damage":89.12,"survived":33.84,"deaths":0.65,"killsEarly":0,"killsLate":0,"damageEarly":90.97,"damageLate":85.89,"naive":{"mean":null,"sem":null,"n":0,"perm":{"p":null}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":null,"sem":null,"n":0},{"bin":1,"from":5,"to":8,"mean":null,"sem":null,"n":0},{"bin":2,"from":9,"to":12,"mean":null,"sem":null,"n":0},{"bin":3,"from":13,"to":16,"mean":null,"sem":null,"n":0},{"bin":4,"from":17,"to":20,"mean":null,"sem":null,"n":0},{"bin":5,"from":21,"to":24,"mean":null,"sem":null,"n":0},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}]}},"scrambled":{"label":"Scrambled wiring","about":"Every synapse rewired at random, keeping each neuron’s in/out degree and transmitter.","n":12,"curve":[{"ep":0,"mean":0,"sem":0},{"ep":1,"mean":0,"sem":0},{"ep":2,"mean":0,"sem":0},{"ep":3,"mean":0,"sem":0},{"ep":4,"mean":0,"sem":0},{"ep":5,"mean":0,"sem":0},{"ep":6,"mean":0,"sem":0},{"ep":7,"mean":0,"sem":0},{"ep":8,"mean":0,"sem":0},{"ep":9,"mean":0,"sem":0}],"early":{"mean":0,"sem":0},"late":{"mean":0,"sem":0,"ci":[0,0],"perm":{"p":1,"exact":true},"t":{"t":0,"df":11,"p":1}},"overall":{"mean":0,"sem":0},"learningIndex":{"mean":0,"sem":0,"perm":{"p":1,"exact":true}},"pickups":0,"kills":0.06667,"accuracy":0.285,"damage":92.83,"survived":31.67,"deaths":0.675,"killsEarly":0.1111,"killsLate":0.1111,"damageEarly":90.69,"damageLate":95.83,"naive":{"mean":null,"sem":null,"n":0,"perm":{"p":null}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":null,"sem":null,"n":0},{"bin":1,"from":5,"to":8,"mean":null,"sem":null,"n":0},{"bin":2,"from":9,"to":12,"mean":null,"sem":null,"n":0},{"bin":3,"from":13,"to":16,"mean":null,"sem":null,"n":0},{"bin":4,"from":17,"to":20,"mean":null,"sem":null,"n":0},{"bin":5,"from":21,"to":24,"mean":null,"sem":null,"n":0},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}]}},"random":{"label":"Random policy","about":"No brain. Random turns, random trigger pulls.","n":12,"curve":[{"ep":0,"mean":0,"sem":0},{"ep":1,"mean":0,"sem":0},{"ep":2,"mean":0,"sem":0},{"ep":3,"mean":0,"sem":0},{"ep":4,"mean":0,"sem":0},{"ep":5,"mean":0,"sem":0},{"ep":6,"mean":0,"sem":0},{"ep":7,"mean":0,"sem":0},{"ep":8,"mean":0,"sem":0},{"ep":9,"mean":0,"sem":0}],"early":{"mean":0,"sem":0},"late":{"mean":0,"sem":0,"ci":[0,0],"perm":{"p":1,"exact":true},"t":{"t":0,"df":11,"p":1}},"overall":{"mean":0,"sem":0},"learningIndex":{"mean":0,"sem":0,"perm":{"p":1,"exact":true}},"pickups":0,"kills":0.1,"accuracy":0.04114,"damage":92.65,"survived":32.55,"deaths":0.7333,"killsEarly":0.1111,"killsLate":0.08333,"damageEarly":91.47,"damageLate":95.75,"naive":{"mean":null,"sem":null,"n":0,"perm":{"p":null}},"touchCurve":{"acq":[{"bin":0,"from":1,"to":4,"mean":null,"sem":null,"n":0},{"bin":1,"from":5,"to":8,"mean":null,"sem":null,"n":0},{"bin":2,"from":9,"to":12,"mean":null,"sem":null,"n":0},{"bin":3,"from":13,"to":16,"mean":null,"sem":null,"n":0},{"bin":4,"from":17,"to":20,"mean":null,"sem":null,"n":0},{"bin":5,"from":21,"to":24,"mean":null,"sem":null,"n":0},{"bin":6,"from":25,"to":28,"mean":null,"sem":null,"n":0},{"bin":7,"from":29,"to":32,"mean":null,"sem":null,"n":0},{"bin":8,"from":33,"to":36,"mean":null,"sem":null,"n":0},{"bin":9,"from":37,"to":40,"mean":null,"sem":null,"n":0}]}}},"comparisons":[{"a":"intact","b":"no-dopamine","metric":"late PI","diff":0,"sem":0,"perm":{"p":1,"exact":true},"d":0,"damageDiff":4.528,"damagePerm":{"p":0.4458,"exact":true},"killsDiff":-1.944,"killsPerm":{"p":0.001465,"exact":true}},{"a":"intact","b":"lc10a-lesion","metric":"late PI","diff":0,"sem":0,"perm":{"p":1,"exact":true},"d":0,"damageDiff":8.028,"damagePerm":{"p":0.1768,"exact":true},"killsDiff":0.2222,"killsPerm":{"p":1,"exact":true}},{"a":"intact","b":"scrambled","metric":"late PI","diff":0,"sem":0,"perm":{"p":1,"exact":true},"d":0,"damageDiff":-1.917,"damagePerm":{"p":0.6572,"exact":true},"killsDiff":0.1111,"killsPerm":{"p":1,"exact":true}},{"a":"intact","b":"random","metric":"late PI","diff":0,"sem":0,"perm":{"p":1,"exact":true},"d":0,"damageDiff":-1.833,"damagePerm":{"p":0.8354,"exact":true},"killsDiff":0.1389,"killsPerm":{"p":1,"exact":true}}],"verdicts":[{"condition":"intact","label":"Intact fly","verdict":"Does not fight","why":"0.24 kills/episode at 58% accuracy, 89 damage taken"},{"condition":"no-dopamine","label":"Dopamine blocked","verdict":"Fights","why":"1.97 kills/episode at 71% accuracy, 89 damage taken; +1.94 kills/episode vs intact (p=0.001)"},{"condition":"lc10a-lesion","label":"LC10a lesion","verdict":"Does not fight","why":"0.00 kills/episode at 0% accuracy, 89 damage taken; −0.22 kills/episode vs intact (p=1.000)"},{"condition":"scrambled","label":"Scrambled wiring","verdict":"Does not fight","why":"0.07 kills/episode at 29% accuracy, 93 damage taken; −0.11 kills/episode vs intact (p=1.000)"},{"condition":"random","label":"Random policy","verdict":"Does not fight","why":"0.10 kills/episode at 4% accuracy, 93 damage taken; −0.14 kills/episode vs intact (p=1.000)"}]},"seed":1,"generated":"2026-10-01T15:02:08.090Z"};
+(function () {
+// Browser app: watch a fly play, run experiments in Web Workers, read the wiring.
+/* global FlyCore, Renderer, drawEyes, REFERENCE */
+
+const C = FlyCore;
+const $ = (id) => document.getElementById(id);
+const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const SERIES = { intact: '--s1', 'no-dopamine': '--s2', 'kc-block': '--s3', scrambled: '--s4', random: '--s5', 'lc10a-lesion': '--s6' };
+const ORB_CSS = { blue: '--orb-blue', green: '--orb-green' };
+const fmt = (x, d = 2) => (isFinite(x) ? (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(d) : 'n/a');
+const fmtP = C.fmtP;
+
+// ---------- tabs ----------
+const TABS = ['watch', 'lab', 'wiring'];
+function showTab(name) {
+  for (const t of TABS) {
+    $('tab-' + t).setAttribute('aria-selected', String(t === name));
+    $('view-' + t).hidden = t !== name;
+  }
+  try { localStorage.setItem('fbd-tab', name); } catch (e) { /* storage unavailable */ }
+  if (name === 'lab') renderLab();
+}
+for (const t of TABS) $('tab-' + t).addEventListener('click', () => showTab(t));
+
+// =====================================================================
+// WATCH
+// =====================================================================
+const WATCH_CONDITIONS = ['intact', 'no-dopamine', 'kc-block', 'scrambled', 'lc10a-lesion'];
+const S = {
+  scenario: 'doom', condition: 'intact', speed: 1, playing: true, human: false,
+  fly: 1, episode: 0, goodColor: 'blue', swapped: false, world: null, agent: null, ev: null,
+  rates: {}, history: [], banner: null, bannerUntil: 0, acc: 0, last: 0, memory: null,
+};
+for (const [k, v] of Object.entries(C.SCENARIOS)) $('scenario').add(new Option(v.label, k));
+for (const k of WATCH_CONDITIONS) $('condition').add(new Option(C.CONDITIONS[k].label, k));
+$('scenario').value = S.scenario;
+
+const renderer = new Renderer($('game'));
+
+function newFly(seed) {
+  S.fly = seed ?? (1 + Math.floor(Math.random() * 9999));
+  S.agent = C.makeAgent(S.condition, C.hashSeed('watch', S.fly));
+  S.goodColor = S.fly % 2 ? 'green' : 'blue';
+  S.episode = 0;
+  S.history = [];
+  S.rates = {};
+  for (const k of Object.keys(S.agent.brain.groups)) S.rates[k] = 0;
+  rasterRows = buildRasterRows(S.agent.brain);
+  buildBrainGeometry(S.agent);
+  log(`New fly #${S.fly} (${C.CONDITIONS[S.condition].label}). ${cap(S.goodColor)} orbs heal.`);
+  newEpisode();
+}
+function newEpisode() {
+  S.world = new C.World({ scenario: S.scenario, seed: C.hashSeed('watch-world', S.fly, S.episode, S.scenario), goodColor: S.goodColor });
+  S.agent.beginEpisode();
+  S.ev = null;
+  S.banner = `EPISODE ${S.episode + 1}`;
+  S.bannerUntil = performance.now() + 1100;
+}
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+
+// keyboard for "You play"
+const keys = new Set();
+addEventListener('keydown', (e) => {
+  if (!S.human || $('view-watch').hidden) return;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+  keys.add(e.key.toLowerCase());
+});
+addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+function humanAction() {
+  const k = (a, b) => keys.has(a) || keys.has(b);
+  return {
+    turn: (k('arrowleft', 'a') ? 1 : 0) - (k('arrowright', 'd') ? 1 : 0),
+    forward: (k('arrowup', 'w') ? 1 : 0) - (k('arrowdown', 's') ? 1 : 0),
+    strafe: (keys.has('q') ? 1 : 0) - (keys.has('e') ? 1 : 0),
+    fire: keys.has(' '),
+  };
+}
+
+function tick() {
+  const w = S.world, a = S.agent;
+  const brainAction = a.act(w, S.ev);
+  const action = S.human ? humanAction() : brainAction;
+  const ev = w.step(action);
+  S.ev = ev;
+  // smoothed group rates for the diagram
+  const b = a.brain, k = 1 - Math.exp(-C.TIC / 0.12);
+  for (const key in S.rates) S.rates[key] += k * (b.groupCount(key) / b.groups[key].length / C.TIC - S.rates[key]);
+  pushRaster(b);
+  if (ev.good) log(`<b>${w.time.toFixed(1)}s</b> touched ${S.goodColor} orb: healed +10. PAM dopamine fires.`);
+  if (ev.bad) log(`<b>${w.time.toFixed(1)}s</b> touched ${C.otherColor(S.goodColor)} orb: burned −12. PPL1 dopamine fires.`);
+  if (ev.kill) log(`<b>${w.time.toFixed(1)}s</b> killed an imp.`);
+  if (ev.damage && !ev.bad) log(`<b>${w.time.toFixed(1)}s</b> hit for ${ev.damage}.`);
+  if (ev.died) log(`<b>${w.time.toFixed(1)}s</b> the fly died.`);
+  if (w.done) {
+    const s = w.stats, n = s.good + s.bad;
+    S.history.push({ pi: n ? (s.good - s.bad) / n : null, good: s.good, bad: s.bad, kills: s.kills, color: S.goodColor });
+    if (S.history.length > 40) S.history.shift();
+    log(`Episode ${S.episode + 1} over: ${s.good} healing, ${s.bad} burning orbs, ${s.kills} kills.`);
+    S.episode++;
+    newEpisode();
+  }
+}
+
+function loop(now) {
+  const dt = Math.min(0.25, (now - (S.last || now)) / 1000);
+  S.last = now;
+  if (S.playing) {
+    S.acc += dt * C.TIC_RATE * S.speed;
+    const t0 = performance.now();
+    let n = 0;
+    while (S.acc >= 1 && performance.now() - t0 < 14) { tick(); S.acc -= 1; n++; }
+    if (S.acc > 4) S.acc = 0; // can't keep up: drop backlog
+  }
+  if (!$('view-watch').hidden) drawWatch(now);
+  requestAnimationFrame(loop);
+}
+
+let memTimer = 0;
+function drawWatch(now) {
+  const w = S.world, a = S.agent;
+  renderer.draw(w, { turn: a.lastAction?.turn || 0, banner: now < S.bannerUntil ? S.banner : (!S.playing ? 'PAUSED' : null) });
+  drawEyes($('eyes'), a.lastOptics);
+  drawBrain();
+  drawRaster();
+  if (now - memTimer > 250) { memTimer = now; S.memory = a.memory(); drawMemory(); drawMotor(); drawSession(); }
+}
+
+// ---------- event log ----------
+function log(html) {
+  const li = document.createElement('li');
+  li.innerHTML = html;
+  const ul = $('log');
+  ul.prepend(li);
+  while (ul.children.length > 40) ul.lastChild.remove();
+}
+
+// ---------- memory, motor, session ----------
+function meter(label, value, lo, hi, color, text) {
+  const mid = lo < 0 ? (0 - lo) / (hi - lo) : 0;
+  const v = (clamp(value, lo, hi) - lo) / (hi - lo);
+  const left = Math.min(mid, v) * 100, width = Math.abs(v - mid) * 100;
+  return `<div class="meter"><span>${label}</span><span class="bar">${lo < 0 ? '<span class="mid"></span>' : ''}<i style="left:${left}%;width:${Math.max(width, 0.8)}%;background:${color}"></i></span><output>${text}</output></div>`;
+}
+function drawMemory() {
+  const m = S.memory || {};
+  const rows = [['blue', 'Blue orb', css('--orb-blue')], ['green', 'Green orb', css('--orb-green')], ['red', 'Imp (red)', css('--imp')], ['dark', 'Imp (dark)', css('--faint')]];
+  $('memory').innerHTML = rows.map(([k, label, col]) => meter(label, m[k]?.valence ?? 0, -1, 1, col, fmt(m[k]?.valence ?? 0))).join('');
+  const chip = $('heals-chip');
+  chip.textContent = `${S.goodColor} heals`;
+  chip.style.color = css(ORB_CSS[S.goodColor]);
+}
+function drawMotor() {
+  const r = S.agent.lastAction || {};
+  $('motor').innerHTML = [
+    meter('Turn', r.turn || 0, -1, 1, css('--ink'), (r.turn || 0) > 0.05 ? 'left' : (r.turn || 0) < -0.05 ? 'right' : 'straight'),
+    meter('Walk', r.forward || 0, -1, 1, css('--ink'), (r.forward || 0) >= 0 ? 'fwd' : 'back'),
+    meter('Sidestep', r.strafe || 0, -1, 1, css('--ink'), Math.abs(r.strafe || 0) > 0.1 ? 'escape' : '–'),
+    meter('Fire', r.fire ? 1 : 0, 0, 1, css('--accent'), r.fire ? 'BANG' : '–'),
+  ].join('');
+  $('brain-note').textContent = S.human ? 'You are steering; the brain is watching' : `${C.CONDITIONS[S.condition].label}, fly #${S.fly}`;
+}
+function drawSession() {
+  const w = S.world, s = w.stats, n = s.good + s.bad;
+  const recent = S.history.slice(-5).map((h) => h.pi).filter((x) => x !== null);
+  const avg = recent.length ? recent.reduce((p, q) => p + q, 0) / recent.length : NaN;
+  $('session').innerHTML = [
+    `Episode <b>${S.episode + 1}</b>`,
+    `This episode PI <b>${n ? fmt((s.good - s.bad) / n) : '–'}</b>`,
+    `Last 5 episodes PI <b>${isFinite(avg) ? fmt(avg) : '–'}</b>`,
+    `Kills <b>${s.kills}</b>`,
+    `Health <b>${Math.round(w.player.health)}</b>`,
+  ].join('');
+}
+
+// ---------- brain diagram ----------
+const NODE_POS = {
+  MECH: [50, 40], HS: [120, 40], LPLC2: [190, 40], LC4: [255, 40], LC10a: [330, 40], vPN: [420, 40],
+  MECHb: [50, 120], AOTU025: [250, 145], AOTU019: [330, 145], KC: [425, 150], APL: [478, 92],
+  LALi: [230, 255], MBON01: [310, 255], MBON11: [385, 255], PPL101: [452, 238], PAM: [482, 290],
+  NOCI: [440, 345], GRN: [484, 382],
+  DNp01: [110, 460], MDN: [190, 460], DNa01: [270, 460], DNa02: [340, 460], P9: [410, 460],
+};
+const SHORT = { MBON11: 'MBON-11', MBON01: 'MBON-01', PPL101: 'PPL1', DNp01: 'GF', AOTU019: 'AOTU019', AOTU025: 'AOTU025' };
+let geo = null;
+function buildBrainGeometry(agent) {
+  const conn = agent.conn, nodes = [], edges = new Map();
+  for (const [type, def] of Object.entries(C.CELL_TYPES)) {
+    for (let s = 0; s < 2; s++) {
+      const p = NODE_POS[type];
+      if (!p) continue;
+      nodes.push({ key: `${type}_${C.SIDES[s]}`, type, side: s, x: s === 0 ? p[0] : 1000 - p[0], y: p[1], r: Math.min(26, 6 + 1.6 * Math.sqrt(def.perSide)), nt: def.nt, sign: def.sign ?? C.NT_SIGN[def.nt] });
+    }
+  }
+  const byKey = Object.fromEntries(nodes.map((n) => [n.key, n]));
+  for (let k = 0; k < conn.pre.length; k++) {
+    const a = conn.neurons[conn.pre[k]], b = conn.neurons[conn.post[k]];
+    const ka = `${a.type}_${C.SIDES[a.side]}`, kb = `${b.type}_${C.SIDES[b.side]}`;
+    if (ka === kb) continue;
+    const id = ka + '>' + kb;
+    let e = edges.get(id);
+    if (!e) { e = { a: byKey[ka], b: byKey[kb], count: 0, sign: conn.sign[conn.pre[k]], plastic: a.type === 'KC' && (b.type === 'MBON11' || b.type === 'MBON01') }; edges.set(id, e); }
+    e.count += conn.count[k];
+  }
+  geo = { nodes, edges: [...edges.values()].filter((e) => e.a && e.b), byKey };
+}
+const MAXRATE = { KC: 25, APL: 80, vPN: 150, LC10a: 140, LC4: 180, LPLC2: 200, HS: 120, MECH: 220, MECHb: 220, NOCI: 250, GRN: 250 };
+function drawBrain() {
+  const cv = $('brain'), g = cv.getContext('2d');
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.fillStyle = css('--panel'); g.fillRect(0, 0, cv.width, cv.height);
+  if (!geo) return;
+  // midline
+  g.strokeStyle = css('--grid'); g.lineWidth = 1; g.setLineDash([4, 6]);
+  g.beginPath(); g.moveTo(500, 10); g.lineTo(500, 540); g.stroke(); g.setLineDash([]);
+  g.font = `600 12px ${css('--body')}`; g.fillStyle = css('--faint'); g.textAlign = 'center';
+  g.fillText('LEFT HEMISPHERE', 250, 545); g.fillText('RIGHT HEMISPHERE', 750, 545);
+  const mem = S.memory;
+  const plast = plasticBySide();
+  for (const e of geo.edges) {
+    const act = clamp((S.rates[e.a.key] || 0) / (MAXRATE[e.a.type] || 100), 0, 1);
+    let width = 0.4 + Math.log10(1 + e.count) * 0.45, color = e.sign > 0 ? css('--exc') : css('--inh'), alpha = 0.1 + 0.55 * act;
+    if (e.plastic) {
+      const comp = e.b.type === 'MBON11' ? 0 : 2;
+      const ratio = plast[comp + e.b.side];
+      width = 0.5 + 5 * ratio; color = css('--reward'); alpha = 0.35 + 0.5 * act;
+    }
+    g.globalAlpha = alpha; g.strokeStyle = color; g.lineWidth = width;
+    const mx = (e.a.x + e.b.x) / 2 + (e.a.side !== e.b.side ? 0 : (e.a.y - e.b.y) * 0.12);
+    const my = (e.a.y + e.b.y) / 2;
+    g.beginPath(); g.moveTo(e.a.x, e.a.y); g.quadraticCurveTo(mx, my, e.b.x, e.b.y); g.stroke();
+  }
+  g.globalAlpha = 1;
+  // dopamine teaching signals (modulatory, dashed)
+  for (let s = 0; s < 2; s++) {
+    for (const [dan, mbon, col] of [['PPL101', 'MBON11', '--punish'], ['PAM', 'MBON01', '--reward']]) {
+      const a = geo.byKey[`${dan}_${C.SIDES[s]}`], b = geo.byKey[`${mbon}_${C.SIDES[s]}`];
+      const act = clamp((S.rates[a.key] || 0) / 120, 0, 1);
+      g.globalAlpha = 0.25 + 0.75 * act; g.strokeStyle = css(col); g.lineWidth = 1.5 + 3 * act; g.setLineDash([3, 4]);
+      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.setLineDash([]);
+    }
+  }
+  g.globalAlpha = 1;
+  for (const n of geo.nodes) {
+    const rate = S.rates[n.key] || 0;
+    const act = clamp(rate / (MAXRATE[n.type] || 100), 0, 1);
+    const base = n.nt === 'DA' ? (n.type === 'PAM' ? css('--reward') : css('--punish')) : n.sign > 0 ? css('--exc') : css('--inh');
+    if (act > 0.02) {
+      const gr = g.createRadialGradient(n.x, n.y, n.r * 0.3, n.x, n.y, n.r * 2.2);
+      gr.addColorStop(0, base); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.globalAlpha = act * 0.7; g.fillStyle = gr; g.beginPath(); g.arc(n.x, n.y, n.r * 2.2, 0, 7); g.fill();
+    }
+    g.globalAlpha = 1;
+    g.fillStyle = css('--panel-2'); g.beginPath(); g.arc(n.x, n.y, n.r, 0, 7); g.fill();
+    g.globalAlpha = 0.25 + 0.75 * act; g.fillStyle = base; g.beginPath(); g.arc(n.x, n.y, n.r - 2, 0, 7); g.fill();
+    g.globalAlpha = 1; g.strokeStyle = base; g.lineWidth = 1.5; g.beginPath(); g.arc(n.x, n.y, n.r, 0, 7); g.stroke();
+    g.fillStyle = css('--ink'); g.font = `500 12px ${css('--mono')}`; g.textAlign = 'center';
+    g.fillText(SHORT[n.type] || n.type, n.x, n.y + n.r + 14);
+  }
+}
+function plasticBySide() {
+  const b = S.agent.brain, sum = [0, 0, 0, 0], n = [0, 0, 0, 0];
+  for (let p = 0; p < b.plSlot.length; p += 7) { const c = b.plComp[p]; sum[c] += b.outW[b.plSlot[p]] / b.plW0[p]; n[c]++; }
+  return sum.map((s, i) => (n[i] ? s / n[i] : 1));
+}
+
+// ---------- spike raster ----------
+let rasterRows = [];
+function buildRasterRows(brain) {
+  const rows = [];
+  const add = (key, k, color) => { const ids = brain.groups[key]; for (let i = 0; i < Math.min(k, ids.length); i++) rows.push({ id: ids[i], color }); };
+  const kc = css('--muted');
+  add('KC_L', 34, kc); add('KC_R', 34, kc);
+  for (const s of ['L', 'R']) { add('MBON11_' + s, 2, css('--inh')); add('MBON01_' + s, 2, css('--exc')); add('LALi_' + s, 2, css('--inh')); }
+  for (const s of ['L', 'R']) { add('PPL101_' + s, 1, css('--punish')); add('PAM_' + s, 3, css('--reward')); }
+  for (const s of ['L', 'R']) add('AOTU019_' + s, 4, css('--inh'));
+  for (const t of ['DNa02', 'DNa01', 'P9', 'MDN', 'DNp01']) for (const s of ['L', 'R']) add(`${t}_${s}`, 2, css('--ink'));
+  return rows;
+}
+const rasterBuf = [];
+function pushRaster(brain) {
+  const col = new Uint8Array(rasterRows.length);
+  for (let i = 0; i < rasterRows.length; i++) col[i] = brain.counts[rasterRows[i].id] > 0 ? 1 : 0;
+  rasterBuf.push(col);
+  if (rasterBuf.length > 400) rasterBuf.shift();
+}
+function drawRaster() {
+  const cv = $('raster'), g = cv.getContext('2d'), W = cv.width, H = cv.height;
+  g.fillStyle = '#100d0b'; g.fillRect(0, 0, W, H);
+  const rh = H / Math.max(1, rasterRows.length), cw = 2;
+  const cols = Math.min(rasterBuf.length, Math.floor(W / cw));
+  for (let c = 0; c < cols; c++) {
+    const col = rasterBuf[rasterBuf.length - cols + c], x = W - (cols - c) * cw;
+    for (let i = 0; i < col.length; i++) if (col[i]) { g.fillStyle = rasterRows[i].color; g.fillRect(x, i * rh, cw, Math.max(1, rh)); }
+  }
+}
+
+// ---------- controls ----------
+$('play').addEventListener('click', () => { S.playing = !S.playing; $('play').textContent = S.playing ? 'Pause' : 'Play'; });
+$('speed').addEventListener('change', (e) => { S.speed = Number(e.target.value); });
+$('scenario').addEventListener('change', (e) => { S.scenario = e.target.value; newEpisode(); log(`Scenario: ${C.SCENARIOS[S.scenario].label}.`); });
+$('condition').addEventListener('change', (e) => { S.condition = e.target.value; newFly(S.fly); });
+$('newfly').addEventListener('click', () => newFly());
+$('swap').addEventListener('click', () => {
+  S.goodColor = C.otherColor(S.goodColor);
+  S.world.goodColor = S.goodColor;
+  log(`<b>Colors swapped.</b> ${cap(S.goodColor)} orbs heal now. The fly's memory still says otherwise.`);
+});
+$('human').addEventListener('click', () => {
+  S.human = !S.human;
+  $('human').setAttribute('aria-pressed', String(S.human));
+  $('human-note').hidden = !S.human;
+  keys.clear();
+});
+$('game').addEventListener('click', () => { if (S.human) $('game').focus(); });
+
+// =====================================================================
+// LAB
+// =====================================================================
+const LAB_PROTOCOLS = { quick: 'Quick learning check', learning: 'Valence learning + reversal', combat: 'Imp combat' };
+for (const [k, v] of Object.entries(LAB_PROTOCOLS)) $('protocol').add(new Option(v, k));
+const ALL_CONDITIONS = Object.keys(C.CONDITIONS);
+for (const k of ALL_CONDITIONS) {
+  const id = 'cc-' + k;
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="checkbox" id="${id}" value="${k}"><span class="dot" style="background:var(${SERIES[k]})"></span>${C.CONDITIONS[k].label}`;
+  l.title = C.CONDITIONS[k].about;
+  $('cond-checks').append(l);
+}
+function applyProtocolDefaults() {
+  const P = C.PROTOCOLS[$('protocol').value];
+  const small = $('protocol').value !== 'quick';
+  $('subjects').value = small ? 8 : P.subjects;
+  $('acq').value = small ? Math.min(P.acquisition, 8) : P.acquisition;
+  $('rev').value = small ? Math.min(P.reversal, 4) : P.reversal;
+  $('rev').disabled = P.scenario === 'combat';
+  for (const k of ALL_CONDITIONS) $('cc-' + k).checked = P.conditions.includes(k);
+  $('protocol-note').textContent = `${C.SCENARIOS[P.scenario].about} Defaults are trimmed for a browser; the CLI runs the full design.`;
+}
+$('protocol').addEventListener('change', () => { applyProtocolDefaults(); renderLab(); });
+$('protocol').value = 'quick';
+applyProtocolDefaults();
+
+let lab = { analysis: null, source: null, results: null, workers: [], running: false };
+
+function workerSource() {
+  return document.getElementById('flycore').textContent + `
+;self.onmessage = (e) => {
+  const { protocol, condition, subject, baseSeed } = e.data;
+  const r = FlyCore.runSubject({ protocol, condition, subject, baseSeed });
+  self.postMessage(r);
+};`;
+}
+
+function runLab() {
+  const P = { ...C.PROTOCOLS[$('protocol').value] };
+  P.subjects = clamp(Number($('subjects').value) || 4, 2, 64);
+  P.acquisition = clamp(Number($('acq').value) || 4, 2, 40);
+  P.reversal = P.scenario === 'combat' ? 0 : clamp(Number($('rev').value) || 0, 0, 20);
+  P.conditions = ALL_CONDITIONS.filter((k) => $('cc-' + k).checked);
+  if (!P.conditions.length) { $('lab-status').textContent = 'Pick at least one condition.'; return; }
+  const seed = Number($('seed').value) || 1;
+  const tasks = [...C.tasksFor(P)];
+  const url = URL.createObjectURL(new Blob([workerSource()], { type: 'text/javascript' }));
+  const nW = Math.max(1, Math.min(tasks.length, (navigator.hardwareConcurrency || 4) - 1, 8));
+  const results = [];
+  let next = 0, done = 0;
+  const t0 = performance.now();
+  lab.running = true;
+  $('run').disabled = true; $('stop').disabled = false;
+  $('lab-status').textContent = `Running ${tasks.length} fly runs on ${nW} workers…`;
+  lab.workers = [];
+  for (let i = 0; i < nW; i++) {
+    const w = new Worker(url);
+    const feed = () => { if (next < tasks.length) w.postMessage({ protocol: P, baseSeed: seed, ...tasks[next++] }); };
+    w.onmessage = (e) => {
+      results.push(e.data);
+      done++;
+      $('prog').style.width = `${(done / tasks.length) * 100}%`;
+      $('lab-status').textContent = `${done} of ${tasks.length} fly runs, ${((performance.now() - t0) / 1000).toFixed(0)} s`;
+      if (done % Math.max(1, P.conditions.length) === 0 || done === tasks.length) {
+        lab.analysis = C.analyze(P, results);
+        lab.results = { protocol: P, seed, results };
+        lab.source = done === tasks.length ? `Your run, seed ${seed}` : `Your run so far (${done}/${tasks.length})`;
+        renderLab();
+      }
+      if (done === tasks.length) finishLab();
+      else feed();
+    };
+    w.onerror = (err) => { $('lab-status').textContent = `A worker failed: ${err.message}`; stopLab(); };
+    lab.workers.push(w);
+    feed();
+  }
+}
+function finishLab() {
+  stopLab(true);
+  $('lab-status').textContent = `Done. ${$('lab-status').textContent.replace(/^Done\. /, '')}`;
+}
+function stopLab(quiet) {
+  for (const w of lab.workers) w.terminate();
+  lab.workers = []; lab.running = false;
+  $('run').disabled = false; $('stop').disabled = true;
+  if (!quiet) $('lab-status').textContent = 'Stopped.';
+}
+$('run').addEventListener('click', runLab);
+$('stop').addEventListener('click', () => stopLab());
+$('copy').addEventListener('click', async () => {
+  const data = lab.results ? JSON.stringify(lab.results) : JSON.stringify(REFERENCE);
+  try { await navigator.clipboard.writeText(data); $('lab-status').textContent = `Copied ${(data.length / 1024).toFixed(0)} KB of JSON.`; }
+  catch (e) { $('lab-status').textContent = 'Clipboard is blocked here. Use the CLI (node cli/run.mjs) to save results.'; }
+});
+
+function renderLab() {
+  const wantCombat = $('protocol').value === 'combat';
+  const own = lab.analysis && (lab.analysis.protocol.scenario === 'combat') === wantCombat ? lab.analysis : null;
+  const A = own || (wantCombat ? REFERENCE.combat : REFERENCE.learning);
+  const source = own ? lab.source : `Reference run from the CLI: ${A.protocol.subjects} flies per condition, seed ${REFERENCE.seed}`;
+  $('result-source').textContent = source;
+  // verdicts
+  $('verdicts').innerHTML = A.verdicts.map((v) => {
+    const good = /^Learns|^Fights/.test(v.verdict);
+    return `<div class="verdict"><span class="dot" style="background:var(${SERIES[v.condition]});margin-top:5px"></span><div><b>${v.label}</b><p>${v.why}</p></div><span class="chip ${good ? 'yes' : 'no'}">${v.verdict}</span></div>`;
+  }).join('');
+  if (A.protocol.scenario === 'combat') drawCombat(A); else drawCurve(A);
+  drawTable(A);
+}
+
+// learning curve by encounter (SVG)
+function drawCurve(A) {
+  const svg = $('curve'), W = 760, H = 300, m = { l: 62, r: 16, t: 14, b: 40 };
+  const conds = Object.keys(A.conditions);
+  const hasRev = !!A.conditions[conds[0]]?.touchCurve?.rev;
+  const nA = A.conditions[conds[0]].touchCurve.acq.length, nR = hasRev ? A.conditions[conds[0]].touchCurve.rev.length : 0;
+  const N = nA + nR, gap = hasRev ? 1 : 0;
+  const x = (i) => m.l + ((i + (i >= nA ? gap : 0)) / (N + gap - 1)) * (W - m.l - m.r);
+  const y = (v) => m.t + ((1 - v) / 2) * (H - m.t - m.b);
+  let s = '';
+  for (const v of [-1, -0.5, 0, 0.5, 1]) {
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(${v === 0 ? '--faint' : '--grid'})" stroke-width="1"/>`;
+    s += `<text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${v > 0 ? '+' : ''}${v}</text>`;
+  }
+  const bin = C.TOUCH_BIN;
+  for (let i = 0; i < N; i += 2) {
+    const k = i < nA ? i : i - nA;
+    s += `<text x="${x(i)}" y="${H - m.b + 16}" text-anchor="middle">${k * bin + 1}</text>`;
+  }
+  if (hasRev) {
+    const xs = (x(nA - 1) + x(nA)) / 2;
+    s += `<line x1="${xs}" x2="${xs}" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-width="1"/>`;
+    s += `<text x="${xs + 6}" y="${m.t + 12}">colors swap</text>`;
+  }
+  s += `<text class="axis-title" x="${m.l}" y="${H - 6}">ORB TOUCH NUMBER${hasRev ? ' (TRAINING, THEN AFTER THE SWAP)' : ''}</text>`;
+  s += `<text class="axis-title" x="14" y="${m.t}" transform="rotate(-90 14 ${m.t})" text-anchor="end">PREFERENCE INDEX</text>`;
+  const series = [];
+  for (const k of conds) {
+    const c = A.conditions[k];
+    // plot a bin only when enough flies reached it, so sparse tails don't swing the line
+    const minN = Math.max(3, Math.ceil(0.4 * c.n));
+    const pts = [...c.touchCurve.acq, ...(c.touchCurve.rev || [])].map((p, i) => ({ i, ...p })).filter((p) => p.n >= minN && isFinite(p.mean));
+    if (!pts.length) continue;
+    series.push({ k, c, pts });
+    const seg = (arr) => arr.map((p, j) => `${j ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p.mean).toFixed(1)}`).join('');
+    const band = (arr) => arr.map((p, j) => `${j ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(clamp(p.mean + p.sem, -1, 1)).toFixed(1)}`).join('') + [...arr].reverse().map((p) => `L${x(p.i).toFixed(1)},${y(clamp(p.mean - p.sem, -1, 1)).toFixed(1)}`).join('') + 'Z';
+    for (const part of [pts.filter((p) => p.i < nA), pts.filter((p) => p.i >= nA)]) {
+      if (part.length < 1) continue;
+      s += `<path d="${band(part)}" fill="var(${SERIES[k]})" opacity="0.1"/>`;
+      s += `<path d="${seg(part)}" fill="none" stroke="var(${SERIES[k]})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    const end = pts[pts.length - 1];
+    s += `<circle cx="${x(end.i)}" cy="${y(end.mean)}" r="4.5" fill="var(${SERIES[k]})" stroke="var(--panel)" stroke-width="2"/>`;
+  }
+  s += `<line id="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>`;
+  s += `<rect id="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/>`;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = s;
+  $('curve-title').textContent = 'Learning curve by encounter';
+  $('curve-legend').innerHTML = series.map((q) => `<span><i style="background:var(${SERIES[q.k]})"></i>${q.c.label}</span>`).join('');
+  $('curve-note').textContent = `Mean preference index (± SEM band) over successive bins of ${bin} orb touches, scored against whichever color heals at the time. +1 means every touch was a healing orb.`;
+  // hover
+  const hit = svg.querySelector('#hit'), cross = svg.querySelector('#cross'), tip = $('tip');
+  hit.onmousemove = (e) => {
+    const r = svg.getBoundingClientRect(), sx = ((e.clientX - r.left) / r.width) * W;
+    let best = 0, bd = 1e9;
+    for (let i = 0; i < N; i++) { const d = Math.abs(x(i) - sx); if (d < bd) { bd = d; best = i; } }
+    cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best)); cross.setAttribute('visibility', 'visible');
+    const k = best < nA ? best : best - nA;
+    const rows = series.map((q) => { const p = q.pts.find((pp) => pp.i === best); return `<span class="dot" style="background:var(${SERIES[q.k]})"></span>${q.c.label}: ${p ? fmt(p.mean) + ' ± ' + p.sem.toFixed(2) + ` (n=${p.n})` : 'no data'}`; });
+    tip.innerHTML = `<b>${best < nA ? 'Training' : 'After swap'}, touches ${k * bin + 1}–${(k + 1) * bin}</b><br>` + rows.join('<br>');
+    tip.hidden = false;
+    tip.style.left = Math.min(innerWidth - 290, e.clientX + 14) + 'px';
+    tip.style.top = e.clientY + 14 + 'px';
+  };
+  hit.onmouseleave = () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); };
+}
+
+// combat: kills per episode, horizontal bars
+function drawCombat(A) {
+  const svg = $('curve'), conds = Object.keys(A.conditions), W = 760, rowH = 34, m = { l: 170, r: 70, t: 10, b: 48 };
+  const H = m.t + m.b + conds.length * rowH;
+  const max = Math.max(1, Math.ceil(Math.max(...conds.map((k) => A.conditions[k].kills)) * 2) / 2);
+  const x = (v) => m.l + (v / max) * (W - m.l - m.r);
+  let s = '';
+  for (let v = 0; v <= max; v += max > 4 ? 1 : 0.5) {
+    s += `<line x1="${x(v)}" x2="${x(v)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--grid)" stroke-width="1"/><text x="${x(v)}" y="${H - m.b + 16}" text-anchor="middle">${v}</text>`;
+  }
+  conds.forEach((k, i) => {
+    const c = A.conditions[k], y0 = m.t + i * rowH + 8, w = Math.max(0, x(c.kills) - m.l), h = 18;
+    s += `<text x="${m.l - 10}" y="${y0 + 13}" text-anchor="end" style="fill:var(--ink);font:13px var(--body)">${c.label}</text>`;
+    if (w > 0) s += `<path d="M${m.l},${y0}h${Math.max(0, w - 4)}a4,4 0 0 1 4,4v${h - 8}a4,4 0 0 1 -4,4h${-Math.max(0, w - 4)}z" fill="var(${SERIES[k]})"><title>${c.label}: ${c.kills.toFixed(2)} kills per episode</title></path>`;
+    s += `<text x="${m.l + w + 8}" y="${y0 + 13}">${c.kills.toFixed(2)}</text>`;
+  });
+  s += `<text class="axis-title" x="${m.l}" y="${H - 6}">IMPS KILLED PER EPISODE</text>`;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = s;
+  $('curve-title').textContent = 'Kills per episode';
+  $('curve-legend').innerHTML = '';
+  $('curve-note').textContent = 'Each bar is the mean across flies and episodes. Accuracy, damage and survival are in the table.';
+}
+
+function drawTable(A) {
+  const conds = Object.values(A.conditions);
+  let h;
+  if (A.protocol.scenario === 'combat') {
+    h = '<tr><th>Condition</th><th>Kills/ep</th><th>Accuracy</th><th>Damage/ep</th><th>Survival</th><th>Kills early→late</th></tr>';
+    h += conds.map((c) => `<tr><td>${c.label}</td><td class="num">${c.kills.toFixed(2)}</td><td class="num">${(c.accuracy * 100).toFixed(0)}%</td><td class="num">${c.damage.toFixed(0)}</td><td class="num">${c.survived.toFixed(1)} s</td><td class="num">${c.killsEarly.toFixed(2)} → ${c.killsLate.toFixed(2)}</td></tr>`).join('');
+  } else {
+    const pm = (q) => (q && isFinite(q.mean) ? `${fmt(q.mean)} ± ${(q.sem || 0).toFixed(2)}` : '–');
+    const rev = conds[0]?.reversal;
+    h = `<tr><th>Condition</th><th>First ${C.TOUCH_BIN} touches</th><th>Late training</th><th>p</th><th>Orbs/ep</th>${rev ? `<th>First ${C.TOUCH_BIN} after swap</th><th>End of reversal</th>` : ''}</tr>`;
+    h += conds.map((c) => `<tr><td>${c.label}</td><td class="num">${pm(c.naive)}</td><td class="num">${pm(c.late)}</td><td class="num">${fmtP(c.late.perm.p)}</td><td class="num">${c.pickups.toFixed(1)}</td>${c.reversal ? `<td class="num">${pm(c.reversal.firstTouches)}</td><td class="num">${pm(c.reversal.last)}</td>` : ''}</tr>`).join('');
+  }
+  if (A.comparisons?.length) {
+    const combat = A.protocol.scenario === 'combat';
+    h += `<tr><th colspan="7" style="padding-top:16px">Intact vs each control, paired by fly</th></tr>`;
+    h += A.comparisons.map((c) => `<tr><td>intact − ${A.conditions[c.b].label}</td><td class="num" colspan="2">${combat ? `${fmt(c.killsDiff)} kills/ep` : `${fmt(c.diff)} late PI`}</td><td class="num">${fmtP(combat ? c.killsPerm.p : c.perm.p)}</td><td class="num" colspan="3">${combat ? `${fmt(c.damageDiff, 1)} damage/ep (p ${fmtP(c.damagePerm.p)})` : `d = ${c.d.toFixed(2)}`}</td></tr>`).join('');
+  }
+  $('table').innerHTML = h;
+}
+
+// =====================================================================
+// WIRING
+// =====================================================================
+function renderWiring() {
+  const conn = C.buildConnectome(new C.RNG(1));
+  const sum = C.connectomeSummary(conn);
+  const rows = Object.entries(C.CELL_TYPES).map(([t, d]) => `<tr><td><b>${t}</b></td><td class="num">${d.perSide * 2}</td><td>${d.nt}${d.input ? ' (input)' : ''}</td><td>${d.region}</td><td>${d.role}</td></tr>`).join('');
+  $('celltypes').innerHTML = `<tr><th>Type</th><th>Cells</th><th>Transmitter</th><th>Region</th><th>Role</th></tr>${rows}<tr><td><b>Total</b></td><td class="num">${sum.neurons}</td><td colspan="3">${sum.connections.toLocaleString()} connections, ${Math.round(sum.synapses).toLocaleString()} synapses</td></tr>`;
+  const L = C.LIF;
+  $('method').innerHTML = `
+    <h2>How it works</h2>
+    <p><b>World.</b> A small raycast shooter in the style of Doom (1993), running at Doom's 35 tics per second. Imps chase you and throw fireballs. Blue and green orbs float around; one color heals and the other burns. Which one heals is set per fly, so it has to be learned.</p>
+    <p><b>Eyes.</b> Each compound eye is 16 ommatidial columns spanning 140&deg;, with 20&deg; of binocular overlap in front. The optic lobe is modeled as rate filters: small-object detectors (LC10a), looming detectors (LC4, LPLC2) that ignore the fly's own walking, horizontal optic flow (HS, from Reichardt correlators) and color channels for the mushroom body.</p>
+    <p><b>Brain.</b> ${sum.neurons} spiking neurons and ${sum.connections.toLocaleString()} connections. Leaky integrate-and-fire with the parameters of Shiu et al. 2024: rest ${L.vRest} mV, threshold ${L.vTh} mV, &tau;<sub>m</sub> ${L.tauM} ms, &tau;<sub>syn</sub> ${L.tauSyn} ms, refractory ${L.tRef} ms, ${L.wSyn} mV per synapse, ${L.delay} ms delay. Signs follow the transmitter (ACh excitatory, GABA inhibitory, glutamate inhibitory except MBON-01, which is modeled as excitatory).</p>
+    <p><b>Innate behavior.</b> LC10a &rarr; AOTU019/AOTU025 &rarr; DNa02 steers toward small objects, after the fly's courtship-pursuit circuit. The gun fires when both AOTU019 populations are active, meaning the target sits in the binocular zone. Looming drives the giant fiber (DNp01), which sidesteps away. Wall contact turns the fly and backs it off.</p>
+    <p><b>Learning.</b> Color input reaches ~600 Kenyon cells through random 6-claw wiring that is different in every fly. Each KC synapse onto MBON-11 (approach) or MBON-01 (avoidance) is plastic. Damage excites nociceptors &rarr; PPL1-&gamma;1pedc dopamine, which depresses recently active KC&rarr;MBON-11 synapses. Healing and kills excite sweet-taste neurons &rarr; PAM-&gamma;5 dopamine, which depresses KC&rarr;MBON-01 synapses. MBON-11 inhibits MBON-01, so punished colors release MBON-01, which turns the fly away, backs it off and gates off pursuit through an inhibitory LAL interneuron.</p>
+    <h2>What this is not</h2>
+    <ul>
+      <li>It is not the full connectome. FlyWire has ~140,000 neurons and MaleCNS ~166,700. This is a hand-built reduction to the named cell types and wiring motifs the game needs, with synapse counts tuned so it behaves.</li>
+      <li>It is not AGI, and it is not trying to be. A fly brain is a narrow, superbly tuned controller. The point of the engine is to test learning claims properly: with controls, counterbalancing and statistics.</li>
+      <li>The test engine checks behavior, and behavior can mislead. In combat, pain-driven learning makes the intact fly avoid imps and stop shooting, without taking less damage. Learning is real there, and it does not help it win.</li>
+    </ul>
+    <h2>Sources</h2>
+    <ul>
+      <li><a href="https://www.nature.com/articles/s41586-024-07763-9" target="_blank" rel="noopener">Shiu et al. 2024, A Drosophila computational brain model reveals sensorimotor processing (Nature)</a></li>
+      <li><a href="https://elifesciences.org/articles/04580" target="_blank" rel="noopener">Aso et al. 2014, Mushroom body output neurons encode valence (eLife)</a></li>
+      <li><a href="https://elifesciences.org/articles/75611" target="_blank" rel="noopener">Gkanias et al. 2022, An incentive circuit for memory dynamics in the mushroom body (eLife)</a></li>
+      <li><a href="https://www.cell.com/neuron/fulltext/S0896-6273(15)00982-4" target="_blank" rel="noopener">Hige et al. 2015, Heterosynaptic plasticity underlies aversive olfactory learning (Neuron)</a></li>
+      <li><a href="https://www.janelia.org/publication/neural-basis-for-looming-size-and-velocity-encoding-in-the-drosophila-giant-fiber-escape" target="_blank" rel="noopener">Ache et al. 2019, Looming size and velocity encoding in the giant fiber escape pathway</a></li>
+      <li><a href="https://github.com/webergithub/fruitfly-lab" target="_blank" rel="noopener">fruitfly-lab: a FlyWire pursuit circuit that plays Doom, with scrambled-wiring and lesion controls</a></li>
+      <li><a href="https://github.com/townie/awesome-fruit-fly" target="_blank" rel="noopener">awesome-fruit-fly: DOOMFLY and other connectome game projects</a></li>
+      <li><a href="https://arxiv.org/abs/1605.02097" target="_blank" rel="noopener">Kempka et al. 2016, ViZDoom: a Doom-based AI research platform</a></li>
+    </ul>`;
+}
+
+// ---------- boot ----------
+renderWiring();
+newFly(7);
+let startTab = 'watch';
+try { startTab = localStorage.getItem('fbd-tab') || 'watch'; } catch (e) { /* storage unavailable */ }
+const hash = location.hash.replace('#', '');
+if (TABS.includes(hash)) startTab = hash;
+showTab(TABS.includes(startTab) ? startTab : 'watch');
+requestAnimationFrame(loop);
+
+})();
+</script>
+
+</body>
+</html>
