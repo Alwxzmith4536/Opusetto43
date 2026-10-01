@@ -67,7 +67,7 @@
 
   <ol class="chapters" id="chapters"></ol>
 
-  <p class="note">Part 1 of a fan-made sprite battle: a sunset run, Metal Sonic's arrival, a spin dash, a six-hit sky clash, a plasma beam and a homing attack, ending on a cliffhanger. The scene renders at 320×180 and is scaled up 4×. Every sprite is original pixel art drawn in code. Space bar plays and pauses; add <code>#t=30</code> to the URL to jump to a time. Sonic the Hedgehog and Metal Sonic belong to SEGA. This is an unofficial, non-commercial fan work.</p>
+  <p class="note">Part 1 of a fan-made sprite battle: a sunset run, Metal Sonic's arrival, a spin dash, a six-hit sky clash, a plasma beam and a homing attack, ending on a cliffhanger. The scene renders at 320×180 and is scaled up 4×. Every sprite is original pixel art drawn in code. Space bar plays and pauses; add <code>#t30</code> to the URL to jump to a time. Sonic the Hedgehog and Metal Sonic belong to SEGA. This is an unofficial, non-commercial fan work.</p>
 </div>
 
 <script>
@@ -960,7 +960,7 @@ document.getElementById('restart').addEventListener('click', () => { seek(0); if
 prog.addEventListener('click', e => { const r = prog.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * total); });
 prog.addEventListener('keydown', e => { if (e.key === 'ArrowRight') seek(time + 3); if (e.key === 'ArrowLeft') seek(time - 3); });
 document.addEventListener('keydown', e => { if (e.code === 'Space' && e.target.tagName !== 'BUTTON') { e.preventDefault(); toggle(); } });
-function fromHash() { const m = location.hash.match(/t=([\d.]+)/); if (m) { seek(+m[1]); if (playing) toggle(); } }
+function fromHash() { const m = location.hash.match(/t=?([\d.]+)/); if (m) { seek(+m[1]); if (playing) toggle(); } }
 addEventListener('hashchange', fromHash);
 
 const fontReady = document.fonts ? document.fonts.load(`16px ${FONT}`).catch(() => {}) : Promise.resolve();
