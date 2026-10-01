@@ -65,7 +65,30 @@ Trained -0.8 versus -177 untrained and -220 random play. G1-G4 and G6 pass. G5 (
 **fails**: the trained fly kills in 87% of episodes, but with a rightward bias rather than
 by steering toward the monster, and the gate flags exactly that.
 
-RESULTS_FLYWIRE_PLACEHOLDER
+### The real fly brain (FlyWire v783 connectome, 139k neurons)
+
+**Wiring checks on the unmodified connectome** (`results/flywire-connectome-gates.json`):
+
+| gate | result |
+|---|---|
+| C1 photoreceptors -> descending neurons | **FAIL** (expected): driving all 7,932 R1-6 photoreceptors activates 23% of lamina neurons, 0% of visual projection neurons, 0% of descending neurons. Graded early vision does not survive a spiking model. |
+| C2 lateralised visuomotor pathway | **PASS**: left-eye LC/LPLC drive pushes DNa02 steering activity +70 Hz to the left; right-eye drive pushes it -32 Hz (p = 0.006) |
+| C3 looming -> giant fibre | **PASS**: LC4 + LPLC2 drive makes the giant fibre (DNp01) fire at 227 Hz from silence |
+
+**Playing Doom** (`vizdoom:basic`, 150 training episodes, 30 evaluation seeds):
+
+| scripted aimer (cheats) | random | untrained | **trained** | DNs silenced | dopamine neurons silenced | gates passed |
+|---:|---:|---:|---:|---:|---:|---:|
+| +76.6 | -83.0 | -168.3 | **-153.5** | -165.6 | -154.0 | **0 / 6** |
+
+The real brain, as wired, **does not learn this task**. The engine shows why. With
+controlled stimuli, 61 descending neurons are tuned to monster azimuth, but the tuning
+is strongly lopsided toward the right eye. During real play, the monster's position can
+be decoded from the visual input with 92% accuracy, yet from the descending neurons only
+at chance (56-64% vs ~62-66% chance). Even the ~3,400 active central-brain neurons reach
+only ~73%. Under the Shiu et al. LIF dynamics, realistic visual drive barely gets past one
+or two synapses. That matches DOOMFLY's failed visual gate. (In this mode the "silenced"
+control silences the descending neurons the readout learns from, not Kenyon cells.)
 
 ## How it works
 
