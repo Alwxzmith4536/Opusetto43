@@ -23,14 +23,15 @@ that the brain never trained on. Every condition is scored on the same seeds.
 
 ### Synthetic fly brain on real Doom (`vizdoom:basic`, 300 training episodes)
 
-| seed | random play | untrained brain | **trained brain** | trained, Kenyon cells silenced | trained with dopamine neurons silenced | gates passed |
-|---|---:|---:|---:|---:|---:|---:|
-| 0 | -134.5 (66%) | -103.4 (74%) | **+36.7 (98%)** | -149.6 (60%) | -100.2 (74%) | 6 / 6 |
-| 1 | -177.5 (54%) | -134.4 (62%) | **+49.9 (100%)** | -175.2 (60%) | -200.3 (48%) | 6 / 6 |
-| 2 | -155.0 (58%) | -133.5 (66%) | **-5.2 (88%)** | -147.3 (64%) | -155.0 (56%) | 6 / 6 |
+| seed | scripted aimer (cheats) | random play | untrained brain | **trained brain** | trained, Kenyon cells silenced | trained with dopamine neurons silenced | gates passed |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 0 | +73.2 (100%) | -134.5 (66%) | -103.4 (74%) | **+36.7 (98%)** | -149.6 (60%) | -100.2 (74%) | 6 / 6 |
+| 1 | +73.2 (100%) | -177.5 (54%) | -134.4 (62%) | **+49.9 (100%)** | -175.2 (60%) | -200.3 (48%) | 6 / 6 |
+| 2 | +73.2 (100%) | -155.0 (58%) | -133.5 (66%) | **-5.2 (88%)** | -147.3 (64%) | -155.0 (56%) | 6 / 6 |
 
 Mean episode return; in brackets, the share of episodes in which the monster was killed.
-In ViZDoom `basic` a kill gives +100, each tic costs -1 and each missed shot -5; the
+The scripted aimer is a reference ceiling that reads the true monster positions from the
+game engine, which the fly never gets. In ViZDoom `basic` a kill gives +100, each tic costs -1 and each missed shot -5; the
 episode times out after 300 tics (-300 without a kill).
 
 Where the trained fly steers (seed 0, share of actions by the monster's true azimuth,
@@ -45,7 +46,24 @@ which the brain never sees):
 Untrained, every row is about a third each. The fly learned to strafe toward the monster
 and fire when it is centred.
 
-RESULTS_DEFEND_PLACEHOLDER
+### Synthetic fly brain on `vizdoom:defend_the_center` (200 training episodes, seed 0)
+
+Monsters walk in from all sides, the fly can only turn and shoot, +1 per kill, -1 for dying.
+
+| scripted aimer (cheats) | random play | untrained | **trained** | Kenyon cells silenced | dopamine neurons silenced | gates passed |
+|---:|---:|---:|---:|---:|---:|---:|
+| +10.2 | +0.5 | +0.3 | **+3.9** | +0.7 | +0.4 | 6 / 6 |
+
+The trained fly learned a simple strategy: sweep left and fire when a monster is centred.
+It fires in 63% of steps with a centred monster versus about a third untrained. It still
+also turns left for monsters on the right, which is why it reaches about 40% of the
+cheating aimer's score.
+
+### Dependency-free MiniDoom self-test (`python -m flydoom selftest`)
+
+Trained -0.8 versus -177 untrained and -220 random play. G1-G4 and G6 pass. G5 (aiming)
+**fails**: the trained fly kills in 87% of episodes, but with a rightward bias rather than
+by steering toward the monster, and the gate flags exactly that.
 
 RESULTS_FLYWIRE_PLACEHOLDER
 

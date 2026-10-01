@@ -124,8 +124,7 @@ class VizDoomEnv:
         else:
             frame = None
             info["damage"] = 0.0
-            if raw > 0 and self.scenario == "basic":
-                self._stats["kills"] = 1.0
+            self._stats["kills"] = float(self.game.get_game_variable(self.vzd.GameVariable.KILLCOUNT))
         self._stats["died"] = bool(done and self.game.is_player_dead())
         return StepResult(frame=frame, reward=raw / self.reward_scale, done=done, info=info)
 

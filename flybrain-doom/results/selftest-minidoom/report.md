@@ -6,6 +6,7 @@ Brain: **synthetic-fly** (1,936 neurons, 165,900 synapses; 1,500 Kenyon cells fe
 
 | condition | episodes | mean return | 95% CI | median | episodes with a kill |
 |---|---:|---:|---|---:|---:|
+| Scripted aimer (cheats: reads true monster positions) | 30 | -14.4 | [-79.3, 49.5] | 86.0 | 73% |
 | Random play | 30 | -219.7 | [-298.0, -143.0] | -309.5 | 53% |
 | Fly brain, untrained | 30 | -177.0 | [-251.1, -105.6] | -145.5 | 67% |
 | Fly brain, trained | 30 | -0.8 | [-59.7, 48.4] | 61.5 | 87% |

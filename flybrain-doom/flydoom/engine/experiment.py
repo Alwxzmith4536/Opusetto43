@@ -7,7 +7,8 @@ import time
 import numpy as np
 
 from . import gates as G
-from .runner import EVAL_SEED_BASE, ExperimentConfig, RandomPolicy, build_agent, evaluate, make_env, train
+from .runner import (EVAL_SEED_BASE, ExperimentConfig, OraclePolicy, RandomPolicy, build_agent, evaluate,
+                     make_env, train)
 
 
 def _monster_frames(env, n_each: int, seed: int, side_deg: float = 10.0):
@@ -50,6 +51,8 @@ def run_experiment(cfg: ExperimentConfig, controls: bool = True, log=print, out_
     n = cfg.eval_episodes
     log(f"[flydoom] evaluating baselines on {n} fixed seeds ...")
     ev = {"random": evaluate(RandomPolicy(env.motor_map, seed=cfg.seed), env, n, record_aim=True)}
+    if hasattr(env, "monster_azimuths"):
+        ev["oracle"] = evaluate(OraclePolicy(env), env, n)
     ev["untrained"] = evaluate(agent, env, n, record_aim=True)
     w0 = agent.weights()
     log(f"[flydoom] training for {cfg.train_episodes} episodes (dopamine-gated plasticity on) ...")

@@ -4,7 +4,8 @@ One game step (``frame_skip`` Doom tics, ~114 ms of game time) corresponds to:
 
 1. **perception window** (``window_ms`` of brain time): the frame's VPN rates drive the
    LIF network; spike counts of KCs, MBONs and descending neurons are collected;
-2. **value readout**: appetitive minus aversive critic-MBON rate gives V(s_t);
+2. **value readout**: appetitive minus aversive critic-MBON synaptic drive (or, with
+   ``value_readout="spikes"``, spike rate) gives V(s_t);
 3. **dopamine burst** (``dopamine_ms``): the reward prediction error of the previous
    step, ``delta = r + gamma*V(s_t) - V(s_{t-1})``, is delivered as Poisson drive to PAM
    (delta > 0) or PPL1 (delta < 0) dopamine neurons; their spike counts are the third
@@ -79,9 +80,10 @@ class FlyAgent:
         """Developmental calibration before any learning.
 
         1. the VPN contrast-gain control adapts to the scene statistics of ``frames``;
-        2. the brain watches up to ``brain_frames`` of them, and the mean Kenyon-cell rates
-           set the initial KC -> MBON weights so that each MBON's mean synaptic drive is
-           ``target_drive_mv`` (just below the 7 mV threshold), uniformly across its inputs.
+        2. the brain watches up to ``brain_frames`` of them, and the mean rates of the
+           presynaptic population (Kenyon cells; DNs in the FlyWire readout) set the initial
+           plastic weights so that each MBON's mean synaptic drive is ``target_drive_mv``
+           (just below the 7 mV spike threshold), uniformly across its inputs.
 
         Plasticity learning rates and the value scale are expressed relative to the resulting
         reference weight, so the same settings work for brains of different sizes.
@@ -91,17 +93,17 @@ class FlyAgent:
         for f in frames:
             self.encoder.pooled(self.optic_lobe.process(f))
         self.begin_episode()
-        kc_hz = np.zeros(self.bp.state_idx.size)
+        state_hz = np.zeros(self.bp.state_idx.size)  # Kenyon cells (or DNs for the FlyWire readout)
         n = min(brain_frames, len(frames))
         for f in frames[:n]:
             self.act(f)
-            kc_hz += self.last_counts[self.bp.state_idx] / (self.cfg.window_ms * 1e-3)
-        kc_hz /= max(n, 1)
+            state_hz += self.last_counts[self.bp.state_idx] / (self.cfg.window_ms * 1e-3)
+        state_hz /= max(n, 1)
         tau = self.net.p.tau_syn
         ref = []
         for name, sp in self.plasticity.sets.items():
             post = self.net.plastic[name]["post"]
-            drive_per_mv = np.bincount(post, weights=kc_hz[sp["pre"]] * 1e-3 * tau, minlength=self.net.n)
+            drive_per_mv = np.bincount(post, weights=state_hz[sp["pre"]] * 1e-3 * tau, minlength=self.net.n)
             w0 = target_drive_mv / np.maximum(drive_per_mv[post], 1e-3)
             w0 = np.minimum(w0, 50.0)
             self.net.set_weights(name, w0)
@@ -111,7 +113,7 @@ class FlyAgent:
         self.plasticity.w_ref = float(np.mean(ref)) if ref else 1.0
         self.cfg.learning = learning
         self.begin_episode()
-        return {"kc_rate_hz": float(kc_hz.mean()), "kc_active_frac": float((kc_hz > 0).mean()),
+        return {"state_rate_hz": float(state_hz.mean()), "state_active_frac": float((state_hz > 0).mean()),
                 "w_ref_mv": self.plasticity.w_ref, "w_max_mv": dict(self.bp.weight_max)}
 
     def lesion(self, what: str) -> None:

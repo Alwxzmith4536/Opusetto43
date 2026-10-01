@@ -1,17 +1,17 @@
-# Fly brain plays Doom: vizdoom:basic
+# Fly brain plays Doom: vizdoom:defend_the_center
 
-Brain: **synthetic-fly** (1,936 neurons, 165,900 synapses; 1,500 Kenyon cells feed the plastic synapses). Training: 300 episodes. Evaluation: frozen weights on 50 fixed seeds.
+Brain: **synthetic-fly** (1,936 neurons, 165,900 synapses; 1,500 Kenyon cells feed the plastic synapses). Training: 200 episodes. Evaluation: frozen weights on 30 fixed seeds.
 
 ## Evaluation
 
 | condition | episodes | mean return | 95% CI | median | episodes with a kill |
 |---|---:|---:|---|---:|---:|
-| Scripted aimer (cheats: reads true monster positions) | 50 | 73.2 | [68.9, 76.9] | 75.0 | 100% |
-| Random play | 50 | -134.5 | [-187.1, -81.9] | -79.5 | 66% |
-| Fly brain, untrained | 50 | -103.4 | [-152.0, -55.5] | -68.5 | 74% |
-| Fly brain, trained | 50 | 36.7 | [14.1, 54.8] | 57.0 | 98% |
-| Trained, Kenyon cells silenced | 50 | -149.6 | [-202.5, -97.2] | -119.0 | 60% |
-| Trained with dopamine neurons silenced | 50 | -100.2 | [-152.6, -50.8] | -13.0 | 74% |
+| Scripted aimer (cheats: reads true monster positions) | 30 | 10.2 | [8.4, 12.0] | 8.0 | 100% |
+| Random play | 30 | 0.5 | [0.1, 0.8] | 0.0 | 80% |
+| Fly brain, untrained | 30 | 0.3 | [-0.1, 0.7] | 0.0 | 77% |
+| Fly brain, trained | 30 | 3.9 | [3.3, 4.5] | 4.0 | 100% |
+| Trained, Kenyon cells silenced | 30 | 0.7 | [0.1, 1.4] | 0.5 | 77% |
+| Trained with dopamine neurons silenced | 30 | 0.4 | [0.1, 0.7] | 0.0 | 83% |
 
 ## Validation gates
 
@@ -31,25 +31,25 @@ Brain: **synthetic-fly** (1,936 neurons, 165,900 synapses; 1,500 Kenyon cells fe
 
 | monster azimuth | steps | left | right | attack |
 |---|---:|---:|---:|---:|
-| < -20° | 596 | 34% | 35% | 31% |
-| -20…-10° | 189 | 39% | 30% | 31% |
-| -10…-3° | 91 | 40% | 27% | 33% |
-| -3…3° | 99 | 38% | 32% | 29% |
-| 3…10° | 216 | 32% | 34% | 33% |
-| 10…20° | 400 | 30% | 36% | 34% |
-| > 20° | 268 | 32% | 36% | 32% |
+| < -20° | 455 | 32% | 37% | 31% |
+| -20…-10° | 219 | 37% | 31% | 32% |
+| -10…-3° | 175 | 32% | 38% | 30% |
+| -3…3° | 198 | 32% | 36% | 32% |
+| 3…10° | 199 | 33% | 29% | 39% |
+| 10…20° | 244 | 35% | 32% | 32% |
+| > 20° | 661 | 33% | 31% | 36% |
 
 **trained**
 
 | monster azimuth | steps | left | right | attack |
 |---|---:|---:|---:|---:|
-| < -20° | 61 | 57% | 13% | 30% |
-| -20…-10° | 100 | 66% | 10% | 24% |
-| -10…-3° | 80 | 50% | 16% | 34% |
-| -3…3° | 107 | 21% | 14% | 65% |
-| 3…10° | 92 | 11% | 48% | 41% |
-| 10…20° | 138 | 23% | 46% | 30% |
-| > 20° | 110 | 34% | 37% | 29% |
+| < -20° | 464 | 69% | 12% | 19% |
+| -20…-10° | 261 | 69% | 10% | 21% |
+| -10…-3° | 403 | 38% | 9% | 53% |
+| -3…3° | 561 | 25% | 12% | 63% |
+| 3…10° | 360 | 34% | 19% | 47% |
+| 10…20° | 208 | 47% | 25% | 28% |
+| > 20° | 360 | 64% | 15% | 21% |
 
 
-Training wall time: 84 s (0.28 s per episode).
+Training wall time: 207 s (1.04 s per episode).

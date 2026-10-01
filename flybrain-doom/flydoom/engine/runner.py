@@ -68,6 +68,44 @@ class RandomPolicy:
         pass
 
 
+class OraclePolicy:
+    """Reference ceiling that cheats: reads the true monster azimuths from the game engine.
+
+    Fires when the nearest monster is within ``tolerance`` degrees of the crosshair, otherwise
+    steers towards it (or sweeps left when none is visible). The fly brain never gets this
+    information; the oracle only shows what good play scores in each scenario.
+    """
+
+    name = "oracle"
+
+    def __init__(self, env, tolerance: float = 2.5):
+        self.env = env
+        self.tolerance = tolerance
+        self.actions = list(env.motor_map)
+        self.last: dict = {}
+
+    def begin_episode(self) -> None:
+        pass
+
+    def act(self, frame: np.ndarray) -> str:
+        az = self.env.monster_azimuths()
+        if az:
+            a = min(az, key=abs)
+            if abs(a) <= self.tolerance and "attack" in self.actions:
+                choice = "attack"
+            else:
+                choice = "left" if a < 0 else "right"
+        else:
+            choice = "left" if "left" in self.actions else self.actions[0]
+        if choice not in self.actions:
+            choice = self.actions[0]
+        self.last = {"action": choice}
+        return choice
+
+    def observe(self, reward: float, done: bool) -> None:
+        pass
+
+
 def collect_frames(env, n: int, seed: int = 0) -> list[np.ndarray]:
     """Frames from random play, used for developmental calibration of the eye and brain."""
     rng = np.random.default_rng(seed)

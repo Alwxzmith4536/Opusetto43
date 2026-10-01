@@ -5,16 +5,16 @@ from __future__ import annotations
 import numpy as np
 
 
-def record_episodes(agent, env, seeds: list[int]) -> list[dict]:
+def record_episodes(agent, env, seeds: list[int], max_steps: int | None = 60) -> list[dict]:
     steps = []
     for k, seed in enumerate(seeds):
-        for st in record_episode(agent, env, seed):
+        for st in record_episode(agent, env, seed, max_steps=max_steps):
             st["episode"] = k + 1
             steps.append(st)
     return steps
 
 
-def record_episode(agent, env, seed: int, learn: bool = False) -> list[dict]:
+def record_episode(agent, env, seed: int, learn: bool = False, max_steps: int | None = None) -> list[dict]:
     prev, agent.cfg.learning = agent.cfg.learning, learn
     frame = env.reset(seed=seed)
     agent.begin_episode()
@@ -30,7 +30,7 @@ def record_episode(agent, env, seed: int, learn: bool = False) -> list[dict]:
         steps.append({"frame": frame, "omm_rgb": omm_rgb, "votes": agent.last["votes"].copy(),
                       "action": action, "value": agent.last["value"], "dopamine": agent.last.get("dopamine", 0.0),
                       "kc_active": agent.last["kc_active"], "return": total})
-        if res.done:
+        if res.done or (max_steps and len(steps) >= max_steps):
             break
         frame = res.frame
     agent.cfg.learning = prev

@@ -51,7 +51,7 @@ def _cmd_replay(a) -> int:
     agent = build_agent(cfg, env)
     w = np.load(os.path.join(a.results, "weights.npz"))
     agent.load_weights({k[len("trained_"):]: w[k] for k in w.files if k.startswith("trained_")})
-    steps = record_episodes(agent, env, [EVAL_SEED_BASE + k for k in range(a.episodes)])
+    steps = record_episodes(agent, env, [EVAL_SEED_BASE + k for k in range(a.episodes)], max_steps=a.max_steps)
     out = a.out or os.path.join(a.results, "replay.gif")
     render_gif(steps, agent, out, title=f"{agent.bp.name} playing {cfg.env} (trained)")
     print(f"[flydoom] wrote {out} ({len(steps)} steps)")
@@ -78,13 +78,40 @@ def _cmd_selftest(a) -> int:
     return 0 if ok else 1
 
 
+def _cmd_oracle(a) -> int:
+    """Add the scripted-aimer reference to an existing results folder (same evaluation seeds)."""
+    import numpy as np
+
+    from .engine import stats
+    from .engine.report import CONDITIONS, rerender
+    from .engine.runner import OraclePolicy, evaluate, make_env
+
+    path = os.path.join(a.results, "results.json")
+    with open(path) as f:
+        s = json.load(f)
+    c = s["config"]
+    env = make_env(c["env"], seed=c["seed"], frame_skip=c["frame_skip"])
+    seeds = s["eval"]["random"]["seeds"]
+    eps = evaluate(OraclePolicy(env), env, len(seeds), seed_base=seeds[0])
+    r = [e["raw_return"] for e in eps]
+    entry = {"label": dict(CONDITIONS)["oracle"], "returns": r, "seeds": [e["seed"] for e in eps],
+             "kill_rate": float(np.mean([e["kills"] > 0 for e in eps])), "summary": stats.summary(r)}
+    s["eval"] = {"oracle": entry, **{k: v for k, v in s["eval"].items() if k != "oracle"}}
+    with open(path, "w") as f:
+        json.dump(s, f, indent=1)
+    rerender(a.results)
+    env.close()
+    print(f"[flydoom] oracle on {len(r)} seeds: mean {np.mean(r):+.1f}, kills in {entry['kill_rate']:.0%} of episodes")
+    return 0
+
+
 def _cmd_summarize(a) -> int:
     """Markdown table of every results folder given (or found under ``results/``)."""
     import glob
 
     folders = a.folders or sorted(os.path.dirname(p) for p in glob.glob(os.path.join("results", "*", "results.json")))
-    print("| run | random | untrained | trained | KCs silenced | dopamine silenced | gates passed |")
-    print("|---|---:|---:|---:|---:|---:|---:|")
+    print("| run | scripted aimer (cheats) | random | untrained | trained | KCs silenced | dopamine silenced | gates passed |")
+    print("|---|---:|---:|---:|---:|---:|---:|---:|")
     for d in folders:
         with open(os.path.join(d, "results.json")) as f:
             s = json.load(f)
@@ -95,7 +122,7 @@ def _cmd_summarize(a) -> int:
 
         judged = [g for g in s["gates"] if g["passed"] is not None]
         passed = sum(g["passed"] is True for g in judged)
-        print(f"| {os.path.basename(d.rstrip('/'))} | {cell('random')} | {cell('untrained')} | **{cell('trained')}** | "
+        print(f"| {os.path.basename(d.rstrip('/'))} | {cell('oracle')} | {cell('random')} | {cell('untrained')} | **{cell('trained')}** | "
               f"{cell('kc_lesioned')} | {cell('dan_lesioned_trained')} | {passed} / {len(judged)} |")
     return 0
 
@@ -186,6 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     rp = sub.add_parser("replay", help="record a GIF of a trained brain from a results folder")
     rp.add_argument("--results", required=True, help="folder written by `run` (results.json + weights.npz)")
     rp.add_argument("--episodes", type=int, default=3)
+    rp.add_argument("--max-steps", type=int, default=60, help="cap per episode (keeps the GIF small)")
     rp.add_argument("--out", default=None)
     rp.add_argument("--flywire-dir", default=None)
     rp.add_argument("--annotations", default=None)
@@ -194,6 +222,10 @@ def main(argv: list[str] | None = None) -> int:
     f = sub.add_parser("fetch-flywire", help="download the public FlyWire v783 connectome tables")
     f.add_argument("--dest", default="data")
     f.set_defaults(fn=_cmd_fetch)
+
+    o = sub.add_parser("oracle", help="add the scripted-aimer reference to an existing results folder")
+    o.add_argument("--results", required=True)
+    o.set_defaults(fn=_cmd_oracle)
 
     sm = sub.add_parser("summarize", help="Markdown table comparing result folders")
     sm.add_argument("folders", nargs="*")

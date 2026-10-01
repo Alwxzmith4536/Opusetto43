@@ -1,11 +1,12 @@
 # Fly brain plays Doom: vizdoom:basic
 
-Brain: **synthetic-fly** (1,936 neurons, 165,900 synapses, 1,500 Kenyon cells). Training: 300 episodes. Evaluation: frozen weights on 50 fixed seeds.
+Brain: **synthetic-fly** (1,936 neurons, 165,900 synapses; 1,500 Kenyon cells feed the plastic synapses). Training: 300 episodes. Evaluation: frozen weights on 50 fixed seeds.
 
 ## Evaluation
 
 | condition | episodes | mean return | 95% CI | median | episodes with a kill |
 |---|---:|---:|---|---:|---:|
+| Scripted aimer (cheats: reads true monster positions) | 50 | 73.2 | [68.9, 76.9] | 75.0 | 100% |
 | Random play | 50 | -155.0 | [-209.0, -99.4] | -88.0 | 58% |
 | Fly brain, untrained | 50 | -133.5 | [-185.4, -82.4] | -114.0 | 66% |
 | Fly brain, trained | 50 | -5.2 | [-46.5, 29.7] | 46.0 | 88% |
