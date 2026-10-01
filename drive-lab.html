@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Drive Learning Lab</title>
+<style>
+:root{
+  --bg:#0d1117;--panel:#161b22;--line:#30363d;--text:#e6edf3;--muted:#8b949e;
+  --a:#f78166;--b:#58a6ff;--ok:#3fb950;--bad:#f85149;--warn:#d29922;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:14px 16px 6px}
+h1{margin:0;font-size:20px}
+header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;padding:10px 16px 24px}
+@media (max-width:960px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.stage{align-self:start;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0}
+#world{width:100%;height:auto;display:block;border-radius:6px;background:#0f2417}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.card h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{background:#21262d;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:#238636;border-color:#2ea043}
+label{display:flex;gap:6px;align-items:center;color:var(--text);font-size:13px}
+input[type=range]{flex:1;min-width:120px}
+.bro{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px;padding:8px 0;border-top:1px solid var(--line)}
+.bro:first-of-type{border-top:0}
+.bro .name{grid-column:1/3;font-weight:600}
+.bro .k{color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+canvas.panel{width:100%;height:auto;display:block}
+#log{max-height:180px;overflow:auto;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+#log div b{color:var(--text);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500}
+.pass{color:var(--ok)}.crash{color:var(--bad)}.stall{color:var(--warn)}
+.note{color:var(--muted);font-size:12px;margin:6px 0 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Drive Learning Lab</h1>
+  <p>Two "brother" populations of neural-network drivers learn to race a track live through neuroevolution and share what they learn with each other. The test engine checks the champions on tracks they have never seen.</p>
+</header>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="world" width="1200" height="800"></canvas>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h2>Controls</h2>
+      <div class="row">
+        <button id="play" class="primary">Pause</button>
+        <button id="newTrack">New track</button>
+        <button id="reset">Reset brains</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label style="flex:1">Speed <input id="speed" type="range" min="1" max="40" value="3"></label>
+        <span id="speedVal">3×</span>
+      </div>
+      <div style="margin-top:8px;display:grid;gap:6px">
+        <label><input id="share" type="checkbox" checked> Brothers share knowledge</label>
+        <label><input id="sensors" type="checkbox" checked> Show leader's sensors</label>
+        <label><input id="curriculum" type="checkbox"> New track every 15 generations</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Who's learning</h2>
+      <div id="bros"></div>
+    </div>
+
+    <div class="card">
+      <h2>Best fitness per generation</h2>
+      <canvas id="chart" class="panel" width="680" height="300"></canvas>
+      <p class="note">Dashed line = finishing all 3 training laps.</p>
+    </div>
+
+    <div class="card">
+      <h2>Leader's brain (live)</h2>
+      <canvas id="net" class="panel" width="680" height="380"></canvas>
+      <p class="note">Left: 7 distance sensors, speed, bias. Right: steer, throttle. Orange = positive weight, blue = negative.</p>
+    </div>
+
+    <div class="card">
+      <h2>Test engine</h2>
+      <div class="row">
+        <button id="runTests">Run test suite (5 unseen tracks)</button>
+      </div>
+      <div id="tests"><p class="note">Each brother's current champion drives 1 lap on 5 fixed tracks it never trained on. PASS = full lap without crashing.</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Event log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ---------- constants ----------
+const W = 1200, H = 800;
+const RAY_ANGLES = [-90, -55, -25, 0, 25, 55, 90].map(d => d * Math.PI / 180);
+const NR = RAY_ANGLES.length, RAY_LEN = 220;
+const NI = NR + 2, NH = 10, NO = 2;            // inputs: rays + speed + bias
+const GENES = NI * NH + (NH + 1) * NO;
+const POP = 30, MAX_STEPS = 2600, TRAIN_LAPS = 3, TEST_LAPS = 1, TEST_STEPS = 3000;
+const MAX_SPEED = 7, CAR_R = 6, HALF_WIDTH = 34;
+const TEST_SEEDS = [9001, 9002, 9003, 9004, 9005];
+
+// ---------- utils ----------
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function gauss() {
+  let u = 0; while (!u) u = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random());
+}
+
+// ---------- track ----------
+function tryTrack(seed, plain) {
+  const r = mulberry32(seed), M = 720;
+  let harm = [];
+  if (!plain) {
+    for (let k = 2; k <= 5; k++) harm.push([k, (r() * 0.32 + 0.08) * (2 / k), r() * Math.PI * 2]);
+    const sum = harm.reduce((s, h) => s + h[1], 0);
+    if (sum > 0.6) harm = harm.map(([k, a, p]) => [k, a * 0.6 / sum, p]);
+  }
+  const raw = [];
+  for (let i = 0; i < M; i++) {
+    const th = i / M * Math.PI * 2;
+    let m = 1;
+    for (const [k, a, p] of harm) m += a * Math.sin(k * th + p);
+    raw.push([Math.cos(th) * m, Math.sin(th) * m]);
+  }
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [x, y] of raw) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const mg = 70, sx = (W - 2 * mg) / (x1 - x0), sy = (H - 2 * mg) / (y1 - y0);
+  const pts = raw.map(([x, y]) => [mg + (x - x0) * sx, mg + (y - y0) * sy]);
+
+  // resample to uniform arc length so "progress" is fair everywhere
+  const L = [0];
+  for (let i = 0; i < M; i++) {
+    const a = pts[i], b = pts[(i + 1) % M];
+    L.push(L[i] + Math.hypot(b[0] - a[0], b[1] - a[1]));
+  }
+  const total = L[M], N = Math.round(total / 14);
+  const cx = new Float32Array(N), cy = new Float32Array(N);
+  let j = 0;
+  for (let k = 0; k < N; k++) {
+    const target = k * total / N;
+    while (L[j + 1] < target) j++;
+    const f = (target - L[j]) / (L[j + 1] - L[j]);
+    const a = pts[j], b = pts[(j + 1) % M];
+    cx[k] = a[0] + (b[0] - a[0]) * f; cy[k] = a[1] + (b[1] - a[1]) * f;
+  }
+
+  if (!plain) {
+    // reject curves too tight for the road width
+    for (let i = 0; i < N; i++) {
+      const p = (i - 3 + N) % N, q = (i + 3) % N;
+      const a = Math.hypot(cx[i] - cx[p], cy[i] - cy[p]);
+      const b = Math.hypot(cx[q] - cx[i], cy[q] - cy[i]);
+      const c = Math.hypot(cx[q] - cx[p], cy[q] - cy[p]);
+      const area2 = Math.abs((cx[i] - cx[p]) * (cy[q] - cy[p]) - (cy[i] - cy[p]) * (cx[q] - cx[p]));
+      if (area2 > 1e-6 && (a * b * c) / (2 * area2) < HALF_WIDTH * 1.6) return null;
+    }
+    // reject sections of road that come too close to each other
+    for (let i = 0; i < N; i++) for (let k = i + 13; k < N; k++) {
+      if (N - (k - i) <= 12) continue;
+      if (Math.hypot(cx[i] - cx[k], cy[i] - cy[k]) < 2 * HALF_WIDTH + 24) return null;
+    }
+  }
+
+  const ax = new Float32Array(N), ay = new Float32Array(N), bx = new Float32Array(N), by = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const p = (i - 1 + N) % N, q = (i + 1) % N;
+    let tx = cx[q] - cx[p], ty = cy[q] - cy[p];
+    const l = Math.hypot(tx, ty); tx /= l; ty /= l;
+    ax[i] = cx[i] - ty * HALF_WIDTH; ay[i] = cy[i] + tx * HALF_WIDTH;
+    bx[i] = cx[i] + ty * HALF_WIDTH; by[i] = cy[i] - tx * HALF_WIDTH;
+  }
+  return { N, hw: HALF_WIDTH, cx, cy, ax, ay, bx, by, seed };
+}
+function makeTrack(seed) {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const t = tryTrack(seed + attempt * 7919, false);
+    if (t) { t.seed = seed; return t; }
+  }
+  const t = tryTrack(seed, true); t.seed = seed; return t;
+}
+
+// ---------- brain ----------
+function randomGenome() {
+  const g = new Float32Array(GENES);
+  for (let i = 0; i < GENES; i++) g[i] = gauss() * 0.8;
+  return g;
+}
+function think(g, inp, hid, out) {
+  for (let h = 0; h < NH; h++) {
+    let s = 0;
+    for (let i = 0; i < NI; i++) s += g[h * NI + i] * inp[i];
+    hid[h] = Math.tanh(s);
+  }
+  const base = NI * NH;
+  for (let o = 0; o < NO; o++) {
+    const w = base + o * (NH + 1);
+    let s = g[w + NH];
+    for (let h = 0; h < NH; h++) s += g[w + h] * hid[h];
+    out[o] = Math.tanh(s);
+  }
+}
+function mutate(g, rate, sigma) {
+  for (let i = 0; i < GENES; i++) if (Math.random() < rate) g[i] += gauss() * sigma;
+}
+
+// ---------- car ----------
+function newCar(g, team, laps, tr) {
+  return {
+    g, team, laps,
+    x: tr.cx[0], y: tr.cy[0], angle: Math.atan2(tr.cy[1] - tr.cy[0], tr.cx[1] - tr.cx[0]),
+    speed: 0, idx: 0, lap: 0, prog: 0, best: 0, stall: 0, steps: 0,
+    alive: true, crashed: false, finished: false,
+    rays: new Float32Array(NR).fill(1), inp: new Float32Array(NI), hid: new Float32Array(NH), out: new Float32Array(NO),
+  };
+}
+function rayHit(px, py, dx, dy, ax, ay, bx, by) {
+  const ex = bx - ax, ey = by - ay, den = dx * ey - dy * ex;
+  if (den === 0) return 1;
+  const fx = ax - px, fy = ay - py;
+  const t = (fx * ey - fy * ex) / den, u = (fx * dy - fy * dx) / den;
+  return (t >= 0 && t <= 1 && u >= 0 && u <= 1) ? t : 1;
+}
+function stepCar(car, tr) {
+  const N = tr.N;
+  // sense
+  for (let r = 0; r < NR; r++) {
+    const a = car.angle + RAY_ANGLES[r], dx = Math.cos(a) * RAY_LEN, dy = Math.sin(a) * RAY_LEN;
+    let best = 1;
+    for (let k = -26; k <= 26; k++) {
+      const i = (car.idx + k + N) % N, j = (i + 1) % N;
+      let t = rayHit(car.x, car.y, dx, dy, tr.ax[i], tr.ay[i], tr.ax[j], tr.ay[j]); if (t < best) best = t;
+      t = rayHit(car.x, car.y, dx, dy, tr.bx[i], tr.by[i], tr.bx[j], tr.by[j]); if (t < best) best = t;
+    }
+    car.rays[r] = best; car.inp[r] = 1 - best;
+  }
+  car.inp[NR] = car.speed / MAX_SPEED; car.inp[NR + 1] = 1;
+  // think + act
+  think(car.g, car.inp, car.hid, car.out);
+  car.speed = Math.min(MAX_SPEED, Math.max(0, (car.speed + car.out[1] * 0.2) * 0.985));
+  car.angle += car.out[0] * 0.08 * Math.min(1, car.speed / 2.5);
+  car.x += Math.cos(car.angle) * car.speed; car.y += Math.sin(car.angle) * car.speed;
+  car.steps++;
+  // locate on track
+  let bestD = Infinity, bi = car.idx, bt = 0;
+  for (let k = -6; k <= 8; k++) {
+    const i = (car.idx + k + N) % N, j = (i + 1) % N;
+    const ex = tr.cx[j] - tr.cx[i], ey = tr.cy[j] - tr.cy[i];
+    let t = ((car.x - tr.cx[i]) * ex + (car.y - tr.cy[i]) * ey) / (ex * ex + ey * ey);
+    t = Math.max(0, Math.min(1, t));
+    const ddx = car.x - (tr.cx[i] + ex * t), ddy = car.y - (tr.cy[i] + ey * t), d = ddx * ddx + ddy * ddy;
+    if (d < bestD) { bestD = d; bi = i; bt = t; }
+  }
+  if (Math.sqrt(bestD) > tr.hw - CAR_R) { car.alive = false; car.crashed = true; return; }
+  const di = bi - car.idx;
+  if (di < -N / 2) car.lap++; else if (di > N / 2) car.lap--;
+  car.idx = bi; car.prog = car.lap * N + bi + bt;
+  if (car.prog > car.best + 0.05) { car.best = car.prog; car.stall = 0; } else car.stall++;
+  if (car.stall > 100 || car.prog < car.best - 12) { car.alive = false; return; }
+  if (car.best >= N * car.laps) { car.alive = false; car.finished = true; }
+}
+function fitness(car) {
+  return car.best + (car.finished ? car.best * (MAX_STEPS / car.steps) * 0.5 : 0);
+}
+
+// ---------- world ----------
+const teams = [
+  { id: 'A', name: 'Brother A · Explorer', color: '#f78166', rate: 0.14, sigma: 0.45 },
+  { id: 'B', name: 'Brother B · Refiner',  color: '#58a6ff', rate: 0.06, sigma: 0.22 },
+];
+const world = { track: null, gen: 1, step: 0, running: true, speed: 3 };
+const history = [];
+const trackCanvas = document.createElement('canvas'); trackCanvas.width = W; trackCanvas.height = H;
+
+function log(html) {
+  const el = document.getElementById('log'), d = document.createElement('div');
+  d.innerHTML = `<b>G${world.gen}</b> ${html}`;
+  el.prepend(d);
+  while (el.children.length > 60) el.lastChild.remove();
+}
+function setTrack(seed) {
+  world.track = makeTrack(seed);
+  renderTrack();
+}
+function resetBrains() {
+  for (const t of teams) {
+    t.genomes = Array.from({ length: POP }, randomGenome);
+    t.record = 0; t.champion = null; t.lastBest = 0; t.lapsDone = 0;
+  }
+  history.length = 0; world.gen = 1;
+}
+function spawn() {
+  world.step = 0;
+  for (const t of teams) t.cars = t.genomes.map(g => newCar(g, t, TRAIN_LAPS, world.track));
+}
+function evolve(team) {
+  const ranked = team.cars.map(c => ({ g: c.g, f: fitness(c), c })).sort((a, b) => b.f - a.f);
+  team.champion = ranked[0].g; team.lastBest = ranked[0].f;
+  team.lastAvg = ranked.reduce((s, r) => s + r.f, 0) / ranked.length;
+  team.lapsDone = ranked[0].c.best / world.track.N;
+  const pick = () => { let b = null; for (let i = 0; i < 3; i++) { const r = ranked[Math.random() * ranked.length | 0]; if (!b || r.f > b.f) b = r; } return b.g; };
+  const next = [ranked[0].g.slice(), ranked[1].g.slice()];
+  while (next.length < POP) {
+    const a = pick(), b = pick(), ch = new Float32Array(GENES);
+    for (let i = 0; i < GENES; i++) ch[i] = Math.random() < 0.5 ? a[i] : b[i];
+    mutate(ch, team.rate, team.sigma);
+    next.push(ch);
+  }
+  team.genomes = next;
+  if (team.lastBest > team.record + 0.5) {
+    team.record = team.lastBest;
+    log(`<span style="color:${team.color}">${team.name}</span> new record ${team.record.toFixed(1)}${ranked[0].c.finished ? ' (finished all laps!)' : ''}`);
+  }
+}
+function endGeneration() {
+  for (const t of teams) evolve(t);
+  history.push({ gen: world.gen, A: teams[0].lastBest, B: teams[1].lastBest });
+  if (document.getElementById('share').checked) {
+    const [lead, follow] = teams[0].lastBest >= teams[1].lastBest ? teams : [teams[1], teams[0]];
+    if (lead.lastBest > 5 && lead.lastBest > follow.lastBest * 1.15) {
+      for (let k = 0; k < 6; k++) {
+        const g = lead.champion.slice(); mutate(g, 0.05, 0.15);
+        follow.genomes[POP - 1 - k] = g;
+      }
+      log(`Brother ${lead.id} teaches Brother ${follow.id}: 6 student copies of the champion`);
+    }
+  }
+  world.gen++;
+  if (document.getElementById('curriculum').checked && world.gen % 15 === 0) {
+    setTrack((Math.random() * 1e9) | 0);
+    log(`Curriculum: switched to new track #${world.track.seed}`);
+  }
+  spawn();
+}
+function stepWorld() {
+  let alive = 0;
+  for (const t of teams) for (const c of t.cars) if (c.alive) { stepCar(c, world.track); if (c.alive) alive++; }
+  world.step++;
+  if (alive === 0 || world.step >= MAX_STEPS) endGeneration();
+}
+function leaderOf(team) {
+  let best = null;
+  for (const c of team.cars) if (c.alive && (!best || c.best > best.best)) best = c;
+  return best;
+}
+
+// ---------- rendering ----------
+const ctx = document.getElementById('world').getContext('2d');
+function renderTrack() {
+  const g = trackCanvas.getContext('2d'), tr = world.track;
+  g.fillStyle = '#0f2417'; g.fillRect(0, 0, W, H);
+  g.beginPath();
+  for (let i = 0; i < tr.N; i++) i ? g.lineTo(tr.ax[i], tr.ay[i]) : g.moveTo(tr.ax[i], tr.ay[i]);
+  g.closePath();
+  for (let i = 0; i < tr.N; i++) i ? g.lineTo(tr.bx[i], tr.by[i]) : g.moveTo(tr.bx[i], tr.by[i]);
+  g.closePath();
+  g.fillStyle = '#2d333b'; g.fill('evenodd');
+  g.strokeStyle = '#c9d1d9'; g.lineWidth = 2; g.stroke();
+  g.setLineDash([10, 12]); g.strokeStyle = 'rgba(230,237,243,.25)'; g.beginPath();
+  for (let i = 0; i <= tr.N; i++) { const k = i % tr.N; i ? g.lineTo(tr.cx[k], tr.cy[k]) : g.moveTo(tr.cx[k], tr.cy[k]); }
+  g.stroke(); g.setLineDash([]);
+  // checkered start line
+  const sx = tr.ax[0], sy = tr.ay[0], ex = tr.bx[0], ey = tr.by[0], n = 8;
+  g.lineWidth = 6;
+  for (let i = 0; i < n; i++) {
+    g.strokeStyle = i % 2 ? '#000' : '#fff'; g.beginPath();
+    g.moveTo(sx + (ex - sx) * i / n, sy + (ey - sy) * i / n);
+    g.lineTo(sx + (ex - sx) * (i + 1) / n, sy + (ey - sy) * (i + 1) / n); g.stroke();
+  }
+}
+function drawCar(c, color, alpha, outline) {
+  ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.angle);
+  ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.fillRect(-9, -4.5, 18, 9);
+  if (outline) { ctx.globalAlpha = 1; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(-9, -4.5, 18, 9); }
+  ctx.restore();
+}
+function draw() {
+  ctx.drawImage(trackCanvas, 0, 0);
+  for (const t of teams) for (const c of t.cars) if (!c.alive) drawCar(c, t.color, 0.12, false);
+  const showSensors = document.getElementById('sensors').checked;
+  for (const t of teams) {
+    const lead = leaderOf(t);
+    for (const c of t.cars) if (c.alive && c !== lead) drawCar(c, t.color, 0.75, false);
+    if (lead) {
+      if (showSensors) {
+        ctx.strokeStyle = t.color; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
+        for (let r = 0; r < NR; r++) {
+          const a = lead.angle + RAY_ANGLES[r], d = RAY_LEN * lead.rays[r];
+          ctx.beginPath(); ctx.moveTo(lead.x, lead.y); ctx.lineTo(lead.x + Math.cos(a) * d, lead.y + Math.sin(a) * d); ctx.stroke();
+          ctx.fillStyle = t.color; ctx.fillRect(lead.x + Math.cos(a) * d - 2, lead.y + Math.sin(a) * d - 2, 4, 4);
+        }
+        ctx.globalAlpha = 1;
+      }
+      drawCar(lead, t.color, 1, true);
+    }
+  }
+  ctx.fillStyle = 'rgba(13,17,23,.75)'; ctx.fillRect(10, 10, 360, 34);
+  ctx.fillStyle = '#e6edf3'; ctx.font = '16px ui-monospace,Menlo,monospace';
+  ctx.fillText(`GEN ${world.gen}  step ${world.step}/${MAX_STEPS}  track #${world.track.seed}`, 20, 33);
+}
+
+function drawChart() {
+  const cv = document.getElementById('chart'), g = cv.getContext('2d'), w = cv.width, h = cv.height, p = 34;
+  g.clearRect(0, 0, w, h);
+  const finish = world.track.N * TRAIN_LAPS;
+  const maxY = Math.max(finish * 1.1, ...history.map(r => Math.max(r.A, r.B)));
+  const n = Math.max(history.length, 10);
+  const X = i => p + (w - p - 10) * i / (n - 1), Y = v => h - p - (h - p - 10) * v / maxY;
+  g.strokeStyle = '#30363d'; g.lineWidth = 1; g.beginPath(); g.moveTo(p, 10); g.lineTo(p, h - p); g.lineTo(w - 10, h - p); g.stroke();
+  g.setLineDash([6, 6]); g.strokeStyle = '#3fb950'; g.beginPath(); g.moveTo(p, Y(finish)); g.lineTo(w - 10, Y(finish)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#8b949e'; g.font = '20px system-ui'; g.fillText(`gen ${history.length ? history[history.length - 1].gen : 0}`, w - 100, h - 8);
+  for (const t of teams) {
+    if (!history.length) break;
+    g.strokeStyle = t.color; g.lineWidth = 3; g.beginPath();
+    history.forEach((r, i) => i ? g.lineTo(X(i), Y(r[t.id])) : g.moveTo(X(i), Y(r[t.id])));
+    g.stroke();
+  }
+}
+
+function drawNet() {
+  const cv = document.getElementById('net'), g = cv.getContext('2d'), w = cv.width, h = cv.height;
+  g.clearRect(0, 0, w, h);
+  const all = teams.map(leaderOf).filter(Boolean);
+  if (!all.length) return;
+  const c = all.sort((a, b) => b.best - a.best)[0];
+  const col = [NI, NH, NO], xs = [60, w / 2, w - 70];
+  const pos = col.map((n, l) => Array.from({ length: n }, (_, i) => [xs[l], 30 + (h - 60) * (n === 1 ? 0.5 : i / (n - 1))]));
+  const act = [c.inp, c.hid, c.out];
+  const edge = (p1, p2, wt) => {
+    g.strokeStyle = wt > 0 ? `rgba(247,129,102,${Math.min(1, Math.abs(wt) / 2)})` : `rgba(88,166,255,${Math.min(1, Math.abs(wt) / 2)})`;
+    g.lineWidth = Math.min(4, 0.5 + Math.abs(wt));
+    g.beginPath(); g.moveTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]); g.stroke();
+  };
+  for (let hI = 0; hI < NH; hI++) for (let i = 0; i < NI; i++) edge(pos[0][i], pos[1][hI], c.g[hI * NI + i]);
+  for (let o = 0; o < NO; o++) for (let hI = 0; hI < NH; hI++) edge(pos[1][hI], pos[2][o], c.g[NI * NH + o * (NH + 1) + hI]);
+  pos.forEach((layer, l) => layer.forEach(([x, y], i) => {
+    const v = act[l][i];
+    g.beginPath(); g.arc(x, y, 11, 0, Math.PI * 2);
+    g.fillStyle = `rgba(230,237,243,${0.15 + 0.85 * Math.abs(v)})`; g.fill();
+    g.strokeStyle = c.team.color; g.lineWidth = 2; g.stroke();
+  }));
+  g.fillStyle = '#e6edf3'; g.font = '20px system-ui';
+  g.textAlign = 'right';
+  g.fillText('steer ' + c.out[0].toFixed(2), w - 90, pos[2][0][1] + 7);
+  g.fillText('throttle ' + c.out[1].toFixed(2), w - 90, pos[2][1][1] + 7);
+  g.textAlign = 'left'; g.fillStyle = c.team.color; g.fillText(c.team.name, 10, h - 6);
+}
+
+function updateStats() {
+  document.getElementById('bros').innerHTML = teams.map(t => {
+    const alive = t.cars.filter(c => c.alive).length;
+    const lead = t.cars.reduce((b, c) => (c.best > b.best ? c : b), t.cars[0]);
+    return `<div class="bro">
+      <div class="name"><span class="dot" style="background:${t.color}"></span>${t.name}</div>
+      <span class="k">Alive</span><span>${alive} / ${POP}</span>
+      <span class="k">Leader now</span><span>${(lead.best / world.track.N).toFixed(2)} laps</span>
+      <span class="k">Last gen best</span><span>${t.lastBest.toFixed(1)} (${t.lapsDone.toFixed(2)} laps)</span>
+      <span class="k">Record</span><span>${t.record.toFixed(1)}</span>
+      <span class="k">Mutation</span><span>${(t.rate * 100).toFixed(0)}% genes, σ ${t.sigma}</span>
+    </div>`;
+  }).join('');
+}
+
+// ---------- test engine ----------
+function runTests() {
+  const rows = [];
+  for (const t of teams) {
+    const g = t.champion || t.genomes[0];
+    for (const seed of TEST_SEEDS) {
+      const tr = makeTrack(seed), car = newCar(g, t, TEST_LAPS, tr);
+      while (car.alive && car.steps < TEST_STEPS) stepCar(car, tr);
+      const pct = Math.min(100, car.best / tr.N * 100);
+      const status = car.finished ? 'PASS' : car.crashed ? 'CRASH' : 'STALL';
+      rows.push({ t, seed, status, pct, steps: car.steps });
+    }
+  }
+  const summary = teams.map(t => {
+    const mine = rows.filter(r => r.t === t), pass = mine.filter(r => r.status === 'PASS').length;
+    return `<span style="color:${t.color}">Brother ${t.id}</span>: ${pass}/${mine.length} passed`;
+  }).join(' · ');
+  document.getElementById('tests').innerHTML = `
+    <p style="margin:8px 0">${summary} <span class="note">(champions from gen ${world.gen - 1})</span></p>
+    <table><tr><th>Brother</th><th>Track</th><th>Result</th><th>Lap %</th><th>Steps</th></tr>
+    ${rows.map(r => `<tr><td style="color:${r.t.color}">${r.t.id}</td><td>#${r.seed}</td>
+      <td class="${r.status.toLowerCase()}">${r.status}</td><td>${r.pct.toFixed(0)}%</td><td>${r.steps}</td></tr>`).join('')}
+    </table>`;
+  log(`Test suite: ${summary}`);
+}
+
+// ---------- wiring ----------
+const playBtn = document.getElementById('play');
+function togglePlay() { world.running = !world.running; playBtn.textContent = world.running ? 'Pause' : 'Play'; }
+playBtn.onclick = togglePlay;
+document.addEventListener('keydown', e => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); togglePlay(); } });
+document.getElementById('speed').oninput = e => { world.speed = +e.target.value; document.getElementById('speedVal').textContent = world.speed + '×'; };
+document.getElementById('newTrack').onclick = () => { setTrack((Math.random() * 1e9) | 0); spawn(); log(`New track #${world.track.seed}`); };
+document.getElementById('reset').onclick = () => { resetBrains(); spawn(); drawChart(); log('Brains reset to random'); };
+document.getElementById('runTests').onclick = runTests;
+
+setTrack(1);
+resetBrains();
+spawn();
+log('Simulation started: 2 brothers × 30 drivers');
+
+let frame = 0, lastGen = 0;
+function loop() {
+  if (world.running) for (let s = 0; s < world.speed; s++) stepWorld();
+  draw();
+  if (frame++ % 6 === 0) { updateStats(); drawNet(); }
+  if (world.gen !== lastGen) { lastGen = world.gen; drawChart(); }
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
