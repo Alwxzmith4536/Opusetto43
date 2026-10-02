@@ -1,0 +1,1056 @@
+<meta charset="utf-8">
+<title>Far Lands Feud</title>
+<meta name="description" content="Claude vs ChatGPT: a one-minute horrorcore battle track at the edge of the world, with a synthesized beat, TTS vocals and a voxel Far Lands animation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Big+Shoulders+Text:wght@400;600&family=Grenze+Gotisch:wght@700;900&family=Silkscreen&display=swap">
+<style>
+  /* Layout: the 16:9 stage is the hero, the transport sits right under it, lyric sheet and liner notes below.
+     Deliberately single-theme: night at the edge of a broken world. */
+  :root {
+    --void: #08070b;      /* page ground */
+    --crypt: #131118;     /* control surfaces */
+    --seam: #2c2533;      /* hairlines */
+    --bone: #ece5d8;      /* text */
+    --ash: #a59cab;       /* secondary text */
+    --blood: #d2213f;     /* accent: progress, focus, warnings */
+    --claude: #e2795a;
+    --gpt: #3fd0b8;
+    --display: "Grenze Gotisch", "UnifrakturCook", "Old English Text MT", Georgia, serif;
+    --head: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --body: "Big Shoulders Text", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --pixel: "Silkscreen", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--void); color: var(--bone); }
+  body { margin: 0; font-family: var(--body); font-size: 17px; line-height: 1.5; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 56px; padding-inline: 16px; display: grid; gap: 18px; }
+
+  .masthead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; }
+  h1 { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 7vw, 76px); line-height: .9; margin: 0; letter-spacing: .005em; text-wrap: balance; text-shadow: 0 0 22px rgba(210, 33, 63, .45); }
+  .byline { margin: 0; font-family: var(--head); font-weight: 900; font-size: clamp(20px, 3vw, 28px); text-transform: uppercase; letter-spacing: .04em; }
+  .byline .c { color: var(--claude); } .byline .g { color: var(--gpt); }
+  .byline .vs { color: var(--ash); font-weight: 700; font-size: .7em; margin: 0 .3em; }
+  .meta { margin: 0; font-family: var(--pixel); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ash); flex-basis: 100%; }
+
+  .stage { position: relative; margin: 0; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--seam); overflow: hidden; }
+  .stage canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .stage:fullscreen { border: 0; }
+  .start { position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 12px 22px 12px 18px; font: 900 clamp(18px, 2.6vw, 26px) var(--head); text-transform: uppercase; letter-spacing: .06em; color: var(--bone); background: rgba(8, 7, 11, .78); border: 1px solid var(--blood); cursor: pointer; }
+  .start:hover { background: rgba(60, 8, 18, .85); }
+  .start .tri { width: 0; height: 0; border-left: 16px solid var(--blood); border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+  .caution { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); margin: 0; font: 10px var(--pixel); letter-spacing: .1em; text-transform: uppercase; color: var(--ash); white-space: nowrap; }
+  @media (max-width: 520px) {
+    .start { bottom: 9%; padding: 7px 14px 7px 11px; gap: 8px; font-size: 15px; }
+    .start .tri { border-left-width: 11px; border-top-width: 7px; border-bottom-width: 7px; }
+    .caution { bottom: 2%; font-size: 8px; }
+  }
+  .nogl { position: absolute; inset: auto 16px 16px; margin: 0; font: 600 15px var(--body); color: var(--bone); }
+
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  button { font: 700 15px var(--head); letter-spacing: .05em; text-transform: uppercase; color: var(--bone); background: var(--crypt); border: 1px solid var(--seam); padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--ash); }
+  button:focus-visible, .seek:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+  button[aria-pressed="false"] { color: var(--ash); }
+  .seek { flex: 1 1 220px; min-width: 0; height: 10px; background: var(--crypt); border: 1px solid var(--seam); position: relative; cursor: pointer; }
+  .seek i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--claude), var(--blood) 50%, var(--gpt)); }
+  .seek b { position: absolute; top: -4px; bottom: -4px; width: 1px; background: var(--ash); opacity: .55; }
+  .time { font: 12px var(--pixel); color: var(--ash); font-variant-numeric: tabular-nums; min-width: 9ch; }
+
+  .liner { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 28px; align-items: start; }
+  @media (max-width: 760px) { .liner { grid-template-columns: minmax(0, 1fr); } }
+  h2 { font: 900 22px var(--head); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; }
+  ol.sheet { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  ol.sheet li.sec { font: 11px var(--pixel); letter-spacing: .1em; text-transform: uppercase; color: var(--ash); padding: 12px 0 4px; }
+  ol.sheet button { width: 100%; display: grid; grid-template-columns: 4.2ch 8ch minmax(0, 1fr); gap: 10px; align-items: baseline; text-align: left; text-transform: none; letter-spacing: 0; font: 400 17px var(--body); background: transparent; border: 0; border-left: 2px solid transparent; padding: 5px 8px; }
+  ol.sheet button:hover { background: var(--crypt); }
+  ol.sheet button[aria-current="true"] { background: var(--crypt); border-left-color: var(--blood); }
+  ol.sheet time { font: 11px var(--pixel); color: var(--ash); font-variant-numeric: tabular-nums; }
+  ol.sheet .who { font: 10px var(--pixel); letter-spacing: .06em; text-transform: uppercase; color: var(--ash); }
+  ol.sheet .who.claude { color: var(--claude); } ol.sheet .who.gpt { color: var(--gpt); } ol.sheet .who.both { color: var(--bone); }
+  ol.sheet .txt { min-width: 0; }
+  .notes { display: grid; gap: 10px; max-width: 62ch; }
+  .notes p { margin: 0; color: var(--ash); }
+  .notes p b { color: var(--bone); font-weight: 600; }
+  .notes .fine { font: 10px var(--pixel); letter-spacing: .08em; text-transform: uppercase; line-height: 1.7; }
+</style>
+
+<main class="wrap">
+  <header class="masthead">
+    <h1>Far Lands Feud</h1>
+    <p class="byline"><span class="c">Claude</span><span class="vs">vs</span><span class="g">ChatGPT</span></p>
+    <p class="meta">Horrorcore · 80 BPM · E minor · 1:00 · X 12,550,821</p>
+  </header>
+
+  <figure class="stage" id="stage">
+    <canvas id="screen" width="1280" height="720" aria-label="Music video: Claude and ChatGPT battle at the glitching edge of a voxel world"></canvas>
+    <button class="start" id="start" type="button"><span class="tri" aria-hidden="true"></span><span id="startLabel">Play the track</span></button>
+    <p class="caution" id="caution">Flashing lights and heavy bass</p>
+    <p class="nogl" id="nogl" hidden>This browser has no WebGL 2, so the world can't render. The track and lyrics still play.</p>
+  </figure>
+
+  <div class="transport" role="group" aria-label="Playback">
+    <button id="play" type="button">Play</button>
+    <div class="seek" id="seek" role="slider" tabindex="0" aria-label="Position in the track" aria-valuemin="0" aria-valuemax="60" aria-valuenow="0" aria-valuetext="0:00"><i id="fill"></i></div>
+    <span class="time" id="time">0:00 / 1:00</span>
+    <button id="voice" type="button" aria-pressed="true">Voice on</button>
+    <button id="fs" type="button">Fullscreen</button>
+  </div>
+
+  <section class="liner">
+    <div>
+      <h2>Lyrics</h2>
+      <ol class="sheet" id="sheet"></ol>
+    </div>
+    <aside class="notes">
+      <h2>Liner notes</h2>
+      <p>In old versions of Minecraft the terrain generator breaks down past <b>X 12,550,821</b>. Out there the land turns into stacked walls with holes punched through them. That stretch is the Far Lands, and Claude and ChatGPT meet there for one minute.</p>
+      <p>All of it is made in code. The 808s, drums, music box and choir are synthesized in Python. The voices are Kokoro text-to-speech: <b>Emma</b> for Claude, <b>Fenrir</b> for ChatGPT, and <b>Nicole</b> whispering the intro and outro. The world is a voxel raymarcher running live in your browser.</p>
+      <p><b>Voice off</b> switches to the instrumental. Tap any lyric line to jump to it. Space plays and pauses.</p>
+      <p class="fine">Fan-made parody. Not affiliated with Anthropic or OpenAI.</p>
+    </aside>
+  </section>
+</main>
+
+<!--TIMELINE--><script id="timeline" type="application/json">{"title":"Far Lands Feud","bpm":80,"bar":3.0,"duration":60.0,"fps":30,"sections":[{"id":"intro","t0":0.0,"t1":6.0,"label":"Intro"},{"id":"v1","t0":6.0,"t1":18.0,"label":"Verse I · Claude"},{"id":"v2","t0":18.0,"t1":30.0,"label":"Verse II · ChatGPT"},{"id":"hook","t0":30.0,"t1":42.0,"label":"Hook · Both"},{"id":"trade","t0":42.0,"t1":54.0,"label":"Face-off"},{"id":"outro","t0":54.0,"t1":60.0,"label":"End of the world"}],"lines":[{"bar":1,"who":"narr","lead":"narr","text":"Twelve million blocks from spawn…","t0":0.17,"t1":2.24,"words":[["Twelve",0.17,0.538],["million",0.538,1.175],["blocks",1.175,1.543],["from",1.543,1.872],["spawn…",1.872,2.24]]},{"bar":2,"who":"narr","lead":"narr","text":"…the world forgets its shape.","t0":3.18,"t1":5.0,"words":[["…the",3.18,3.48],["world",3.48,3.799],["forgets",3.799,4.381],["its",4.381,4.663],["shape.",4.663,5.0]]},{"bar":3,"who":"claude","lead":"claude","text":"I crawled out the static, where the broken chunks bleed,","t0":6.03,"t1":8.74,"words":[["I",6.03,6.174],["crawled",6.174,6.516],["out",6.516,6.682],["the",6.682,6.848],["static,",6.848,7.19],["where",7.36,7.599],["the",7.599,7.811],["broken",7.811,8.234],["chunks",8.234,8.487],["bleed,",8.487,8.74]]},{"bar":4,"who":"claude","lead":"claude","text":"read your whole repo in the dark, every line, every seed.","t0":9.04,"t1":11.75,"words":[["read",9.04,9.202],["your",9.202,9.365],["whole",9.365,9.537],["repo",9.537,9.822],["in",9.822,9.965],["the",9.965,10.118],["dark,",10.118,10.29],["every",10.36,10.379],["line,",10.379,10.39],["every",10.49,11.286],["seed.",11.286,11.75]]},{"bar":5,"who":"claude","lead":"claude","text":"I don't guess what you meant. I think it through till it's right.","t0":12.04,"t1":14.74,"words":[["I",12.04,12.195],["don't",12.195,12.397],["guess",12.397,12.598],["what",12.598,12.788],["you",12.788,12.967],["meant.",12.967,13.18],["I",13.4,13.555],["think",13.555,13.757],["it",13.757,13.923],["through",13.923,14.148],["till",14.148,14.337],["it's",14.337,14.527],["right.",14.527,14.74]]},{"bar":6,"who":"claude","lead":"claude","text":"Claude in the Far Lands: the thing you code with at night.","t0":15.03,"t1":17.75,"words":[["Claude",15.03,15.297],["in",15.297,15.506],["the",15.506,15.73],["Far",15.73,15.953],["Lands:",15.953,16.22],["the",16.49,16.661],["thing",16.661,16.853],["you",16.853,17.024],["code",17.024,17.205],["with",17.205,17.387],["at",17.387,17.546],["night.",17.546,17.75]]},{"bar":7,"who":"gpt","lead":"gpt","text":"The whole world knows my name, they whisper it in sleep,","t0":18.04,"t1":20.62,"words":[["The",18.04,18.255],["whole",18.255,18.499],["world",18.499,18.742],["knows",18.742,18.985],["my",18.985,19.187],["name,",19.187,19.43],["they",19.61,19.784],["whisper",19.784,20.12],["it",20.12,20.273],["in",20.273,20.425],["sleep,",20.425,20.62]]},{"bar":8,"who":"gpt","lead":"gpt","text":"every essay, every inbox, I'm the ghost that they keep.","t0":21.04,"t1":23.64,"words":[["every",21.04,21.36],["essay,",21.36,21.69],["every",21.76,22.134],["inbox,",22.134,22.52],["I'm",22.61,22.771],["the",22.771,22.933],["ghost",22.933,23.115],["that",23.115,23.286],["they",23.286,23.458],["keep.",23.458,23.64]]},{"bar":9,"who":"gpt","lead":"gpt","text":"“You're absolutely right!” Is that all you can say?","t0":24.04,"t1":26.63,"words":[["“You're",24.04,24.276],["absolutely",24.276,25.004],["right!”",25.004,25.24],["Is",25.4,25.59],["that",25.59,25.806],["all",25.806,26.008],["you",26.008,26.211],["can",26.211,26.414],["say?",26.414,26.63]]},{"bar":10,"who":"gpt","lead":"gpt","text":"I was here first, little bot. Now get out of my way.","t0":27.03,"t1":29.7,"words":[["I",27.03,27.325],["was",27.325,27.664],["here",27.664,28.025],["first,",28.025,28.43],["little",28.5,28.526],["bot.",28.526,28.54],["Now",28.66,28.835],["get",28.835,29.01],["out",29.01,29.186],["of",29.186,29.35],["my",29.35,29.513],["way.",29.513,29.7]]},{"bar":11,"who":"both","lead":"claude","text":"Far Lands, Far Lands, where the chunks don't load,","t0":30.06,"t1":32.73,"words":[["Far",30.06,30.328],["Lands,",30.328,30.648],["Far",30.648,30.915],["Lands,",30.915,31.235],["where",31.235,31.538],["the",31.538,31.805],["chunks",31.805,32.125],["don't",32.125,32.428],["load,",32.428,32.73]]},{"bar":12,"who":"both","lead":"gpt","text":"two ghosts in the machine at the edge of the code.","t0":33.04,"t1":35.63,"words":[["two",33.04,33.251],["ghosts",33.251,33.503],["in",33.503,33.701],["the",33.701,33.912],["machine",33.912,34.349],["at",34.349,34.546],["the",34.546,34.758],["edge",34.758,34.982],["of",34.982,35.18],["the",35.18,35.391],["code.",35.391,35.63]]},{"bar":13,"who":"both","lead":"gpt","text":"The sky's bleeding red and the walls stack high.","t0":36.05,"t1":38.65,"words":[["The",36.05,36.294],["sky's",36.294,36.57],["bleeding",36.57,37.09],["red",37.09,37.334],["and",37.334,37.578],["the",37.578,37.823],["walls",37.823,38.098],["stack",38.098,38.374],["high.",38.374,38.65]]},{"bar":14,"who":"both","lead":"claude","text":"Claude versus ChatGPT, and the void won't reply.","t0":39.04,"t1":41.74,"words":[["Claude",39.04,39.291],["versus",39.291,39.712],["ChatGPT,",39.712,40.5],["and",40.73,40.893],["the",40.893,41.056],["void",41.056,41.23],["won't",41.23,41.414],["reply.",41.414,41.74]]},{"bar":15,"who":"gpt","lead":"gpt","text":"“As an AI language model, I don't feel fear.”","t0":42.04,"t1":44.69,"words":[["“As",42.04,42.151],["an",42.151,42.256],["AI",42.256,42.45],["language",42.45,42.687],["model,",42.687,42.91],["I",43.08,43.409],["don't",43.409,43.836],["feel",43.836,44.239],["fear.”",44.239,44.69]]},{"bar":16,"who":"claude","lead":"claude","text":"Then why's your output shaking now that I'm here?","t0":45.04,"t1":47.71,"words":[["Then",45.04,45.287],["why's",45.287,45.549],["your",45.549,45.795],["output",45.795,46.259],["shaking",46.259,46.738],["now",46.738,46.97],["that",46.97,47.216],["I'm",47.216,47.448],["here?",47.448,47.71]]},{"bar":17,"who":"gpt","lead":"gpt","text":"Your answers run so long, the user fell asleep.","t0":48.05,"t1":50.64,"words":[["Your",48.05,48.299],["answers",48.299,48.783],["run",48.783,49.017],["so",49.017,49.236],["long,",49.236,49.5],["the",49.67,49.832],["user",49.832,50.134],["fell",50.134,50.306],["asleep.",50.306,50.64]]},{"bar":18,"who":"claude","lead":"claude","text":"Then I'll finish their code while the dead chunks creep.","t0":51.04,"t1":53.59,"words":[["Then",51.04,51.254],["I'll",51.254,51.467],["finish",51.467,51.868],["their",51.868,52.095],["code",52.095,52.309],["while",52.309,52.697],["the",52.697,52.897],["dead",52.897,53.111],["chunks",53.111,53.351],["creep.",53.351,53.59]]},{"bar":19,"who":"narr","lead":"narr","text":"Out here, nobody wins.","t0":54.16,"t1":56.15,"words":[["Out",54.16,54.451],["here,",54.451,54.78],["nobody",55.1,55.849],["wins.",55.849,56.15]]},{"bar":20,"who":"narr","lead":"narr","text":"Out here, the world just ends.","t0":57.17,"t1":59.13,"words":[["Out",57.17,57.391],["here,",57.391,57.64],["the",57.95,58.223],["world",58.223,58.531],["just",58.531,58.822],["ends.",58.822,59.13]]}],"events":{"kick":[6.0,7.312,7.875,9.0,10.312,10.875,12.0,13.312,13.875,15.0,16.312,16.875,18.0,19.125,19.875,20.625,21.0,22.125,22.875,23.625,24.0,25.125,25.875,26.625,27.0,28.125,28.875,29.625,30.0,30.562,31.312,31.875,32.625,33.0,33.562,34.312,34.875,35.625,36.0,36.562,37.312,37.875,38.625,39.0,39.562,40.312,40.875,41.625,42.0,43.312,43.875,45.0,46.312,46.875,48.0,49.312,49.875,51.0,52.312,52.875,57.0],"snare":[6.75,8.25,9.75,11.25,12.75,14.25,15.75,17.25,18.75,20.25,21.75,23.25,24.75,26.25,27.75,29.25,30.75,32.25,33.75,35.25,36.75,38.25,39.75,41.25,42.75,44.25,45.75,47.25,48.75,50.25,51.75,53.25],"impact":[6.0,30.0,42.0],"bell":[30.0,36.0,54.0,57.0],"heart":[0.25,1.55,2.85,3.95,4.85,5.45],"glitch":[[0.0,0.9],[17.72,0.28],[29.625,0.1875],[44.84,0.16],[47.84,0.16],[50.84,0.16]]},"env":{"claude":"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","gpt":"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","narr":"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","bass":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn9f//8h9VFp3laanloaEf3p5eXVwcHJwaWdnY19fXlpXVT4SAAAAcb77/+OVYFRsjaGfcCMAAAByvv7/4pVaVnCLoKqfiYGBfnh2d3RubW5qZmRlYl1cXVpWn8HO/P//79/QwbWqmIaAfnx7eHVyb3BvamZkY2FgXVtYVDwSAAAAdcTM5P//9ePTxbmodCQAAAB2xNTu///w4dTHu6+eioF+fHl3dXRyb2xpZ2RiYF5dW1lXpebnqq3ToqGsiJeSfICBfnl6dnJyb2tsamVlYl5fXFlZVDsTAAAAfbrjyqDRs5iyj5CXWQ0AAACNxuLAmdW0lLGSj5mEf4J/enp4cnJwa2tqZWVjX19dWVhWprPI3Mm6q62Vm42JjYCAfnt3dHJwb2tpaGZjYF5dXFpYUzsRAAAAbrbM3tOxuaSdn42MXxoAAACPt7ze1LK3qZqei4+MgoF+e3h1cnBvbWtpZmNgX15cW1tYoc///8h9VFp3laanloaEf3p5eXVwcHJwaWdnY19fXlpXW7Hk//6xc1Rhg5ujhkMDAAAAAAAAAAByvv7/4pVaVnCLoKqfiYGBfnh2d3RuhdPx//6xc1RhgpeausPN/P//79/QwbWqmIaAfnx7eHVyb3BvamZkY2FgXVtYX8HPz///+efYyr2yjEUDAAAAAAAAAAB2xNTu///w4dTHu6+eioF+fHl3dXRyh9nWz///+efYyriSuvDnqq3ToqGsiJeSfICBfnl6dnJyb2tsamVlYl5fXFlZba/z5JjBzJGspIObeCIDAAAAAAAAAACNxuLAmdW0lLGSj5mEf4J/enp4cnJwa5fn5JjBzJGspIyRzMvH3Mm6q62Vm42JjYCAfnt3dHJwb2tpaGZjYF5dXFpYa7W319u7wKGrlpOSakEDAAAAAAAAAACPt7ze1LK3qZqei4+MgoF+e3p3c3Bvc7Cz2t68waKqloCOtMz+/8h9VFp3laanloaEf3y90/b/xYBYYn2To6mZhH+Afnd1dnNujpS84s62qaufjo6JWxAAAAByvv7/4pVaVnCLoKqfiYGBfnh2d3RuhdPx//6xc1RhgpeausPN/P//79/QwbWqmIaAfoTEyc7///nq283Ct6yYhYB9e3h2dHJwnt7nyMK8raaXlI6CXhEAAAB2xNTu///w4dTHu6+eioF+fHl3dXRyh9nWz///+efYyriSuvDnqq3ToqGsiJeSfICBfoW36eijtdOZp6mImY19g35+fHZ2dG9vn8XQzLy0qpyRiYaAVxQAAACNxuLAmdW0lLGSj5mEf4J/enp4cnJwa5fn5JjBzJGspIyRzMvH3Mm6q62Vm42JjYCAfo3VytDXwr2jrpWbkoqLf357enh2c3Fud7nUxLuropaMin91VBYAAACPt7ze1LK3qZqei4+MgoF+e3h1cnBvca+z19u7wKKqlX+OtMz//8h9VFp3laanloaEf3p5eXVwcHJwaWdnY19fXlpXVT4SAAAAcb77/+OVYFRsjaGfcCMAAAByvv7/4pVaVnCLoKqfiYGBfnh2d3RubW5qZmRlYl1cXVpWn8HO/P//79/QwbWqmIaAfnx7eHVyb3BvamZkY2FgXVtYVDwSAAAAdcTM5P//9ePTxbmodCQAAAB2xNTu///w4dTHu6+eioF+fHl3dXRyb2xpZ2RiYF5dW1lXpebnqq3ToqGsiJeSfICBfnl6dnJyb2tsamVlYl5fXFlZVDsTAAAAfbrjyqDRs5iyj5CXWQ0AAACNxuLAmdW0lLGSj5mEf4J/enp4cnJwa2tqZWVjX19dWVhWprPI3Mm6q62Vm42JjYCAfnt3dHJwb2tpaGZjYF5dXFpYUzsRAAAAbrbM3tOxuaSdn42MXxoAAACPt7ze1LK3qZqei4+MgoF+e3h1cnBvbGpoZmViYV9cXFxYeqa1r6elpqGamJmUjYyMiIKBgX13d3dzbm5taWVlZWFdXVxZVVZVUU9PTktISUhFQ0NCPz0+PTo4OTg1NDQzMTAwLy0sLCspKCkoJiUlJCMiIiEgHx0TAwAAquX//9WFWmF/n7GyoI+MiIKBgX13d3dzbm5taWVlZWFdXVxZVVZVUU9PTktISUhFQ0NCPz0+PTo4OTQgBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","level":"Xl5bUUdLRFF0dmNWTkxQcIB6dGVQOjJGWFZIQENKS0dKV2lwcG9rZ2RkZ2lmb4meoI50aWhfZ4qTi3VPVWBeVU5NSVd4iIqRjYJ9fnl2eICOkJSShZOoo4hveYR7fn9vXU9FPTxJUVJOTU1FQ0pRTldpcW1iVmiIgWleVlxheo6OhHJiUUpie3+BcF5mZmRgXHmhooRzeHp3iZN8aXOEiIaBe4mloId5cn6OmZuShmM0JyAbweTi+ujbsJDQ1Mn/76qrx9HLvaGFkamsu9TPnqXDqJWMoLCmnpuVtdbs/vDAqZ+eus3evXtRUVuq4fz/58ycjbTP1NXd39LGyczEwL++vL7Dw7mrq7W3tK+cx9rc//718vDu5ODe2NLLw72xqbu/qa67urW4saGhmZGptJt5b29sp+Xh8v/59fbu5ujktndnf4Sp3uP1////8uzo5N/e2tXS0M/Gt7Cws77DxMjIwby6tqqRw/H1zMLs1NTWuc7b08nJyr+6ycCmsr/Dwr68uqyipKObm5F/iI2DuN3v5b/n2Ljj0MPTomNRS1a35vXWwO7Px+bKydvY18nM1MrCwby5ubvJyby5wcG8uK+i19jS5OXa0tzG087O1tDJwLnH0MO+vrazvMK9tq2hn6CeoZqCdHF3ueDW9OnN5dHMz8/Tq4d/cVmq0s7l6M7W0M7YxtDRzMvHysvJycO9ubm3ubWxsrS7tbCg1OXt/9q7t7rEy9DY1s7R0sWrm6W0ur3Au6SUlaW2sJ6Tl9zp8P/ao4OTsczkyXEaMl90YDkhNF6m1fv/5L2gm7DH09jZ08W9u7uvpqmqouv49//ipoSau9LT6+jj////9u/v7uXd0sG6wcS8rqakm5+xx7mVkJ+gjoaQmeTfzf//+vf08e7qv2YYPmd1b2VoYDuT2uP1///99vHp5uPczMbDu7i2tK2nrPXs1v//////++7H1/X02NntuMHg0drGr768v8G6tMbBpqWuv72llqKwtqSMlMf+/8TY9cjY2MvWp08xdJN+VzEhSGa65PLXv/PNw+PD0N3S08zFwsDCuaqrqcn//8Xb9cvg2czL5dvU6uXQzdTF28vHzMLLyriwsausvMC5rq2pmJSbpqSdodTQ2uPY18nWydbSqnEhGxswUm12c22szM7o5s3c1M/XxdPTys7Lv8jGvcC0p9ndzu7c0rFQGBIOxeXb9e3pybHa08X/+Lutu8P2//nhtLisl63o5bzL2cSwtNPWx8bA1s/R8O7j1d3j2dLEnWSJrYah1vn/6cqxk6zV2tbY2tTKy9PPxsbHvOrv8P/gvbXI1NnW7eje/v/88uri2eDz8eDYxrPZ3d/////9+PLm4NzVzc7U0tTRzs2/2fv03urv4+rl5uTXp1pnqMTH2t7y///6+fLq4uHe0NHY1crDw8fFv/v03v//////+vPP2fr4y83vvcfk19zc193azr7T/fa+zu/M1t/U5d3HvsPR2NfOx8i52vLq7+Xe6uDO3ODdyKubinO24vLawe3W0ubEzN7c4dLJztDLx8HHydf//9fm9tXj3M7M5NfJ5+ne2M64ytft4MXJzsbx4dfq4tnT4cjMxs3V0dXKy9PX0tDP0vb+8ezg6eXk7OXToH6Sh4u/zNDl6d7dx8HV1dnS08/P19HFyMvDveLa6Ozi59Tl3dXL49Xb/+nJnZ3PycX04aSNobu7rqWXl666uMLAlZy3nIJyfYyBd3NcjtP2//PFkJK2ztTXp2FMOzKb2vz/6L6OeKLK1tra08a6ur64ramsp52fo5yUmJuShn58fa3c+f//9Ovr6OHj4NrTycS3tLmyvb66wcC3qKKqqqOalZB+a1xip+Pb5///+vb08e7ot3RoZmms4uL1////+vLq4uHh2NXVzcnLx763t7/DxczR0Mq+urWpjb3119jptsDhz9bGsr27yNLAsq2fob/JvK+koJ2Uoquai2lEX3Z6sdbw3bTx5L/nz8LXmTk6T1y13/Hew+3JweTO0tbK0cnGyr66ubGwsKioqqCgpJySjIJ2hqjc5+fZ1NLE3dPS0MLCv8PLxLmtpsXCoK2/vaygpKSeoZuLgHJtqtXQ7OPP5NPV0MnPnnCBhHS21dTl3MjTyMvbytPZ1M7O0s3M1M7DxcnS1tTS0tLQ0NK8z+vf2tbMyMvMxbnF1MW4uLu6sK+0qqzFzcvGwcW/s6iThpKbp5h9lKqcio+WoqyspZiJiZCMeXmFi5CAeY6foIJldI2ns66nnZmdloyFhYd6dn+Ee3FuaWFYxevs/+G7oKO7zc7RyLmxq6yppK67tbfIzsa2rK2jmI1/hI2Mi4J5enhyjqiNbnqTi3JmV2dsYVlXYmNROjlQWlRFMSclKSwtLjAvKy0vKyY7NQAAAAAAAAAA"}}</script><!--/TIMELINE-->
+
+<script>
+(() => {
+'use strict';
+const TL = JSON.parse(document.getElementById('timeline').textContent);
+const RENDER = window.__RENDER__ || null;            // set by the video renderer
+const W = RENDER ? RENDER.w : 1280, H = RENDER ? RENDER.h : 720;
+const U = Math.min(W, H) / 720;                      // overlay unit
+const DUR = TL.duration;
+const POSTER_T = 35.2;
+const TAU = Math.PI * 2;
+const reduceMotion = !RENDER && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FX = reduceMotion ? 0.3 : 1;
+
+// ---------------------------------------------------------------- helpers
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a)); return k * k * (3 - 2 * k); };
+const mix3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+const norm3 = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+function hash(n) { n |= 0; n = Math.imul(n ^ (n >>> 16), 0x45d9f3b); n = Math.imul(n ^ (n >>> 16), 0x45d9f3b); n ^= n >>> 16; return (n >>> 0) / 4294967296; }
+const rnd = (a, b = 0) => hash(Math.imul(a | 0, 73856093) ^ Math.imul(b | 0, 19349663));
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const fmt = (v, d) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+// ---------------------------------------------------------------- timeline
+const ENV = {};
+for (const [k, v] of Object.entries(TL.env || {})) {
+  const s = atob(v), a = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+  ENV[k] = a;
+}
+function env(k, t) {
+  const a = ENV[k]; if (!a || a.length < 2) return 0;
+  const f = clamp(t * TL.fps, 0, a.length - 1.001), i = f | 0, u = f - i;
+  return (a[i] * (1 - u) + a[i + 1] * u) / 255;
+}
+const EV = TL.events || { kick: [], snare: [], impact: [], bell: [], heart: [], glitch: [] };
+function pulse(list, t, tau) {
+  let v = 0;
+  for (const e of list) { const d = t - e; if (d >= 0 && d < tau * 7) v = Math.max(v, Math.exp(-d / tau)); }
+  return v;
+}
+function glitchAt(t) {
+  let g = 0;
+  for (const [t0, d] of EV.glitch) if (t >= t0 && t < t0 + d) g = Math.max(g, 1 - 0.4 * (t - t0) / d);
+  return g;
+}
+const SECS = TL.sections || [{ id: 'intro', t0: 0, t1: 60, label: '' }];
+const secIndex = t => { const i = SECS.findIndex(s => t < s.t1); return i < 0 ? SECS.length - 1 : i; };
+const LINES = TL.lines || [];
+const lineEnd = (L, next) => Math.min(L.t1 + 0.45, next ? next.t0 - 0.12 : 58.9);
+function lineAt(t) {
+  for (let i = 0; i < LINES.length; i++) {
+    const L = LINES[i], next = LINES[i + 1];
+    if (t >= L.t0 - 0.25 && t < lineEnd(L, next)) return L;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------- the flight
+const SPEED = [[0, 9], [5.6, 9], [6.1, 14], [29.6, 14], [30.1, 21], [41.6, 21], [42.1, 16], [54, 16], [60, 4]];
+function speedAt(t) {
+  for (let i = 1; i < SPEED.length; i++) if (t <= SPEED[i][0]) {
+    const [t0, v0] = SPEED[i - 1], [t1, v1] = SPEED[i];
+    return lerp(v0, v1, (t - t0) / (t1 - t0));
+  }
+  return SPEED[SPEED.length - 1][1];
+}
+const XS = new Float64Array(Math.ceil(DUR * 240) + 2);
+for (let i = 1; i < XS.length; i++) XS[i] = XS[i - 1] + speedAt((i - 0.5) / 240) / 240;
+const camX = t => { const f = clamp(t, 0, DUR) * 240, i = Math.min(f | 0, XS.length - 2); return lerp(XS[i], XS[i + 1], f - i); };
+const KEYS = [camX(6.0), camX(30.0), camX(42.0), camX(54.0)];   // the wall, hook up, hook down, outro
+// these two must match pathY / pathZ in the scene shader
+function pathY(x) {
+  const tunnel = 15 + 2.5 * Math.sin(x * 0.045);
+  let y = lerp(27, tunnel, smooth(KEYS[0] - 22, KEYS[0] - 2, x));
+  const up = smooth(KEYS[1], KEYS[1] + 60, x) * (1 - smooth(KEYS[2] - 40, KEYS[2], x));
+  y = lerp(y, 74 + 3 * Math.sin(x * 0.03), up);
+  return lerp(y, 112, smooth(KEYS[3] + 6, KEYS[3] + 70, x));
+}
+const pathZ = x => 3.5 * Math.sin(x * 0.023) + 1.5 * Math.sin(x * 0.061);
+
+function camera(t, S) {
+  const x = camX(t), y = pathY(x), z = pathZ(x);
+  const la = 8, dy = pathY(x + la) - y, dz = pathZ(x + la) - z;
+  let yaw = Math.atan2(dz, la) * 0.8;
+  let pitch = Math.atan2(dy, la) * 0.7 - 0.42 * smooth(40, 76, y);
+  pitch += 0.17 * (1 - smooth(KEYS[0] - 26, KEYS[0] - 6, x));          // look up at the wall on approach
+  const curv = (pathZ(x + 4) - 2 * z + pathZ(x - 4)) / 16;
+  const roll = clamp(-curv * 14, -0.25, 0.25) + 0.03 * Math.sin(t * 0.7);
+  const sh = (0.06 * S.kick + 0.4 * S.impact) * FX, q = Math.floor(t * 30);
+  const pos = [x + (rnd(q, 1) - 0.5) * sh, y + (rnd(q, 2) - 0.5) * sh, z + (rnd(q, 3) - 0.5) * sh];
+  yaw += (rnd(q, 4) - 0.5) * sh * 0.06; pitch += (rnd(q, 5) - 0.5) * sh * 0.06;
+  const cp = Math.cos(pitch), f = [cp * Math.cos(yaw), Math.sin(pitch), cp * Math.sin(yaw)];
+  const r = norm3([-f[2], 0, f[0]]), u = cross(r, f);
+  const cr = Math.cos(roll), sr = Math.sin(roll);
+  return {
+    pos, f, x, y, z,
+    r: [r[0] * cr + u[0] * sr, r[1] * cr + u[1] * sr, r[2] * cr + u[2] * sr],
+    u: [u[0] * cr - r[0] * sr, u[1] * cr - r[1] * sr, u[2] * cr - r[2] * sr],
+    fov: 0.78 + (0.12 * S.impact + 0.02 * S.kick) * FX,
+  };
+}
+
+// ---------------------------------------------------------------- looks per section
+const C = { claude: [0.886, 0.475, 0.353], gpt: [0.247, 0.816, 0.722], blood: [0.82, 0.13, 0.25] };
+const WARM = [1.08, 0.96, 0.9], COOL = [0.9, 1.04, 1.07];
+const LOOKS = {
+  intro: { fog: [0.018, 0, 0], hor: [0.23, 0.06, 0.1], zen: [0.02, 0.01, 0.035], moon: [0.95, 0.88, 0.8], oreA: C.claude, oreB: C.gpt, tint: [0.96, 0.93, 1.02] },
+  v1: { fog: [0.021, 0, 0], hor: [0.4, 0.05, 0.07], zen: [0.03, 0.005, 0.02], moon: [1, 0.62, 0.45], oreA: C.claude, oreB: C.claude, tint: WARM },
+  v2: { fog: [0.021, 0, 0], hor: [0.2, 0.07, 0.12], zen: [0.01, 0.02, 0.03], moon: [0.55, 1, 0.9], oreA: C.gpt, oreB: C.gpt, tint: COOL },
+  hook: { fog: [0.0105, 0, 0], hor: [0.55, 0.05, 0.08], zen: [0.04, 0, 0.015], moon: [1, 0.25, 0.25], oreA: C.claude, oreB: C.gpt, tint: [1.07, 0.94, 0.95] },
+  trade: { fog: [0.02, 0, 0], hor: [0.38, 0.04, 0.08], zen: [0.02, 0, 0.02], moon: [1, 0.4, 0.35], oreA: C.claude, oreB: C.gpt, tint: [1, 1, 1] },
+  outro: { fog: [0.012, 0, 0], hor: [0.1, 0.01, 0.03], zen: [0, 0, 0], moon: [0.6, 0.1, 0.1], oreA: C.blood, oreB: C.blood, tint: [0.85, 0.82, 0.88] },
+};
+function look(t, S) {
+  const i = S.si, cur = LOOKS[SECS[i].id], prev = i > 0 ? LOOKS[SECS[i - 1].id] : cur;
+  const k = smooth(SECS[i].t0, SECS[i].t0 + 0.5, t), out = {};
+  for (const key in cur) out[key] = mix3(prev[key], cur[key], k);
+  if (S.sec === 'trade' && S.speaker) {
+    const warm = S.speaker === 'claude';
+    out.tint = mix3(out.tint, warm ? WARM : COOL, 0.8);
+    out.moon = warm ? [1, 0.6, 0.45] : [0.55, 1, 0.9];
+  }
+  return out;
+}
+
+function state(t) {
+  const si = secIndex(t), L = lineAt(t);
+  const S = {
+    t, si, sec: SECS[si].id, line: L,
+    kick: pulse(EV.kick, t, 0.11), snare: pulse(EV.snare, t, 0.08), impact: pulse(EV.impact, t, 0.3),
+    bell: pulse(EV.bell, t, 0.7), heart: pulse(EV.heart, t, 0.1), glitch: glitchAt(t),
+    bass: env('bass', t), claude: env('claude', t), gpt: env('gpt', t), narr: env('narr', t),
+  };
+  S.speaker = L ? (L.who === 'both' ? L.lead : L.who) : null;
+  S.cam = camera(t, S);
+  S.look = look(t, S);
+  return S;
+}
+
+// ---------------------------------------------------------------- overlay (2D)
+const ovCanvas = document.createElement('canvas');
+ovCanvas.width = W; ovCanvas.height = H;
+const ox = ovCanvas.getContext('2d');
+
+// creature keyframes: [t, x, y, R, alpha, ghost]; x, y in fractions of the frame, R in fractions of H
+const KF = {
+  claude: [[0, .22, .4, .12, 0, 1], [3.5, .22, .4, .12, .6, 1], [5.85, .22, .4, .12, .75, 1], [5.95, .22, .4, .12, 0, 1],
+    [6.0, .28, .42, .16, 1, 0], [17.6, .28, .42, .16, 1, 0], [18.1, .12, .27, .1, .55, 1], [29.85, .12, .27, .1, .55, 1],
+    [30.0, .25, .41, .14, 1, 0], [41.8, .25, .41, .14, 1, 0], [42.15, .23, .43, .145, 1, 0], [53.9, .23, .43, .145, 1, 0],
+    [56.5, .2, .38, .12, .8, 0], [58.9, .14, .34, .07, 0, .5]],
+  gpt: [[0, .78, .4, .12, 0, 1], [3.5, .78, .4, .12, .6, 1], [5.85, .78, .4, .12, .75, 1], [5.95, .78, .4, .12, 0, 1],
+    [6.0, .88, .27, .1, .55, 1], [17.85, .88, .27, .1, .55, 1], [18.0, .72, .42, .16, 1, 0], [29.6, .72, .42, .16, 1, 0],
+    [30.0, .75, .41, .14, 1, 0], [41.8, .75, .41, .14, 1, 0], [42.15, .77, .43, .145, 1, 0], [53.9, .77, .43, .145, 1, 0],
+    [56.5, .8, .38, .12, .8, 0], [58.9, .86, .34, .07, 0, .5]],
+};
+function kf(list, t) {
+  if (t <= list[0][0]) return list[0];
+  for (let i = 1; i < list.length; i++) if (t < list[i][0]) {
+    const a = list[i - 1], b = list[i], k = smooth(a[0], b[0], t);
+    return a.map((v, j) => lerp(v, b[j], k));
+  }
+  return list[list.length - 1];
+}
+
+function aura(R, rgb, a) {
+  const g = ox.createRadialGradient(0, 0, R * 0.1, 0, 0, R * 2.1);
+  g.addColorStop(0, `rgba(${rgb},${0.5 * a})`); g.addColorStop(0.45, `rgba(${rgb},${0.14 * a})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ox.fillStyle = g; ox.beginPath(); ox.arc(0, 0, R * 2.1, 0, TAU); ox.fill();
+}
+function drips(R, rgb, t, seed) {
+  for (let i = 0; i < 6; i++) {
+    const ph = (t * 0.55 + rnd(i, seed)) % 1;
+    const x = (rnd(i + 9, seed) - 0.5) * R * 0.9, y = R * 0.45 + ph * R * 1.5;
+    ox.fillStyle = `rgba(${rgb},${0.8 * (1 - ph)})`;
+    ox.beginPath(); ox.ellipse(x, y, R * 0.022 * (1 - ph * 0.6), R * 0.04 * (1 - ph * 0.6), 0, 0, TAU); ox.fill();
+  }
+}
+function fangs(w, h, glow) {
+  ox.fillStyle = '#160001';
+  ox.beginPath(); ox.moveTo(-w, 0); ox.quadraticCurveTo(0, -h * 0.4, w, 0); ox.quadraticCurveTo(0, h * 1.6, -w, 0); ox.fill();
+  const g = ox.createRadialGradient(0, h * 0.4, 0, 0, h * 0.4, w);
+  g.addColorStop(0, glow); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ox.save(); ox.globalAlpha *= clamp(0.25 + h / (w * 0.5)); ox.fillStyle = g; ox.fill(); ox.restore();
+  ox.fillStyle = '#efe6d8';
+  const n = 7, step = 2 * w / n;
+  for (let i = 0; i < n; i++) {
+    const x0 = -w + (i + 0.18) * step, x1 = x0 + step * 0.64, xm = (x0 + x1) / 2, e = 1 - (xm / w) ** 2;
+    const top = -h * 0.2 * e, bot = h * 0.62 * e + h * 0.15;
+    const tl = (0.32 + 0.25 * (i % 2)) * Math.max(h, w * 0.12) * e;
+    ox.beginPath(); ox.moveTo(x0, top); ox.lineTo(x1, top); ox.lineTo(xm, top + tl); ox.fill();
+    ox.beginPath(); ox.moveTo(x0, bot); ox.lineTo(x1, bot); ox.lineTo(xm, bot - tl * 0.8); ox.fill();
+  }
+}
+function capsule(x, y, w, h) {
+  const r = w / 2;
+  ox.moveTo(x, y + r); ox.arc(x + r, y + r, r, Math.PI, 0); ox.lineTo(x + w, y + h - r);
+  ox.arc(x + r, y + h - r, r, 0, Math.PI); ox.closePath();
+}
+function blinkAt(t, seed) { const p = (t + seed * 1.7) % 3.9; return p < 0.12 ? 0.12 : 1; }
+
+function drawClaude(x, y, R, o) {
+  ox.save(); ox.translate(x, y);
+  const body = o.alpha * (1 - o.ghost);
+  if (body > 0.01) {
+    ox.globalAlpha = body;
+    aura(R, '226,121,90', 1);
+    drips(R, '240,140,100', o.t, 3);
+    const n = 11;
+    for (let i = 0; i < n; i++) {
+      const ang = i / n * TAU + o.t * 0.12 + 0.07 * Math.sin(o.t * 1.7 + i * 2.3);
+      const len = R * (0.94 + 0.16 * Math.sin(o.t * 2.3 + i * 1.9) + 0.22 * o.kick + 0.12 * rnd(i, 1));
+      const w = R * (0.15 + 0.03 * Math.sin(i * 3.1));
+      ox.save(); ox.rotate(ang);
+      const gr = ox.createLinearGradient(R * 0.3, 0, len, 0);
+      gr.addColorStop(0, '#ffe3d6'); gr.addColorStop(0.35, '#e2795a'); gr.addColorStop(1, '#561409');
+      ox.fillStyle = gr;
+      ox.beginPath(); ox.moveTo(R * 0.28, -w * 0.5);
+      ox.quadraticCurveTo(len * 0.62, -w * 0.42, len, 0); ox.quadraticCurveTo(len * 0.62, w * 0.42, R * 0.28, w * 0.5);
+      ox.closePath(); ox.fill(); ox.restore();
+    }
+    const cg = ox.createRadialGradient(0, -R * 0.06, R * 0.04, 0, 0, R * 0.46);
+    cg.addColorStop(0, '#2c0d08'); cg.addColorStop(1, '#0b0302');
+    ox.fillStyle = cg; ox.beginPath(); ox.arc(0, 0, R * 0.45, 0, TAU); ox.fill();
+    ox.strokeStyle = 'rgba(255,190,160,0.4)'; ox.lineWidth = Math.max(1, R * 0.02); ox.stroke();
+    ox.save(); ox.translate(0, R * 0.15); fangs(R * 0.25, R * (0.03 + 0.21 * o.mouth), '#ff3a24'); ox.restore();
+  }
+  ox.globalAlpha = o.alpha;
+  const open = blinkAt(o.t, 1);
+  for (const s of [-1, 1]) {
+    ox.save(); ox.translate(s * R * 0.16, -R * 0.08); ox.rotate(-s * 0.3);
+    ox.shadowColor = '#ff6a3a'; ox.shadowBlur = R * 0.3;
+    ox.fillStyle = '#fff3e9'; ox.beginPath(); ox.ellipse(0, 0, R * 0.095, R * 0.034 * open, 0, 0, TAU); ox.fill();
+    ox.shadowBlur = 0; ox.fillStyle = '#c80f26'; ox.beginPath(); ox.ellipse(R * 0.01 * -s, 0, R * 0.022, R * 0.026 * open, 0, 0, TAU); ox.fill();
+    ox.restore();
+  }
+  ox.restore();
+}
+
+function drawGPT(x, y, R, o) {
+  ox.save(); ox.translate(x, y);
+  const body = o.alpha * (1 - o.ghost);
+  if (body > 0.01) {
+    ox.globalAlpha = body;
+    aura(R, '63,208,184', 1);
+    drips(R, '90,230,205', o.t, 7);
+    ox.lineWidth = R * 0.115; ox.lineJoin = 'round';
+    for (let k = 0; k < 6; k++) {
+      ox.save(); ox.rotate(k * TAU / 6 + o.t * 0.22 + 0.14 * o.kick);
+      const wob = Math.sin(o.t * 3 + k) * R * 0.02 + (o.glitchy && rnd(k, Math.floor(o.t * 20)) > 0.6 ? R * 0.08 : 0);
+      const gr = ox.createLinearGradient(0, -R * 1.0, 0, -R * 0.1);
+      gr.addColorStop(0, '#0d4a42'); gr.addColorStop(0.5, '#3fd0b8'); gr.addColorStop(1, '#c4fff3');
+      ox.strokeStyle = gr;
+      ox.beginPath(); capsule(-R * 0.19, -R * 0.99 + wob, R * 0.38, R * 0.87); ox.stroke();
+      ox.restore();
+    }
+    ox.fillStyle = '#03100e';
+    ox.beginPath();
+    for (let k = 0; k < 6; k++) { const a = k * TAU / 6 + TAU / 12; ox.lineTo(Math.cos(a) * R * 0.47, Math.sin(a) * R * 0.47); }
+    ox.closePath(); ox.fill();
+    ox.strokeStyle = 'rgba(160,255,235,0.45)'; ox.lineWidth = Math.max(1, R * 0.02); ox.stroke();
+    // a voice-meter for a mouth
+    const bars = 9, bw = R * 0.034, span = R * 0.42, q = Math.floor(o.t * 14);
+    ox.fillStyle = '#86f7e3'; ox.shadowColor = '#3fd0b8'; ox.shadowBlur = R * 0.15;
+    for (let i = 0; i < bars; i++) {
+      const hgt = R * (0.02 + 0.2 * o.mouth * (0.35 + 0.65 * rnd(i, q)) * (1 - Math.abs(i - 4) / 6));
+      ox.fillRect(-span / 2 + i * span / (bars - 1) - bw / 2, R * 0.2 - hgt / 2, bw, hgt);
+    }
+    ox.shadowBlur = 0;
+  }
+  ox.globalAlpha = o.alpha;
+  const open = blinkAt(o.t, 2) * (o.glitchy && rnd(Math.floor(o.t * 24), 5) > 0.7 ? 0.3 : 1);
+  for (const s of [-1, 1]) {
+    ox.save(); ox.translate(s * R * 0.15, -R * 0.1);
+    ox.shadowColor = '#3fd0b8'; ox.shadowBlur = R * 0.3; ox.fillStyle = '#eafffb';
+    ox.fillRect(-R * 0.032, -R * 0.075 * open, R * 0.064, R * 0.15 * open);
+    ox.restore();
+  }
+  ox.restore();
+}
+
+function drawCreatures(t, S, poster) {
+  const order = S.speaker === 'claude' ? ['gpt', 'claude'] : ['claude', 'gpt'];
+  for (const who of order) {
+    let [, fx, fy, fR, alpha, ghost] = kf(KF[who], t);
+    if (poster) { fx = who === 'claude' ? 0.27 : 0.73; fy = 0.63; fR = 0.15; alpha = 1; ghost = 0; }
+    if (alpha < 0.01) continue;
+    let R = fR * H, a = alpha;
+    const duel = S.sec === 'hook' || S.sec === 'trade';
+    if (duel && S.speaker && !poster) { const on = S.speaker === who; R *= on ? 1.1 : 0.92; a *= on ? 1 : 0.72; }
+    R *= 1 + 0.035 * S.kick;
+    const bob = Math.sin(t * 1.3 + (who === 'gpt' ? 2 : 0)) * 0.012 * H;
+    const o = { t, kick: S.kick, alpha: a, ghost, mouth: clamp((who === 'claude' ? S.claude : S.gpt) * 1.25), glitchy: S.glitch > 0.1 || (S.sec === 'trade' && rnd(Math.floor(t * 15), 3) > 0.93) };
+    const draw = who === 'claude' ? drawClaude : drawGPT;
+    const x = fx * W, y = fy * H + bob;
+    if (o.glitchy && ghost < 0.5) {
+      ox.save(); ox.globalCompositeOperation = 'lighter';
+      draw(x - R * 0.07 * FX, y, R, { ...o, alpha: a * 0.35 });
+      draw(x + R * 0.07 * FX, y, R, { ...o, alpha: a * 0.35 });
+      ox.restore();
+    }
+    draw(x, y, R, o);
+    if (duel && ghost < 0.5) {
+      ox.save(); ox.globalAlpha = a * 0.9;
+      ox.font = `${Math.round(13 * U)}px "Silkscreen", monospace`; ox.textAlign = 'center';
+      ox.fillStyle = who === 'claude' ? '#f09170' : '#62e6cf';
+      ox.fillText(who === 'claude' ? 'CLAUDE' : 'CHATGPT', x, y + R * 1.32);
+      ox.restore();
+    }
+  }
+}
+
+const LYR_PX = 46, NARR_PX = 38;
+const layouts = new Map();
+function layoutLine(L) {
+  if (layouts.has(L)) return layouts.get(L);
+  const narr = L.who === 'narr';
+  ox.font = narr ? `700 ${Math.round(NARR_PX * U)}px "Big Shoulders Display", "Arial Narrow", sans-serif`
+                 : `900 ${Math.round(LYR_PX * U)}px "Big Shoulders Display", "Arial Narrow", sans-serif`;
+  const words = L.words.map(([w, a, b]) => ({ w: narr ? w.toLowerCase() : w.toUpperCase(), a, b }));
+  const space = ox.measureText(' ').width * 1.45, maxW = W * 0.84;
+  const rows = [[]]; let rw = 0;
+  for (const wd of words) {
+    wd.width = ox.measureText(wd.w).width;
+    if (rw + wd.width > maxW && rows[rows.length - 1].length) { rows.push([]); rw = 0; }
+    rows[rows.length - 1].push(wd); rw += wd.width + space;
+  }
+  const lh = (narr ? 46 : 54) * U;
+  const baseY = narr ? H * (L.t0 < 6 ? 0.7 : 0.56) - (rows.length - 1) * lh / 2 : H - 58 * U - (rows.length - 1) * lh;
+  rows.forEach((row, ri) => {
+    const tw = row.reduce((s, w) => s + w.width, 0) + space * (row.length - 1);
+    let x = W / 2 - tw / 2;
+    for (const wd of row) { wd.x = x; wd.y = baseY + ri * lh; x += wd.width + space; }
+  });
+  const lay = { narr, words, top: baseY - lh * 0.8 };
+  layouts.set(L, lay);
+  return lay;
+}
+
+function drawLyrics(t, S) {
+  const L = S.line; if (!L) return;
+  const lay = layoutLine(L);
+  const who = L.who === 'both' ? L.lead : L.who;
+  const col = who === 'claude' ? '#f2946f' : who === 'gpt' ? '#62e6cf' : '#ece5d8';
+  const next = LINES[LINES.indexOf(L) + 1];
+  const outT = lineEnd(L, next);
+  const alpha = smooth(L.t0 - 0.25, L.t0, t) * (1 - smooth(outT - 0.2, outT, t));
+  if (alpha <= 0) return;
+  ox.save();
+  if (!lay.narr) {
+    const g = ox.createLinearGradient(0, lay.top - 30 * U, 0, H);
+    g.addColorStop(0, 'rgba(4,2,6,0)'); g.addColorStop(1, `rgba(4,2,6,${0.7 * alpha})`);
+    ox.fillStyle = g; ox.fillRect(0, lay.top - 30 * U, W, H);
+    const tag = L.who === 'both' ? (L.lead === 'claude' ? 'CLAUDE + CHATGPT' : 'CHATGPT + CLAUDE') : who === 'claude' ? 'CLAUDE' : 'CHATGPT';
+    ox.globalAlpha = alpha;
+    ox.font = `${Math.round(13 * U)}px "Silkscreen", monospace`; ox.textAlign = 'center';
+    ox.fillStyle = col; ox.fillText(tag, W / 2, lay.top - 6 * U);
+  }
+  ox.font = lay.narr ? `700 ${Math.round(NARR_PX * U)}px "Big Shoulders Display", "Arial Narrow", sans-serif`
+                     : `900 ${Math.round(LYR_PX * U)}px "Big Shoulders Display", "Arial Narrow", sans-serif`;
+  ox.textAlign = 'left'; ox.lineJoin = 'round';
+  lay.words.forEach((wd, i) => {
+    const said = t >= wd.a - 0.04, now = said && t < wd.b + 0.03;
+    const pop = now ? 1 + 0.07 * (1 - smooth(wd.a - 0.04, wd.a + 0.16, t)) : 1;
+    ox.save();
+    let jx = 0, jy = 0;
+    if (lay.narr) { const q = Math.floor(t * 18); jx = (rnd(q, i) - 0.5) * 2.4 * U * FX; jy = (rnd(q, i + 40) - 0.5) * 2.4 * U * FX; }
+    ox.translate(wd.x + wd.width / 2 + jx, wd.y + jy); ox.scale(pop, pop);
+    ox.globalAlpha = alpha * (said ? 1 : lay.narr ? 0.0 : 0.28);
+    ox.lineWidth = 7 * U; ox.strokeStyle = 'rgba(5,3,8,0.9)';
+    ox.strokeText(wd.w, -wd.width / 2, 0);
+    if (now) { ox.shadowColor = col; ox.shadowBlur = 18 * U; }
+    ox.fillStyle = now ? col : lay.narr ? '#d9d0c6' : '#f4eee3';
+    ox.fillText(wd.w, -wd.width / 2, 0);
+    ox.restore();
+  });
+  ox.restore();
+}
+
+function drawHUD(t, S) {
+  const c = S.cam, wx = 12550821 + (c.x - KEYS[0]);
+  const tokens = Math.min(1e6, Math.floor(18000 + Math.pow(clamp(t / 58.9), 1.25) * 982000));
+  const rows = [
+    `FAR LANDS FEUD  80 BPM  ${t < 6 ? 'LOADING CHUNKS' : t > 58.9 ? 'CONNECTION LOST' : 'LIVE'}`,
+    `XYZ: ${fmt(wx, 3)} / ${fmt(c.y, 3)} / ${fmt(c.z, 3)}`,
+    `CHUNK: ${Math.floor(wx / 16)} ${Math.floor(c.y / 16)} ${Math.floor(c.z / 16)}`,
+    `FACING: EAST (TOWARDS POSITIVE X)`,
+    `BIOME: ${c.x < KEYS[0] ? 'DEEP OCEAN' : 'FAR LANDS'}`,
+    `CONTEXT: ${fmt(tokens, 0)} / 1,000,000 TOKENS`,
+  ];
+  const quiet = S.sec === 'intro' || S.sec === 'outro' ? 0.92 : 0.6;
+  ox.save();
+  ox.globalAlpha = quiet * (1 - smooth(59.2, 59.6, t));
+  ox.font = `${Math.round(11 * U)}px "Silkscreen", monospace`; ox.textBaseline = 'top';
+  const lh = 16 * U;
+  rows.forEach((r, i) => {
+    const w = ox.measureText(r).width;
+    ox.fillStyle = 'rgba(8,6,12,0.55)'; ox.fillRect(12 * U, 12 * U + i * lh, w + 8 * U, lh - 2 * U);
+    ox.fillStyle = i === 1 && c.x >= KEYS[0] ? '#ff5a6e' : i === 5 && tokens > 9e5 ? '#ff5a6e' : '#ddd6ca';
+    ox.fillText(r, 16 * U, 14 * U + i * lh);
+  });
+  ox.restore();
+}
+
+function centered(parts, y) {
+  const total = parts.reduce((s, p) => s + ox.measureText(p[0]).width, 0);
+  let x = W / 2 - total / 2;
+  ox.textAlign = 'left';
+  for (const [txt, col] of parts) { ox.fillStyle = col; ox.fillText(txt, x, y); x += ox.measureText(txt).width; }
+}
+
+function drawTitle(t, S, poster) {
+  const a = poster ? 1 : smooth(0.4, 1.3, t) * (1 - smooth(5.15, 5.8, t));
+  if (a <= 0.003) return;
+  ox.save(); ox.globalAlpha = a;
+  let size = 132 * U;
+  ox.font = `900 ${size}px "Grenze Gotisch", Georgia, serif`;
+  const tw = ox.measureText('Far Lands Feud').width;
+  if (tw > W * 0.86) { size *= W * 0.86 / tw; ox.font = `900 ${size}px "Grenze Gotisch", Georgia, serif`; }
+  const y = poster ? H * 0.24 : H * 0.34;
+  const jit = (S.heart * 5 + S.glitch * 9) * U * FX;
+  ox.textAlign = 'center';
+  ox.fillStyle = 'rgba(210,33,63,0.8)'; ox.fillText('Far Lands Feud', W / 2 + jit, y + 5 * U);
+  ox.shadowColor = 'rgba(210,33,63,0.85)'; ox.shadowBlur = 30 * U;
+  ox.fillStyle = '#f1eadf'; ox.fillText('Far Lands Feud', W / 2 - jit * 0.4, y);
+  ox.shadowBlur = 0;
+  ox.font = `900 ${Math.round(40 * U)}px "Big Shoulders Display", "Arial Narrow", sans-serif`;
+  centered([['CLAUDE', '#f0906c'], ['  VS  ', '#a59cab'], ['CHATGPT', '#62e6cf']], y + 58 * U);
+  ox.font = `${Math.round(12 * U)}px "Silkscreen", monospace`;
+  ox.textAlign = 'center'; ox.fillStyle = '#c8bfc9';
+  ox.fillText('A HORRORCORE BATTLE AT THE EDGE OF THE WORLD', W / 2, y + 90 * U);
+  ox.restore();
+}
+
+function drawStingers(t, S) {
+  const s = SECS[S.si];
+  if (s.id !== 'intro') {
+    const d = t - s.t0, a = smooth(0.1, 0.35, d) * (1 - smooth(2.1, 2.6, d));
+    if (a > 0) {
+      ox.save(); ox.globalAlpha = a;
+      ox.font = `${Math.round(13 * U)}px "Silkscreen", monospace`; ox.textBaseline = 'top'; ox.textAlign = 'right';
+      const label = s.label.toUpperCase(), w = ox.measureText(label).width;
+      ox.fillStyle = 'rgba(8,6,12,0.7)'; ox.fillRect(W - w - 30 * U, 12 * U, w + 18 * U, 22 * U);
+      ox.fillStyle = s.id === 'v1' ? '#f0906c' : s.id === 'v2' ? '#62e6cf' : '#ff5a6e';
+      ox.fillRect(W - w - 30 * U, 12 * U, 3 * U, 22 * U);
+      ox.fillStyle = '#efe8dc'; ox.fillText(label, W - 18 * U, 17 * U);
+      ox.restore();
+    }
+  }
+  // the coordinate where the world breaks, flashed on the drop
+  const d = t - 6.0;
+  if (d >= 0 && d < 1.3) {
+    ox.save(); ox.globalAlpha = (1 - smooth(0.8, 1.3, d)) * 0.95;
+    ox.font = `${Math.round(30 * U)}px "Silkscreen", monospace`; ox.textAlign = 'center'; ox.textBaseline = 'middle';
+    const j = (rnd(Math.floor(t * 24), 9) - 0.5) * 8 * U * FX;
+    ox.fillStyle = 'rgba(210,33,63,0.9)'; ox.fillText('X 12,550,821', W / 2 + j + 3 * U, H * 0.13 + 2 * U);
+    ox.fillStyle = '#f5efe4'; ox.fillText('X 12,550,821', W / 2 + j, H * 0.13);
+    ox.font = `${Math.round(12 * U)}px "Silkscreen", monospace`; ox.fillStyle = '#ddd6ca';
+    ox.fillText('YOU HAVE REACHED THE FAR LANDS', W / 2, H * 0.13 + 28 * U);
+    ox.restore();
+  }
+}
+
+function drawEnd(t) {
+  if (t < 58.9) return;
+  ox.save(); ox.textAlign = 'center'; ox.textBaseline = 'middle';
+  ox.globalAlpha = smooth(58.95, 59.25, t);
+  ox.font = `900 ${Math.round(64 * U)}px "Grenze Gotisch", Georgia, serif`;
+  ox.shadowColor = 'rgba(210,33,63,0.9)'; ox.shadowBlur = 24 * U; ox.fillStyle = '#f1eadf';
+  ox.fillText('the void won’t reply', W / 2, H * 0.45);
+  ox.shadowBlur = 0;
+  ox.font = `${Math.round(14 * U)}px "Silkscreen", monospace`; ox.fillStyle = '#ff5a6e';
+  if (Math.floor(t * 4) % 2 === 0) ox.fillText('CONNECTION LOST', W / 2, H * 0.45 + 52 * U);
+  ox.globalAlpha = smooth(59.3, 59.6, t);
+  ox.font = `${Math.round(10 * U)}px "Silkscreen", monospace`; ox.fillStyle = '#a59cab';
+  ox.fillText('FAN-MADE PARODY · NOT AFFILIATED WITH ANTHROPIC OR OPENAI', W / 2, H - 28 * U);
+  ox.restore();
+}
+
+function drawOverlay(t, S, poster) {
+  ox.clearRect(0, 0, W, H);
+  drawCreatures(t, S, poster);
+  if (!poster) { drawLyrics(t, S); drawHUD(t, S); }
+  drawTitle(t, S, poster);
+  if (!poster) { drawStingers(t, S); drawEnd(t); }
+}
+
+// ---------------------------------------------------------------- WebGL
+const VS = `#version 300 es
+void main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+
+const SCENE_FS = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform vec3 uPos, uFwd, uRight, uUp;
+uniform float uFov, uTime, uKick, uBass, uFlash, uDissolve, uCorrupt, uFog;
+uniform vec4 uKeys;
+uniform vec3 uOreA, uOreB, uHor, uZen, uMoon;
+out vec4 outColor;
+
+float h13(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
+float h12(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h12(i), h12(i + vec2(1, 0)), f.x), mix(h12(i + vec2(0, 1)), h12(i + vec2(1, 1)), f.x), f.y); }
+float n3(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(h13(i), h13(i + vec3(1,0,0)), f.x), mix(h13(i + vec3(0,1,0)), h13(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(h13(i + vec3(0,0,1)), h13(i + vec3(1,0,1)), f.x), mix(h13(i + vec3(0,1,1)), h13(i + vec3(1,1,1)), f.x), f.y), f.z); }
+
+float pathY(float x){
+  float tunnel = 15.0 + 2.5 * sin(x * 0.045);
+  float y = mix(27.0, tunnel, smoothstep(uKeys.x - 22.0, uKeys.x - 2.0, x));
+  float up = smoothstep(uKeys.y, uKeys.y + 60.0, x) * (1.0 - smoothstep(uKeys.z - 40.0, uKeys.z, x));
+  y = mix(y, 74.0 + 3.0 * sin(x * 0.03), up);
+  return mix(y, 112.0, smoothstep(uKeys.w + 6.0, uKeys.w + 70.0, x));
+}
+float pathZ(float x){ return 3.5 * sin(x * 0.023) + 1.5 * sin(x * 0.061); }
+
+bool gone(vec3 c){ return h12(floor(c.xz / 16.0) + 7.3) < uDissolve; }
+
+// 0 air, 1 bedrock, 2 old terrain, 3 corridor floor, 4 Far Lands rock
+float block(vec3 c){
+  vec3 q = c + 0.5;
+  float s = pathY(q.x + 0.5) - pathY(q.x - 0.5);
+  vec2 d = vec2(q.y - pathY(q.x), (q.z - pathZ(q.x)) * 0.9);
+  if (dot(d, d) < 13.0 * (1.0 + s * s)) return 0.0;            // the flight tube
+  if (gone(c)) return 0.0;
+  if (c.y < 0.0) return 1.0;
+  float X = uKeys.x;
+  if (c.x < X) {
+    float edge = 1.0 - smoothstep(X - 46.0, X - 20.0, c.x);
+    float h = 2.0 + edge * (5.0 + 12.0 * n2(c.xz * 0.045) + 4.0 * n2(c.xz * 0.13));
+    return c.y < floor(h) ? 2.0 : 0.0;
+  }
+  float slab = floor(c.z / 15.0);
+  float top = 44.0 + 22.0 * n2(vec2(c.x * 0.012, slab * 1.7));
+  if (c.y > top) return 0.0;
+  bool wall = fract((c.z + 2.0 * n2(vec2(c.x * 0.02, c.y * 0.05))) / 15.0) < 0.55;
+  float shelf = mod(c.y, 7.0);
+  bool plate = shelf < 1.0 && n2(vec2(c.x * 0.05, c.z * 0.21) + floor(c.y / 7.0) * 3.1) > 0.5;
+  if (!wall && !plate) return c.y < 1.0 ? 3.0 : 0.0;
+  if (wall && shelf > 5.0 && n2(vec2(c.x * 0.07, c.z * 0.4 + c.y)) > 0.45) return 0.0;
+  if (n3(vec3(c.x * 0.035, c.y * 0.17, c.z * 0.17)) < 0.3) return 0.0;
+  return 4.0;
+}
+float waterLevel(float x){ return x < uKeys.x ? 4.0 : 3.0; }
+
+const vec3 MOON = vec3(0.9325, 0.2797, -0.3264);
+vec3 sky(vec3 rd){
+  float h = rd.y;
+  vec3 col = mix(uHor, uZen, smoothstep(-0.05, 0.6, h));
+  col = mix(col, uHor * 0.3, smoothstep(0.0, -0.45, h));
+  float m = dot(rd, MOON);
+  float disc = smoothstep(0.9974, 0.9981, m);
+  float crater = 0.5 * n2(rd.yz * 420.0) + 0.5 * n2(rd.xz * 160.0);
+  col = mix(col, uMoon * (0.72 + 0.45 * crater), disc);
+  col += uMoon * (pow(max(m, 0.0), 90.0) * 0.45 + pow(max(m, 0.0), 8.0) * 0.07);
+  col += vec3(step(0.9972, h13(floor(rd * 260.0)))) * smoothstep(0.08, 0.5, h) * 0.8;
+  return col + uFlash * vec3(0.35, 0.3, 0.38);
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;
+  vec3 rd = normalize(uFwd + uFov * (uv.x * uRight + uv.y * uUp));
+  vec3 ro = uPos;
+  vec3 cell = floor(ro), sd = sign(rd), dd = abs(1.0 / rd);
+  vec3 side = (sd * (cell - ro) + sd * 0.5 + 0.5) * dd;
+  vec3 m = vec3(0.0);
+  float t = 0.0, id = 0.0;
+  bool water = false;
+  for (int i = 0; i < 170; i++) {
+    id = block(cell);
+    if (id > 0.0) break;
+    if (cell.y >= 0.0 && cell.y < waterLevel(cell.x) && !gone(cell)) { water = true; break; }
+    m = step(side.xyz, side.yzx) * step(side.xyz, side.zxy);
+    side += m * dd;
+    cell += m * sd;
+    t = dot(side - dd, m);
+    if (t > 150.0) break;
+  }
+  vec3 fogCol = uHor * 0.9;
+  float fog = 1.0 - exp(-t * uFog);
+  vec3 col;
+  if (water) {
+    float tw = rd.y < -0.001 ? (cell.y + 1.0 - ro.y) / rd.y : t;
+    tw = max(tw, t);
+    vec3 wp = ro + rd * tw;
+    float rip = 0.5 * n2(wp.xz * 2.0 + uTime * 0.6) + 0.5 * n2(wp.xz * 5.3 - uTime * 0.9);
+    vec3 rf = normalize(reflect(rd, vec3(0.0, 1.0, 0.0)) + vec3(rip - 0.5, 0.0, rip - 0.5) * 0.08);
+    float fres = 0.1 + 0.8 * pow(1.0 - max(-rd.y, 0.0), 3.0);
+    col = mix(vec3(0.02, 0.035, 0.045), sky(rf), fres) * (0.85 + 0.3 * rip) + uFlash * 0.25;
+    col = mix(col, fogCol, 1.0 - exp(-tw * uFog));
+  } else if (id > 0.0) {
+    vec3 n = -m * sd;
+    vec3 p = ro + rd * t;
+    vec3 fp = clamp(p - cell, 0.0, 0.999);
+    vec2 fuv = m.x > 0.5 ? fp.zy : (m.y > 0.5 ? fp.xz : fp.xy);
+    vec2 tx = floor(fuv * 16.0);
+    if (id == 4.0 && m.x < 0.5) tx.x = floor(fuv.x * 2.0);          // Far Lands texture smear along X
+    float tn = h13(vec3(tx, dot(cell, vec3(1.0, 57.0, 113.0))));
+    bool airAbove = block(cell + vec3(0.0, 1.0, 0.0)) == 0.0;
+    vec3 grass = vec3(0.19, 0.27, 0.12), dirt = vec3(0.29, 0.19, 0.13), stone = vec3(0.31, 0.3, 0.32), rock = vec3(0.34, 0.26, 0.27);
+    vec3 base;
+    if (id == 1.0 || id == 3.0) base = vec3(0.12, 0.11, 0.12) * (0.7 + 0.6 * tn);
+    else if (n.y > 0.5) base = grass * (0.75 + 0.5 * tn);
+    else {
+      float deep = (!airAbove && block(cell + vec3(0.0, 2.0, 0.0)) > 0.0 && block(cell + vec3(0.0, 3.0, 0.0)) > 0.0) ? 1.0 : 0.0;
+      base = mix(dirt, id == 4.0 ? rock : stone, deep) * (0.75 + 0.5 * tn);
+      if (airAbove && n.y > -0.5 && fuv.y > 0.78 - 0.12 * h12(vec2(tx.x, cell.x + cell.z))) base = grass * (0.7 + 0.5 * tn);
+    }
+    vec3 a = cell + n;
+    vec3 t1 = m.x > 0.5 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 t2 = m.y > 0.5 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+    float u1 = dot(fp, t1), u2 = dot(fp, t2), ao = 1.0;
+    ao -= 0.28 * step(0.5, block(a + t1)) * smoothstep(0.4, 1.0, u1);
+    ao -= 0.28 * step(0.5, block(a - t1)) * smoothstep(0.4, 1.0, 1.0 - u1);
+    ao -= 0.28 * step(0.5, block(a + t2)) * smoothstep(0.4, 1.0, u2);
+    ao -= 0.28 * step(0.5, block(a - t2)) * smoothstep(0.4, 1.0, 1.0 - u2);
+    float face = n.y > 0.5 ? 1.0 : (n.y < -0.5 ? 0.45 : (abs(n.x) > 0.5 ? 0.8 : 0.64));
+    float depthL = mix(0.35, 1.0, smoothstep(0.0, 50.0, p.y));
+    float lamp = 0.85 * exp(-t * 0.075);
+    vec3 lightCol = mix(vec3(1.0), uMoon, 0.35);
+    col = base * ((face * depthL + max(dot(n, MOON), 0.0) * 0.35) * ao * lightCol + lamp * vec3(1.0, 0.85, 0.7) + uFlash * vec3(0.9, 0.85, 1.0));
+    if (id == 4.0 && h13(cell * 1.37 + 3.1) > 0.984) {                // glowing ore pulses with the 808
+      vec3 oc = mix(uOreA, uOreB, step(0.5, h13(cell + 9.7)));
+      float spot = step(0.55, h13(vec3(floor(fuv * 16.0), cell.y)));
+      col = mix(col, oc * (1.3 + 2.2 * uBass), spot * 0.9);
+    }
+    if (h12(floor(cell.xz / 16.0) + 3.3) < uCorrupt) {                  // missing textures as the world fails
+      vec2 ck = floor(fuv * 2.0);
+      col = mix(col, mod(ck.x + ck.y, 2.0) < 1.0 ? vec3(0.95, 0.0, 0.95) : vec3(0.02), 0.85);
+    }
+    col = mix(col, fogCol, fog);
+  } else {
+    col = mix(sky(rd), fogCol, 0.6 * smoothstep(0.25, -0.05, rd.y));
+  }
+  outColor = vec4(col, 1.0);
+}`;
+
+const POST_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uScene, uOv;
+uniform vec2 uRes;
+uniform float uCA, uGlitch, uStatic, uGrain, uVig, uFlash, uInvert, uFade, uSeed;
+uniform vec3 uTint;
+out vec4 outColor;
+float h12(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+vec3 grab(vec2 uv){
+  vec3 s = texture(uScene, uv).rgb * uTint * (1.0 - uFade);
+  vec4 o = texture(uOv, uv);
+  return s * (1.0 - o.a) + o.rgb;
+}
+void main(){
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float band = floor(uv.y * 18.0 + floor(uSeed * 7.0));
+  float on = step(1.0 - uGlitch * 0.55, h12(vec2(band, floor(uSeed * 31.0))));
+  uv.x += on * (h12(vec2(band * 1.7, uSeed)) - 0.5) * 0.16 * uGlitch;
+  float ca = uCA / uRes.x * (0.6 + length(uv - 0.5));
+  vec3 col = vec3(grab(uv + vec2(ca, 0.0)).r, grab(uv).g, grab(uv - vec2(ca, 0.0)).b);
+  col *= 0.93 + 0.07 * sin(gl_FragCoord.y * 3.14159);
+  float n = h12(gl_FragCoord.xy + fract(uSeed * 13.37) * 1000.0);
+  col += (n - 0.5) * uGrain;
+  col = mix(col, vec3(n * 0.85), uStatic);
+  col += uFlash * vec3(1.0, 0.92, 0.9);
+  float v = 1.0 - smoothstep(0.35, 0.95, length((uv - 0.5) * vec2(1.25, 1.0)));
+  col *= mix(1.0, v, uVig);
+  col = mix(col, vec3(1.0) - col, uInvert);
+  outColor = vec4(col, 1.0);
+}`;
+
+const screen = document.getElementById('screen');
+screen.width = W; screen.height = H;
+const gl = screen.getContext('webgl2', { antialias: false, alpha: false, depth: false, premultipliedAlpha: false, preserveDrawingBuffer: !!RENDER, powerPreference: 'high-performance' });
+let G = null, fallback2d = null;
+let sceneScale = RENDER ? (RENDER.sceneScale || 0.5) : 0.5;
+
+function initGL() {
+  const sh = (type, src) => {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  };
+  const prog = fs => {
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(p, i); u[info.name] = gl.getUniformLocation(p, info.name); }
+    return { p, u };
+  };
+  const tex = (filter) => {
+    const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  };
+  G = { scene: prog(SCENE_FS), post: prog(POST_FS), vao: gl.createVertexArray(), sceneTex: tex(gl.NEAREST), ovTex: tex(gl.LINEAR), fb: gl.createFramebuffer(), sw: 0, sh: 0 };
+  sizeScene();
+}
+function sizeScene() {
+  const sw = Math.max(64, Math.round(W * sceneScale)), shh = Math.max(36, Math.round(H * sceneScale));
+  if (sw === G.sw && shh === G.sh) return;
+  G.sw = sw; G.sh = shh;
+  gl.bindTexture(gl.TEXTURE_2D, G.sceneTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, sw, shh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, G.fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, G.sceneTex, 0);
+}
+function setU(P, name, v) {
+  const loc = P.u[name]; if (loc == null) return;
+  if (typeof v === 'number') gl.uniform1f(loc, v);
+  else if (v.length === 2) gl.uniform2fv(loc, v);
+  else if (v.length === 3) gl.uniform3fv(loc, v);
+  else gl.uniform4fv(loc, v);
+}
+
+try { if (gl) initGL(); } catch (e) { console.error(e); G = null; }
+if (!G) {
+  document.getElementById('nogl').hidden = false;
+  if (!gl) fallback2d = screen.getContext('2d');
+}
+
+function renderAt(t, poster = false) {
+  const S = state(t);
+  drawOverlay(t, S, poster);
+  if (!G) {
+    if (fallback2d) { fallback2d.fillStyle = '#0b0710'; fallback2d.fillRect(0, 0, W, H); fallback2d.drawImage(ovCanvas, 0, 0); }
+    return S;
+  }
+  const lk = S.look, duel = S.sec === 'hook' || S.sec === 'trade';
+  gl.bindVertexArray(G.vao);
+  // scene pass
+  gl.bindFramebuffer(gl.FRAMEBUFFER, G.fb); gl.viewport(0, 0, G.sw, G.sh);
+  const P = G.scene; gl.useProgram(P.p);
+  const c = S.cam;
+  setU(P, 'uRes', [G.sw, G.sh]); setU(P, 'uPos', c.pos); setU(P, 'uFwd', c.f); setU(P, 'uRight', c.r); setU(P, 'uUp', c.u);
+  setU(P, 'uFov', c.fov); setU(P, 'uTime', t); setU(P, 'uKeys', KEYS);
+  setU(P, 'uKick', S.kick); setU(P, 'uBass', S.bass);
+  setU(P, 'uFlash', ((duel ? S.snare * 0.5 : S.snare * 0.15) + S.impact * 0.8 + S.bell * 0.2 + (t < 6 ? S.heart * 0.32 : 0)) * FX);
+  setU(P, 'uDissolve', smooth(54.6, 59.2, t) * 0.92);
+  setU(P, 'uCorrupt', smooth(53, 58.5, t) * 0.5 + S.glitch * 0.25);
+  setU(P, 'uFog', lk.fog[0]);
+  setU(P, 'uOreA', lk.oreA); setU(P, 'uOreB', lk.oreB); setU(P, 'uHor', lk.hor); setU(P, 'uZen', lk.zen); setU(P, 'uMoon', lk.moon);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  // overlay upload
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.ovTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ovCanvas);
+  // post pass
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+  const Q = G.post; gl.useProgram(Q.p);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.sceneTex);
+  gl.uniform1i(Q.u.uScene, 0); gl.uniform1i(Q.u.uOv, 1);
+  const glitch = S.glitch * FX;
+  const stat = Math.max(clamp(1 - t / 0.9) * 0.75, smooth(58.9, 59.2, t) * (1 - 0.8 * smooth(59.4, 59.8, t)) * 0.55, glitch * 0.15);
+  setU(Q, 'uRes', [W, H]);
+  setU(Q, 'uCA', (1.2 + (S.sec === 'hook' ? 3.5 : 1.5) * S.kick + 7 * glitch + 4 * S.impact) * FX * U);
+  setU(Q, 'uGlitch', poster ? 0 : glitch);
+  setU(Q, 'uStatic', poster ? 0 : stat);
+  setU(Q, 'uGrain', 0.07); setU(Q, 'uVig', 0.9);
+  setU(Q, 'uFlash', poster ? 0 : (S.impact * 0.55 + (duel ? S.snare * 0.1 : 0)) * FX);
+  setU(Q, 'uInvert', !poster && S.impact > 0.82 && FX >= 1 ? 1 : 0);
+  setU(Q, 'uFade', smooth(59.0, 59.6, t));
+  setU(Q, 'uSeed', Math.floor(t * 24) / 24);
+  setU(Q, 'uTint', lk.tint);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  return S;
+}
+
+// ---------------------------------------------------------------- the video renderer's door
+const fontsReady = Promise.all([
+  '900 40px "Grenze Gotisch"', '900 40px "Big Shoulders Display"', '700 40px "Big Shoulders Display"', '12px "Silkscreen"',
+].map(f => document.fonts.load(f).catch(() => null))).then(() => document.fonts.ready);
+if (RENDER) {
+  window.FL = {
+    ready: fontsReady.then(() => !!G),
+    frame(t, type = 'image/jpeg', q = 0.92) { renderAt(t); return screen.toDataURL(type, q); },
+    poster(t = POSTER_T, type = 'image/jpeg', q = 0.92) { renderAt(t, true); return screen.toDataURL(type, q); },
+  };
+  return;
+}
+
+// ---------------------------------------------------------------- player
+const $ = id => document.getElementById(id);
+const playBtn = $('play'), startBtn = $('start'), voiceBtn = $('voice'), seekEl = $('seek'), fill = $('fill'), timeEl = $('time');
+const A = { ctx: null, full: null, inst: null, gFull: null, gInst: null, srcs: [], startAt: 0, offset: 0, playing: false, starting: false, voice: true, el: null, loading: null };
+
+for (const s of SECS.slice(1)) { const b = document.createElement('b'); b.style.left = `${s.t0 / DUR * 100}%`; seekEl.appendChild(b); }
+
+const sheet = $('sheet'), sheetBtns = [];
+let lastSec = null;
+LINES.forEach((L, i) => {
+  const si = secIndex(L.t0);
+  if (si !== lastSec) { lastSec = si; const li = document.createElement('li'); li.className = 'sec'; li.textContent = SECS[si].label; sheet.appendChild(li); }
+  const li = document.createElement('li'), b = document.createElement('button');
+  b.type = 'button';
+  const who = L.who === 'narr' ? 'Narrator' : L.who === 'both' ? 'Both' : L.who === 'claude' ? 'Claude' : 'ChatGPT';
+  const tm = document.createElement('time'); tm.textContent = mmss(L.t0);
+  const w = document.createElement('span'); w.className = `who ${L.who}`; w.textContent = who;
+  const tx = document.createElement('span'); tx.className = 'txt'; tx.textContent = L.text;
+  b.append(tm, w, tx);
+  b.addEventListener('click', () => { seek(Math.max(0, L.t0 - 0.3)); if (!A.playing) play(); });
+  li.appendChild(b); sheet.appendChild(li); sheetBtns.push(b);
+});
+
+function loadAudio() {
+  if (A.loading) return A.loading;
+  A.loading = (async () => {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      A.ctx = new Ctx();
+      const bufs = await Promise.all(['media/far-lands-feud.mp3', 'media/far-lands-feud-instrumental.mp3'].map(async u => {
+        const r = await fetch(u); if (!r.ok) throw new Error(`${u}: ${r.status}`);
+        const ab = await r.arrayBuffer();
+        return new Promise((res, rej) => A.ctx.decodeAudioData(ab, res, rej));
+      }));
+      [A.full, A.inst] = bufs;
+      A.gFull = A.ctx.createGain(); A.gInst = A.ctx.createGain();
+      A.gFull.connect(A.ctx.destination); A.gInst.connect(A.ctx.destination);
+      A.gInst.gain.value = 0;
+    } catch (e) {
+      console.warn('Web Audio unavailable, using a plain audio element', e);
+      A.ctx = null; A.el = new Audio('media/far-lands-feud.mp3'); A.el.preload = 'auto';
+      voiceBtn.disabled = true; voiceBtn.title = 'The instrumental needs Web Audio';
+    }
+  })();
+  return A.loading;
+}
+loadAudio();
+
+const now = () => {
+  if (A.el) return A.el.currentTime;
+  return A.playing && A.ctx ? A.ctx.currentTime - A.startAt : A.offset;
+};
+function stopSources() { for (const s of A.srcs) { try { s.stop(); } catch (_) {} } A.srcs = []; }
+function startSources() {   // both mixes start together; the voice toggle only moves their gains
+  stopSources();
+  const mk = (buf, g) => { const s = A.ctx.createBufferSource(); s.buffer = buf; s.connect(g); s.start(0, A.offset); return s; };
+  A.srcs = [mk(A.full, A.gFull), mk(A.inst, A.gInst)];
+  A.startAt = A.ctx.currentTime - A.offset;
+  A.playing = true;
+}
+async function play() {
+  if (A.playing || A.starting) return;
+  A.starting = true;
+  startBtn.hidden = true; $('caution').hidden = true;
+  try {
+    await loadAudio();
+    if (A.offset >= DUR - 0.05) A.offset = 0;
+    if (A.el) { A.el.currentTime = A.offset; await A.el.play(); A.playing = true; }
+    else { await A.ctx.resume(); startSources(); }
+  } catch (e) {
+    console.warn('Playback did not start', e);
+  } finally {
+    A.starting = false;
+  }
+  if (!A.playing) return;
+  playBtn.textContent = 'Pause';
+  requestAnimationFrame(loop);
+}
+function pause() {
+  if (!A.playing) return;
+  A.offset = now(); A.playing = false;
+  if (A.el) A.el.pause(); else stopSources();
+  playBtn.textContent = 'Play';
+  renderAt(A.offset); updateUI(A.offset);
+}
+function seek(t) {
+  A.offset = clamp(t, 0, DUR);
+  if (A.el) A.el.currentTime = A.offset;
+  else if (A.playing) startSources();
+  if (!A.playing) { renderAt(A.offset); updateUI(A.offset); }
+}
+function setVoice(on) {
+  A.voice = on;
+  voiceBtn.setAttribute('aria-pressed', String(on));
+  voiceBtn.textContent = on ? 'Voice on' : 'Voice off';
+  if (A.ctx && A.gFull) {
+    const k = A.ctx.currentTime;
+    A.gFull.gain.setTargetAtTime(on ? 1 : 0, k, 0.03);
+    A.gInst.gain.setTargetAtTime(on ? 0 : 1, k, 0.03);
+  }
+}
+
+let curLine = -1;
+function updateUI(t) {
+  fill.style.width = `${clamp(t / DUR) * 100}%`;
+  timeEl.textContent = `${mmss(t)} / ${mmss(DUR)}`;
+  seekEl.setAttribute('aria-valuenow', t.toFixed(1)); seekEl.setAttribute('aria-valuetext', mmss(t));
+  const L = lineAt(t), idx = L ? LINES.indexOf(L) : -1;
+  if (idx !== curLine) {
+    if (curLine >= 0) sheetBtns[curLine].removeAttribute('aria-current');
+    if (idx >= 0) sheetBtns[idx].setAttribute('aria-current', 'true');
+    curLine = idx;
+  }
+}
+
+let slow = 0, frames = 0;
+function loop() {
+  if (!A.playing) return;
+  const t = now();
+  if (t >= DUR || (A.el && A.el.ended)) {
+    A.playing = false; A.offset = DUR; stopSources();
+    playBtn.textContent = 'Replay'; renderAt(DUR - 0.001); updateUI(DUR);
+    return;
+  }
+  const t0 = performance.now();
+  renderAt(t); updateUI(t);
+  if (G) {               // drop the world's resolution on slow devices
+    if (performance.now() - t0 > 22) slow++;
+    if (++frames === 45) { if (slow > 25 && sceneScale > 0.3) { sceneScale = sceneScale > 0.4 ? 0.375 : 0.3; sizeScene(); } slow = 0; frames = 0; }
+  }
+  requestAnimationFrame(loop);
+}
+
+playBtn.addEventListener('click', () => (A.playing ? pause() : play()));
+startBtn.addEventListener('click', () => play());
+voiceBtn.addEventListener('click', () => setVoice(!A.voice));
+if (!document.fullscreenEnabled && !document.webkitFullscreenEnabled) $('fs').hidden = true;
+$('fs').addEventListener('click', () => {
+  const st = $('stage');
+  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  else (st.requestFullscreen?.() || st.webkitRequestFullscreen?.() || Promise.resolve())?.catch?.(() => {});
+});
+function seekFromPointer(e) { const r = seekEl.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * DUR); }
+seekEl.addEventListener('pointerdown', e => { seekFromPointer(e); seekEl.setPointerCapture?.(e.pointerId); });
+seekEl.addEventListener('pointermove', e => { if (e.buttons & 1) seekFromPointer(e); });
+seekEl.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); seek(now() + (e.key === 'ArrowRight' ? 3 : -3)); }
+});
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !/^(BUTTON|INPUT|TEXTAREA)$/.test(e.target.tagName)) { e.preventDefault(); A.playing ? pause() : play(); }
+});
+
+renderAt(POSTER_T, true);
+fontsReady.then(() => { layouts.clear(); if (!A.playing) renderAt(A.offset > 0 ? A.offset : POSTER_T, A.offset === 0); });
+})();
+</script>
