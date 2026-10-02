@@ -110,7 +110,9 @@ try {
     }));
     const out = path.join(opt.out, 'far-lands-feud.mp4');
     const ff = spawnSync('ffmpeg', ['-y', '-v', 'error', '-framerate', String(opt.fps), '-i', path.join(dir, 'f%05d.jpg'),
-      '-i', opt.audio, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'slow', '-crf', String(opt.crf || 21),
+      '-i', opt.audio, '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'slow', '-crf', String(opt.crf || 23),
+      // the film grain and static would otherwise push this past 20 Mbps
+      '-maxrate', '2800k', '-bufsize', '5600k',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart',
       '-metadata', 'title=Far Lands Feud', '-metadata', 'artist=Claude vs ChatGPT (fan parody)', out], { stdio: 'inherit' });
     if (ff.status !== 0) throw new Error('ffmpeg failed');
