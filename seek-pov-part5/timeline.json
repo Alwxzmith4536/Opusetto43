@@ -1,0 +1,114 @@
+{
+ "DUR": 63,
+ "LINES": [
+  {
+   "s": 16.5,
+   "e": 19.8,
+   "who": "F",
+   "text": "Welcome to Bar Kitsune~ Oh my... you're a big one."
+  },
+  {
+   "s": 20.2,
+   "e": 23.4,
+   "who": "F",
+   "text": "Rough night? Let me guess. Something sweet? A cocktail?"
+  },
+  {
+   "s": 24,
+   "e": 26,
+   "who": "E",
+   "text": "...b... BEEERRR."
+  },
+  {
+   "s": 26.3,
+   "e": 28.6,
+   "who": "F",
+   "text": "Ha! A beer it is. Coming right up~"
+  },
+  {
+   "s": 33.5,
+   "e": 36,
+   "who": "F",
+   "text": "One ice-cold beer, slid right to you."
+  },
+  {
+   "s": 47.8,
+   "e": 49,
+   "who": "E",
+   "text": "*BUUUURP*"
+  },
+  {
+   "s": 49.2,
+   "e": 52.4,
+   "who": "F",
+   "text": "Hahaha! That's the fastest anyone's ever finished one!"
+  },
+  {
+   "s": 52.8,
+   "e": 56.4,
+   "who": "F",
+   "text": "First one's on the house, big guy. Just don't scare my regulars, okay?"
+  },
+  {
+   "s": 56.7,
+   "e": 58.4,
+   "who": "P",
+   "text": "...zzz... five more minutes, boss... zzz..."
+  }
+ ],
+ "CPS": 30,
+ "EYES": [],
+ "STEPS": [
+  3.5,
+  4.48,
+  5.46,
+  6.44,
+  7.42,
+  8.4,
+  9.38,
+  10.36,
+  11.34,
+  12.32,
+  13.3,
+  14.28,
+  15.26
+ ],
+ "SFX": [
+  {
+   "t": 12.6,
+   "k": "chime"
+  },
+  {
+   "t": 15,
+   "k": "shake"
+  },
+  {
+   "t": 21.6,
+   "k": "pour"
+  },
+  {
+   "t": 27.6,
+   "k": "tap"
+  },
+  {
+   "t": 34.2,
+   "k": "slide"
+  },
+  {
+   "t": 40.6,
+   "k": "glug"
+  },
+  {
+   "t": 46.8,
+   "k": "clunk"
+  },
+  {
+   "t": 47.8,
+   "k": "burp"
+  }
+ ],
+ "INSIDE": 16,
+ "END": 58.6,
+ "LIFT": 40.2,
+ "DRINK1": 45.4
+}
