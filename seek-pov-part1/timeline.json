@@ -1,0 +1,196 @@
+{
+ "DUR": 72,
+ "LINES": [
+  {
+   "s": 20.5,
+   "e": 24.6,
+   "who": "N",
+   "text": "Ehh~? Senpai, you're drawing again? Lemme see, lemme see~"
+  },
+  {
+   "s": 25,
+   "e": 27.6,
+   "who": "S",
+   "text": "N-Nagatoro-san! It's not finished yet!"
+  },
+  {
+   "s": 28,
+   "e": 32.6,
+   "who": "N",
+   "text": "Pfft— is that supposed to be me? You made my legs way too long, perv~"
+  },
+  {
+   "s": 33,
+   "e": 35.6,
+   "who": "S",
+   "text": "It's just a reference sketch! For the club!"
+  },
+  {
+   "s": 36,
+   "e": 40.4,
+   "who": "N",
+   "text": "Hmm~ Then draw me properly. I'll even pose for you. Just this once."
+  },
+  {
+   "s": 41.2,
+   "e": 43.4,
+   "who": "S",
+   "text": "...Hey. Did the lights just flicker?"
+  },
+  {
+   "s": 43.8,
+   "e": 46.6,
+   "who": "N",
+   "text": "Don't change the subject, Senpai~ You're blushing."
+  },
+  {
+   "s": 49,
+   "e": 51.4,
+   "who": "S",
+   "text": "There are... eyes. On the wall."
+  },
+  {
+   "s": 51.8,
+   "e": 55,
+   "who": "N",
+   "text": "Huh? There's nothing there, dummy. ...Senpai?"
+  },
+  {
+   "s": 57.4,
+   "e": 60.8,
+   "who": "N",
+   "text": "...Hey. Who's that standing in the doorway?"
+  }
+ ],
+ "CPS": 30,
+ "EYES": [
+  {
+   "t": 8,
+   "hide": null
+  },
+  {
+   "t": 9.6,
+   "hide": null
+  },
+  {
+   "t": 10.8,
+   "hide": null
+  },
+  {
+   "t": 11.9,
+   "hide": null
+  },
+  {
+   "t": 12.8,
+   "hide": null
+  },
+  {
+   "t": 13.6,
+   "hide": null
+  },
+  {
+   "t": 14.3,
+   "hide": null
+  },
+  {
+   "t": 15,
+   "hide": null
+  },
+  {
+   "t": 47.6,
+   "hide": [
+    51.9,
+    55.4
+   ]
+  },
+  {
+   "t": 48,
+   "hide": [
+    51.9,
+    55.2
+   ]
+  },
+  {
+   "t": 48.3,
+   "hide": [
+    51.9,
+    55.6
+   ]
+  },
+  {
+   "t": 48.6,
+   "hide": [
+    51.9,
+    55
+   ]
+  },
+  {
+   "t": 48.9,
+   "hide": [
+    51.9,
+    55.8
+   ]
+  },
+  {
+   "t": 49.2,
+   "hide": [
+    51.9,
+    55.3
+   ]
+  },
+  {
+   "t": 55.9,
+   "hide": null
+  },
+  {
+   "t": 56.3,
+   "hide": null
+  }
+ ],
+ "STEPS": [
+  6.271,
+  6.725,
+  7.15,
+  7.575,
+  8,
+  8.425,
+  8.85,
+  9.275,
+  9.7,
+  10.125,
+  10.55,
+  10.979,
+  11.404,
+  11.829,
+  12.254,
+  12.679,
+  13.104,
+  13.529,
+  13.954,
+  14.379,
+  14.804,
+  15.058,
+  17.037,
+  17.812
+ ],
+ "LUNGE": 61,
+ "BLACK": 61.7,
+ "FLICKER": [
+  [
+   41,
+   42.3
+  ],
+  [
+   47,
+   48.8
+  ],
+  [
+   55.6,
+   56.6
+  ],
+  [
+   60.2,
+   61
+  ]
+ ]
+}
