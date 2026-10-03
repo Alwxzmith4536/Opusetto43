@@ -1,0 +1,280 @@
+{
+ "DUR": 70,
+ "LINES": [
+  {
+   "s": 4.6,
+   "e": 7.4,
+   "who": "N",
+   "text": "Come out, ink-head~ I know you're down there~"
+  },
+  {
+   "s": 7.7,
+   "e": 9.6,
+   "who": "G",
+   "text": "Nagatoro, don't poke it!"
+  },
+  {
+   "s": 9.8,
+   "e": 11.8,
+   "who": "S",
+   "text": "N-Nagatoro-san, get away from it!"
+  },
+  {
+   "s": 14,
+   "e": 16,
+   "who": "N",
+   "text": "KYAAA—!! It's crawling on me!!"
+  },
+  {
+   "s": 16.6,
+   "e": 18.4,
+   "who": "K",
+   "text": "RUN!!!"
+  },
+  {
+   "s": 18.6,
+   "e": 20.6,
+   "who": "G",
+   "text": "Senpai, MOVE!"
+  },
+  {
+   "s": 23.5,
+   "e": 26.5,
+   "who": "N",
+   "text": "Senpai!! Don't leave me!! *sob*"
+  },
+  {
+   "s": 27,
+   "e": 29,
+   "who": "S",
+   "text": "Nagatoro-san!!"
+  },
+  {
+   "s": 31,
+   "e": 33.6,
+   "who": "G",
+   "text": "Keep running! Don't look back!"
+  },
+  {
+   "s": 34.4,
+   "e": 36.6,
+   "who": "K",
+   "text": "It's so FAST!!"
+  },
+  {
+   "s": 38.5,
+   "e": 41.8,
+   "who": "N",
+   "text": "It's cold... it's got eyes... get it OFF me...!"
+  },
+  {
+   "s": 43,
+   "e": 45.6,
+   "who": "S",
+   "text": "I... I'm sorry... I'm sorry...!"
+  },
+  {
+   "s": 50.6,
+   "e": 52.6,
+   "who": "S",
+   "text": "...No."
+  },
+  {
+   "s": 52.9,
+   "e": 55,
+   "who": "G",
+   "text": "SENPAI, WHAT ARE YOU DOING?!"
+  },
+  {
+   "s": 55.3,
+   "e": 57.6,
+   "who": "S",
+   "text": "I'm not leaving her behind!!"
+  },
+  {
+   "s": 57.9,
+   "e": 59.2,
+   "who": "N",
+   "text": "...Senpai?"
+  },
+  {
+   "s": 59.5,
+   "e": 61.3,
+   "who": "S",
+   "text": "LET HER GO!!!"
+  }
+ ],
+ "CPS": 30,
+ "EYES": [
+  {
+   "t": -5,
+   "hide": null
+  },
+  {
+   "t": 12.4,
+   "hide": null
+  },
+  {
+   "t": 12.6,
+   "hide": null
+  },
+  {
+   "t": 12.9,
+   "hide": null
+  },
+  {
+   "t": 20,
+   "hide": null
+  },
+  {
+   "t": 21.3,
+   "hide": null
+  },
+  {
+   "t": 22.6,
+   "hide": null
+  },
+  {
+   "t": 23.9,
+   "hide": null
+  },
+  {
+   "t": 25.2,
+   "hide": null
+  },
+  {
+   "t": 26.5,
+   "hide": null
+  },
+  {
+   "t": 27.8,
+   "hide": null
+  },
+  {
+   "t": 29.1,
+   "hide": null
+  },
+  {
+   "t": 30.4,
+   "hide": null
+  },
+  {
+   "t": 31.700000000000003,
+   "hide": null
+  },
+  {
+   "t": 33,
+   "hide": null
+  },
+  {
+   "t": 34.3,
+   "hide": null
+  },
+  {
+   "t": 35.6,
+   "hide": null
+  },
+  {
+   "t": 36.900000000000006,
+   "hide": null
+  },
+  {
+   "t": 38.2,
+   "hide": null
+  },
+  {
+   "t": 39.5,
+   "hide": null
+  },
+  {
+   "t": 40.8,
+   "hide": null
+  },
+  {
+   "t": 42.1,
+   "hide": null
+  }
+ ],
+ "STEPS": [
+  17.6,
+  18.22,
+  18.84,
+  19.46,
+  20.08,
+  20.7,
+  21.32,
+  21.94,
+  22.56,
+  23.18,
+  23.8,
+  24.42,
+  25.04,
+  25.66,
+  26.28,
+  26.9,
+  27.52,
+  28.14,
+  28.76,
+  29.38,
+  30,
+  30.62,
+  31.24,
+  31.86,
+  32.48,
+  33.1,
+  33.72,
+  34.34,
+  34.96,
+  35.58,
+  36.2,
+  36.82,
+  37.44,
+  38.06,
+  38.68,
+  39.3,
+  39.92,
+  40.54,
+  41.16,
+  41.78,
+  42.4,
+  43.02,
+  43.64,
+  44.26,
+  44.88,
+  45.5,
+  46.12,
+  46.74,
+  47.36,
+  47.98,
+  48.6,
+  49.22
+ ],
+ "SFX": [
+  {
+   "t": 12.2,
+   "k": "burst"
+  },
+  {
+   "t": 13.2,
+   "k": "grab"
+  },
+  {
+   "t": 50.5,
+   "k": "stop"
+  },
+  {
+   "t": 61.6,
+   "k": "impact"
+  }
+ ],
+ "CHASE0": 21,
+ "CHASE1": 49.5,
+ "CHARGE": 59.4,
+ "IMPACT": 61.6,
+ "FLICKER": [
+  [
+   12,
+   13.7
+  ]
+ ]
+}
