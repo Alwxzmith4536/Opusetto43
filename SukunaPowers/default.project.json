@@ -1,0 +1,574 @@
+{
+  "name": "SukunaPowers",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "SukunaShared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "SukunaServer": {
+        "$path": "src/server/SukunaServer.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$properties": {
+        "GameSettingsAvatar": "R15"
+      },
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "SukunaClient": {
+          "$path": "src/client/SukunaClient.client.luau"
+        }
+      }
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Technology": "Future",
+        "ClockTime": 16.6,
+        "Brightness": 2.6,
+        "Ambient": [
+          0.27,
+          0.24,
+          0.26
+        ],
+        "OutdoorAmbient": [
+          0.52,
+          0.47,
+          0.5
+        ],
+        "GlobalShadows": true,
+        "EnvironmentDiffuseScale": 1,
+        "EnvironmentSpecularScale": 1
+      },
+      "Atmosphere": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Density": 0.3,
+          "Offset": 0.25,
+          "Color": [
+            0.78,
+            0.68,
+            0.68
+          ],
+          "Decay": [
+            0.42,
+            0.33,
+            0.36
+          ],
+          "Glare": 0.25,
+          "Haze": 1.2
+        }
+      },
+      "Bloom": {
+        "$className": "BloomEffect",
+        "$properties": {
+          "Intensity": 0.7,
+          "Size": 28,
+          "Threshold": 1.4
+        }
+      },
+      "ColorCorrection": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Contrast": 0.08,
+          "Saturation": 0.05
+        }
+      },
+      "SunRays": {
+        "$className": "SunRaysEffect",
+        "$properties": {
+          "Intensity": 0.06,
+          "Spread": 0.6
+        }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "StreamingEnabled": false
+      },
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Locked": true,
+          "Size": [
+            512,
+            16,
+            512
+          ],
+          "CFrame": {
+            "CFrame": {
+              "position": [
+                0,
+                -8,
+                0
+              ],
+              "orientation": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ]
+              ]
+            }
+          },
+          "Material": "Slate",
+          "Color": [
+            0.29,
+            0.27,
+            0.29
+          ],
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "SpawnLocation": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "Size": [
+            10,
+            1,
+            10
+          ],
+          "CFrame": {
+            "CFrame": {
+              "position": [
+                0,
+                0.5,
+                34
+              ],
+              "orientation": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ]
+              ]
+            }
+          },
+          "Material": "Slate",
+          "Color": [
+            0.16,
+            0.12,
+            0.13
+          ],
+          "Duration": 0,
+          "Neutral": true,
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "Pedestal": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Shape": "Cylinder",
+          "Size": [
+            3,
+            7,
+            7
+          ],
+          "CFrame": {
+            "CFrame": {
+              "position": [
+                0,
+                1.5,
+                0
+              ],
+              "orientation": [
+                [
+                  0,
+                  -1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ]
+              ]
+            }
+          },
+          "Material": "Slate",
+          "Color": [
+            0.15,
+            0.13,
+            0.14
+          ],
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "PedestalRing": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": false,
+          "Shape": "Cylinder",
+          "Size": [
+            0.3,
+            7.6,
+            7.6
+          ],
+          "CFrame": {
+            "CFrame": {
+              "position": [
+                0,
+                2.9,
+                0
+              ],
+              "orientation": [
+                [
+                  0,
+                  -1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ]
+              ]
+            }
+          },
+          "Material": "Neon",
+          "Color": [
+            0.6,
+            0.02,
+            0.08
+          ],
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "SukunaCube": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [
+            4,
+            4,
+            4
+          ],
+          "CFrame": {
+            "CFrame": {
+              "position": [
+                0,
+                6.5,
+                0
+              ],
+              "orientation": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ]
+              ]
+            }
+          },
+          "Material": "Neon",
+          "Color": [
+            0.784,
+            0.047,
+            0.118
+          ],
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        },
+        "ClickDetector": {
+          "$className": "ClickDetector",
+          "$properties": {
+            "MaxActivationDistance": 32
+          }
+        },
+        "PointLight": {
+          "$className": "PointLight",
+          "$properties": {
+            "Color": [
+              1,
+              0.1,
+              0.15
+            ],
+            "Range": 14,
+            "Brightness": 3,
+            "Shadows": true
+          }
+        }
+      },
+      "Torii": {
+        "$className": "Model",
+        "LeftPillar": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Shape": "Cylinder",
+            "Size": [
+              22,
+              2,
+              2
+            ],
+            "CFrame": {
+              "CFrame": {
+                "position": [
+                  -11,
+                  11,
+                  14
+                ],
+                "orientation": [
+                  [
+                    0,
+                    -1,
+                    0
+                  ],
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    1
+                  ]
+                ]
+              }
+            },
+            "Material": "SmoothPlastic",
+            "Color": [
+              0.55,
+              0.07,
+              0.08
+            ]
+          }
+        },
+        "RightPillar": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Shape": "Cylinder",
+            "Size": [
+              22,
+              2,
+              2
+            ],
+            "CFrame": {
+              "CFrame": {
+                "position": [
+                  11,
+                  11,
+                  14
+                ],
+                "orientation": [
+                  [
+                    0,
+                    -1,
+                    0
+                  ],
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    1
+                  ]
+                ]
+              }
+            },
+            "Material": "SmoothPlastic",
+            "Color": [
+              0.55,
+              0.07,
+              0.08
+            ]
+          }
+        },
+        "Kasagi": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Size": [
+              32,
+              1.6,
+              2.6
+            ],
+            "CFrame": {
+              "CFrame": {
+                "position": [
+                  0,
+                  22.6,
+                  14
+                ],
+                "orientation": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    1
+                  ]
+                ]
+              }
+            },
+            "Material": "SmoothPlastic",
+            "Color": [
+              0.1,
+              0.08,
+              0.09
+            ],
+            "TopSurface": "Smooth",
+            "BottomSurface": "Smooth"
+          }
+        },
+        "Shimaki": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Size": [
+              30,
+              1.2,
+              2
+            ],
+            "CFrame": {
+              "CFrame": {
+                "position": [
+                  0,
+                  21.2,
+                  14
+                ],
+                "orientation": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    1
+                  ]
+                ]
+              }
+            },
+            "Material": "SmoothPlastic",
+            "Color": [
+              0.55,
+              0.07,
+              0.08
+            ],
+            "TopSurface": "Smooth",
+            "BottomSurface": "Smooth"
+          }
+        },
+        "Nuki": {
+          "$className": "Part",
+          "$properties": {
+            "Anchored": true,
+            "Size": [
+              26,
+              1,
+              1.4
+            ],
+            "CFrame": {
+              "CFrame": {
+                "position": [
+                  0,
+                  17.5,
+                  14
+                ],
+                "orientation": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    1
+                  ]
+                ]
+              }
+            },
+            "Material": "SmoothPlastic",
+            "Color": [
+              0.55,
+              0.07,
+              0.08
+            ],
+            "TopSurface": "Smooth",
+            "BottomSurface": "Smooth"
+          }
+        }
+      }
+    }
+  }
+}
