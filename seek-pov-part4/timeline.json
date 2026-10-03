@@ -1,0 +1,138 @@
+{
+ "DUR": 64,
+ "LINES": [
+  {
+   "s": 3.2,
+   "e": 5,
+   "who": "S",
+   "text": "LET HER GO!!!"
+  },
+  {
+   "s": 5.4,
+   "e": 7,
+   "who": "N",
+   "text": "S-Senpai!!"
+  },
+  {
+   "s": 7.3,
+   "e": 9.8,
+   "who": "G",
+   "text": "Sorry, Nagatoro!! We're NOT going back in there!!"
+  },
+  {
+   "s": 10,
+   "e": 11.8,
+   "who": "K",
+   "text": "Every girl for herself~!!"
+  },
+  {
+   "s": 12,
+   "e": 14.2,
+   "who": "S",
+   "text": "Nagatoro-san, get behind me!"
+  },
+  {
+   "s": 19.4,
+   "e": 21.4,
+   "who": "S",
+   "text": "Into the grass— go, go!"
+  },
+  {
+   "s": 26,
+   "e": 28.8,
+   "who": "N",
+   "text": "(whisper) Senpai... it's right there..."
+  },
+  {
+   "s": 29.4,
+   "e": 31.4,
+   "who": "S",
+   "text": "(whisper) Shh... don't move..."
+  },
+  {
+   "s": 34,
+   "e": 36.8,
+   "who": "N",
+   "text": "(whisper) ...Your hand is shaking, Senpai."
+  },
+  {
+   "s": 37.4,
+   "e": 39.4,
+   "who": "S",
+   "text": "(whisper) S-so is yours..."
+  },
+  {
+   "s": 49.6,
+   "e": 52.2,
+   "who": "N",
+   "text": "(whisper) ...It's leaving. We're okay. We're okay..."
+  },
+  {
+   "s": 52.8,
+   "e": 54.8,
+   "who": "S",
+   "text": "(whisper) ...Thank you for not letting go."
+  }
+ ],
+ "CPS": 30,
+ "EYES": [],
+ "STEPS": [
+  22.4,
+  23.6,
+  24.8,
+  26,
+  27.2,
+  28.4,
+  29.6,
+  30.8,
+  32,
+  33.2,
+  34.4,
+  35.6,
+  47.6,
+  48.8,
+  50,
+  51.2,
+  52.4,
+  53.6
+ ],
+ "SFX": [
+  {
+   "t": 3,
+   "k": "tackle"
+  },
+  {
+   "t": 5,
+   "k": "thud"
+  },
+  {
+   "t": 13.2,
+   "k": "windup"
+  },
+  {
+   "t": 15,
+   "k": "punch"
+  },
+  {
+   "t": 15.6,
+   "k": "wind"
+  },
+  {
+   "t": 17,
+   "k": "land"
+  },
+  {
+   "t": 17.6,
+   "k": "thud"
+  },
+  {
+   "t": 46.6,
+   "k": "pot"
+  }
+ ],
+ "HIDE": 22,
+ "NOISE": 46.6,
+ "END": 58.2,
+ "FALL0": 15.6,
+ "LAND": 17.6
+}
