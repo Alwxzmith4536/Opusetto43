@@ -1,0 +1,268 @@
+{
+ "DUR": 77,
+ "LINES": [
+  {
+   "s": 5,
+   "e": 7.5,
+   "who": "N",
+   "text": "Kyaa—! Let go of me, you ink freak!"
+  },
+  {
+   "s": 7.7,
+   "e": 9.6,
+   "who": "S",
+   "text": "N-Nagatoro-san!!"
+  },
+  {
+   "s": 12,
+   "e": 14.9,
+   "who": "N",
+   "text": "Senpai, do something!! Kick it or whatever!"
+  },
+  {
+   "s": 15.3,
+   "e": 17.6,
+   "who": "S",
+   "text": "I-I can't! It's way too strong!"
+  },
+  {
+   "s": 19,
+   "e": 22,
+   "who": "N",
+   "text": "Where is it even taking us?! ...Wait. The toilets?!"
+  },
+  {
+   "s": 22.4,
+   "e": 24.4,
+   "who": "S",
+   "text": "No no no no no—"
+  },
+  {
+   "s": 31.4,
+   "e": 34.4,
+   "who": "N",
+   "text": "BLEHH— gross, gross, GROSS!! It's in my hair!!"
+  },
+  {
+   "s": 35.4,
+   "e": 39.4,
+   "who": "S",
+   "text": "Nagatoro-saaan... *sniff* I'm sorry... I couldn't protect you..."
+  },
+  {
+   "s": 39.9,
+   "e": 43.2,
+   "who": "N",
+   "text": "...Senpai? Are you seriously crying right now? ...Dummy."
+  },
+  {
+   "s": 45,
+   "e": 47.6,
+   "who": "G",
+   "text": "Yo, Nagatoro~! We heard screaming from the hallway!"
+  },
+  {
+   "s": 47.9,
+   "e": 50.4,
+   "who": "K",
+   "text": "Ehh~ what's this inky thing? It's kinda ugly~"
+  },
+  {
+   "s": 50.8,
+   "e": 53.4,
+   "who": "G",
+   "text": "Hey, ink-head! Nobody bullies Senpai except US!"
+  },
+  {
+   "s": 53.7,
+   "e": 55.4,
+   "who": "K",
+   "text": "Say cheese~ ♪"
+  },
+  {
+   "s": 60.4,
+   "e": 62.6,
+   "who": "G",
+   "text": "Lol. It ran away. Big baby."
+  },
+  {
+   "s": 62.9,
+   "e": 65.8,
+   "who": "N",
+   "text": "Senpai... you cried for me? Ehh~ that's kinda cute~"
+  },
+  {
+   "s": 66.1,
+   "e": 67.8,
+   "who": "S",
+   "text": "I-I did NOT!"
+  },
+  {
+   "s": 68.2,
+   "e": 70.4,
+   "who": "N",
+   "text": "...Hey. Did that drain just blink?"
+  }
+ ],
+ "CPS": 30,
+ "EYES": [
+  {
+   "t": -5,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": -5,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": -5,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": -5,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": -5,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": 16,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": 18.5,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": 25.6,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": 33,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": 36.5,
+   "hide": [
+    55.55,
+    999
+   ]
+  },
+  {
+   "t": 41,
+   "hide": [
+    55.55,
+    999
+   ]
+  }
+ ],
+ "STEPS": [
+  9.6,
+  10.45,
+  11.3,
+  12.15,
+  13,
+  13.85,
+  14.7,
+  15.55,
+  16.4,
+  17.25,
+  18.1,
+  18.95,
+  19.8,
+  20.65,
+  21.5,
+  22.35,
+  23.2,
+  24.05,
+  24.9,
+  25.75,
+  26.6
+ ],
+ "SFX": [
+  {
+   "t": 5.6,
+   "k": "grab"
+  },
+  {
+   "t": 8.2,
+   "k": "grab"
+  },
+  {
+   "t": 29.6,
+   "k": "whoosh"
+  },
+  {
+   "t": 30.6,
+   "k": "splash"
+  },
+  {
+   "t": 34.7,
+   "k": "thud"
+  },
+  {
+   "t": 44,
+   "k": "bang"
+  },
+  {
+   "t": 55.5,
+   "k": "flash"
+  },
+  {
+   "t": 56.2,
+   "k": "bonk"
+  },
+  {
+   "t": 56.7,
+   "k": "slurp"
+  },
+  {
+   "t": 59.6,
+   "k": "drip"
+  }
+ ],
+ "CUT": 59.6,
+ "SHUT": 70.8,
+ "FLICKER": [
+  [
+   25.4,
+   26.6
+  ],
+  [
+   43.9,
+   44.5
+  ],
+  [
+   56.2,
+   59.6
+  ]
+ ]
+}
