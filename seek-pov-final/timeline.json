@@ -1,0 +1,75 @@
+{
+ "DUR": 74,
+ "LINES": [
+  {
+   "s": 3.6,
+   "e": 6.6,
+   "who": "N",
+   "text": "...Seek? Why are you looking at us like that?"
+  },
+  {
+   "s": 7,
+   "e": 9,
+   "who": "S",
+   "text": "N-Nagatoro-san... run—"
+  },
+  {
+   "s": 9.4,
+   "e": 11.6,
+   "who": "N",
+   "text": "Senpai... don't let go of my hand."
+  },
+  {
+   "s": 40,
+   "e": 42.6,
+   "who": "E",
+   "text": "...far... farther..."
+  },
+  {
+   "s": 50,
+   "e": 53.4,
+   "who": "E",
+   "text": "...so quiet... no doors... no light..."
+  },
+  {
+   "s": 55,
+   "e": 57.2,
+   "who": "E",
+   "text": "...good... bye..."
+  }
+ ],
+ "CPS": 26,
+ "EYES": [],
+ "STEPS": [],
+ "SFX": [
+  {
+   "t": 11.8,
+   "k": "sting"
+  },
+  {
+   "t": 13.2,
+   "k": "wave"
+  },
+  {
+   "t": 18.4,
+   "k": "lift"
+  },
+  {
+   "t": 30,
+   "k": "warp"
+  },
+  {
+   "t": 58.6,
+   "k": "blast"
+  }
+ ],
+ "TURN": 11.8,
+ "WAVE": 13.2,
+ "DARK": 15.4,
+ "LIFT": 18.4,
+ "SPACE": 22,
+ "WARP0": 30,
+ "WARP1": 44,
+ "BLAST": 58.6,
+ "END": 64
+}
