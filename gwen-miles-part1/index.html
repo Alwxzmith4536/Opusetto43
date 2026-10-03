@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Across the Doors – Part 1</title>
+<meta name="description" content="Indie 3D fan animation: Gwen Stacy meets Miles Morales at school, seen through a DOORS-style Seeker's eye.">
+<style>
+  :root { --ink:#07060a; --panel:#14111a; --line:#2a2433; --paper:#e9e4da; --muted:#8f879c; --goo:#d6a24a; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html,body { margin:0; background:var(--ink); color:var(--paper); font-family: "Trebuchet MS", system-ui, sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; padding:16px; display:grid; gap:12px; }
+  h1 { margin:0; font: 700 18px/1.2 "Trebuchet MS", sans-serif; letter-spacing:.14em; text-transform:uppercase; }
+  h1 span { color:var(--muted); font-weight:400; }
+  .stage { position:relative; aspect-ratio:16/9; background:#000; border:1px solid var(--line); }
+  canvas#view { width:100%; height:100%; display:block; image-rendering:pixelated; }
+  #start { position:absolute; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.72); }
+  #start button { font:700 20px "Trebuchet MS",sans-serif; letter-spacing:.2em; padding:14px 34px; color:var(--paper); background:#1a1420; border:2px solid var(--goo); cursor:pointer; }
+  #start button:hover,#start button:focus-visible { background:var(--goo); color:#000; outline:none; }
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--line); padding:8px 10px; }
+  .bar button { font:600 13px "Trebuchet MS",sans-serif; color:var(--paper); background:#221b2b; border:1px solid var(--line); padding:6px 12px; cursor:pointer; }
+  .bar button:hover,.bar button:focus-visible { border-color:var(--goo); outline:none; }
+  .bar input[type=range] { flex:1 1 200px; accent-color:var(--goo); min-width:120px; }
+  #clock { font:12px ui-monospace,Consolas,monospace; color:var(--muted); min-width:84px; text-align:right; }
+  p.note { margin:0; font-size:13px; color:var(--muted); line-height:1.5; }
+  p.note code { color:var(--paper); }
+  @media (max-width:560px){ .wrap{padding:10px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Across the Doors <span>· Part 1 · “The New Kid”</span></h1>
+  <div class="stage">
+    <canvas id="view" width="1280" height="720"></canvas>
+    <div id="start"><button id="go">▶ OPEN THE DOOR</button></div>
+  </div>
+  <div class="bar">
+    <button id="play">Pause</button>
+    <button id="restart">Restart</button>
+    <input id="scrub" type="range" min="0" max="100" step="0.1" value="0" aria-label="Timeline">
+    <span id="clock">0:00 / 0:00</span>
+    <button id="rec">Record .webm</button>
+    <button id="mute">Sound: on</button>
+  </div>
+  <p class="note">Space = pause · R = restart. Fan animation, not affiliated with Marvel, Sony or Roblox/DOORS. Characters are original low-poly stand-ins; to use your own licensed models drop <code>assets/gwen.glb</code> and <code>assets/miles.glb</code> next to this page and they load automatically.</p>
+</div>
+
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from './vendor/GLTFLoader.js';
+
+/* ------------------------------------------------------------------ setup */
+const view = document.getElementById('view');
+const ctx = view.getContext('2d');
+const W = 1280, H = 720;
+const RW = 640, RH = 360;                       // chunky low-res render, upscaled with no smoothing
+const renderer = new THREE.WebGLRenderer({ antialias:false, preserveDrawingBuffer:true });
+renderer.setSize(RW, RH, false);
+renderer.setPixelRatio(1);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050407);
+scene.fog = new THREE.FogExp2(0x050407, 0.07);
+const camera = new THREE.PerspectiveCamera(72, RW/RH, 0.05, 80);
+scene.add(camera);
+scene.add(new THREE.HemisphereLight(0x8a7fb0,0x3a2a20,2.6));
+
+const M = (c, o={}) => new THREE.MeshStandardMaterial({ color:c, roughness:.9, metalness:0, flatShading:true, ...o });
+const box = (w,h,d,mat,x=0,y=0,z=0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.position.set(x,y,z); return m; };
+function labelTex(text, bg='#1b1510', fg='#e8c987', w=256, h=128, size=80){
+  const c = document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
+  g.fillStyle=bg; g.fillRect(0,0,w,h); g.strokeStyle=fg; g.lineWidth=6; g.strokeRect(5,5,w-10,h-10);
+  g.fillStyle=fg; g.font=`700 ${size}px Georgia, serif`; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,w/2,h/2+4);
+  const t = new THREE.CanvasTexture(c); t.magFilter=THREE.NearestFilter; return t;
+}
+
+/* ------------------------------------------------------------------ world */
+const lights = [];
+function lamp(x,y,z,color=0xffd9a0,intensity=30){
+  const l = new THREE.PointLight(color, intensity, 16, 1.4); l.position.set(x,y,z); scene.add(l);
+  const bulb = box(.5,.06,.25,new THREE.MeshBasicMaterial({color:0xfff2cf}),x,y+.18,z); scene.add(bulb);
+  lights.push({ l, bulb, base:intensity, seed:Math.random()*100 });
+}
+
+// hallway: x in [-2.5,2.5], z from +6 to -30, ceiling y=3
+const wallM = M(0x4a3a2e), floorM = M(0x2b2420), ceilM = M(0x1d1814), lockerM = M(0x2f4a63), lockerD = M(0x233a50);
+scene.add(box(5,.1,38,floorM,0,-.05,-12));
+scene.add(box(5,.1,38,ceilM,0,3.05,-12));
+scene.add(box(.1,3,38,wallM,2.55,1.5,-12));
+scene.add(box(.1,3,38,wallM,-2.55,1.5,-12));
+scene.add(box(5,3,.1,wallM,0,1.5,6));                 // start wall
+// end wall with doorway x in [-1,1]
+scene.add(box(1.5,3,.2,wallM,-1.75,1.5,-30)); scene.add(box(1.5,3,.2,wallM,1.75,1.5,-30)); scene.add(box(2,.7,.2,wallM,0,2.65,-30));
+for (let i=0;i<=26;i++){                              // lockers on the left wall
+  const z = 4 - i*1.0 - 0.0;
+  if (z < -29) break;
+  const hide = Math.abs(z + 6) < .01;
+  const lk = box(.5,2.2,.88, i%2?lockerM:lockerD, -2.25,1.1,z); scene.add(lk);
+  scene.add(box(.04,.08,.2,M(0x9aa,{metalness:.4}),-1.99,1.2,z+.25));
+  if (hide) lk.userData.hide = true;
+}
+// right wall: classroom doors + posters
+const doorWood = M(0x5b3a22);
+[[-12,'001'],[-20,'003']].forEach(([z,n])=>{
+  scene.add(box(.12,2.3,1.4,doorWood,2.45,1.15,z));
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(.55,.28),new THREE.MeshBasicMaterial({map:labelTex(n,'#1b1510','#e8c987',128,64,40)}));
+  pl.position.set(2.37,2.5,z); pl.rotation.y=-Math.PI/2; scene.add(pl);
+});
+const posterTex = (t,c)=>{ const k=document.createElement('canvas'); k.width=128;k.height=170; const g=k.getContext('2d'); g.fillStyle=c; g.fillRect(0,0,128,170); g.fillStyle='#000a'; g.fillRect(8,8,112,100); g.fillStyle='#fff'; g.font='700 15px sans-serif'; g.textAlign='center'; t.split('|').forEach((s,i)=>g.fillText(s,64,135+i*17)); const x=new THREE.CanvasTexture(k); x.magFilter=THREE.NearestFilter; return x; };
+[[-3,'WELCOME|BACK!','#a33'],[-9,'SCIENCE|FAIR','#37a'],[-16,'ART|CLUB','#4a6'],[-24,'NO RUNNING|IN HALLS','#a82']].forEach(([z,t,c])=>{
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(.7,.93),new THREE.MeshBasicMaterial({map:posterTex(t,c)})); p.position.set(2.48,1.6,z); p.rotation.y=-Math.PI/2; scene.add(p);
+});
+// "001" room sign at start, DOORS-style
+const sign1 = new THREE.Mesh(new THREE.PlaneGeometry(1,.5),new THREE.MeshBasicMaterial({map:labelTex('001')})); sign1.position.set(0,2.5,5.9); sign1.rotation.y=Math.PI; scene.add(sign1);
+const sign2 = new THREE.Mesh(new THREE.PlaneGeometry(1,.5),new THREE.MeshBasicMaterial({map:labelTex('002')})); sign2.position.set(0,2.65,-29.88); scene.add(sign2);
+[1.5,-3,-9,-15,-21,-27].forEach(z=>lamp(0,2.85,z));
+
+// door 002 (hinged at x=-1, swings into the classroom)
+const doorPivot = new THREE.Group(); doorPivot.position.set(-1,0,-30);
+doorPivot.add(box(2,2.3,.1,doorWood,1,1.15,0));
+doorPivot.add(box(.1,.1,.18,M(0xc9a24a,{metalness:.6}),1.8,1.1,0));
+scene.add(doorPivot);
+
+// classroom: z from -30 to -44
+const room = new THREE.Group(); scene.add(room);
+room.add(box(10,.1,14,M(0x3a2d22),0,-.05,-37));
+room.add(box(10,.1,14,ceilM,0,3.05,-37));
+room.add(box(.1,3,14,wallM,5,1.5,-37)); room.add(box(.1,3,14,wallM,-5,1.5,-37)); room.add(box(10,3,.1,wallM,0,1.5,-44));
+room.add(box(4,3,.2,wallM,-3,1.5,-30)); room.add(box(4,3,.2,wallM,3,1.5,-30)); // wall pieces beside doorway
+room.add(box(5,1.6,.05,M(0x14301f),0,1.6,-43.9));      // blackboard
+const chalk = document.createElement('canvas'); chalk.width=512; chalk.height=256; const cg = chalk.getContext('2d');
+cg.fillStyle='#14301f'; cg.fillRect(0,0,512,256); cg.fillStyle='#d8e2d0'; cg.font='700 38px "Comic Sans MS",cursive'; cg.fillText('PHYSICS 101',24,56); cg.font='28px "Comic Sans MS",cursive'; cg.fillText('F = m · a',30,110); cg.fillText('What is gravity?',30,160); cg.fillText('Pop quiz Friday!',30,210);
+const chalkTex = new THREE.CanvasTexture(chalk); chalkTex.magFilter=THREE.NearestFilter;
+const bb = new THREE.Mesh(new THREE.PlaneGeometry(4.8,1.5),new THREE.MeshBasicMaterial({map:chalkTex})); bb.position.set(0,1.6,-43.85); room.add(bb);
+// seeker eye on the blackboard (revealed at the end)
+const eyeCan = document.createElement('canvas'); eyeCan.width=256; eyeCan.height=256; const eg = eyeCan.getContext('2d');
+eg.fillStyle='#000'; eg.beginPath(); eg.arc(128,128,120,0,7); eg.fill(); eg.fillStyle='#f4f0e6'; eg.beginPath(); eg.ellipse(128,128,96,60,0,0,7); eg.fill();
+eg.fillStyle='#111'; eg.beginPath(); eg.arc(128,128,34,0,7); eg.fill(); eg.fillStyle='#fff'; eg.beginPath(); eg.arc(118,118,8,0,7); eg.fill();
+const eyeMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(eyeCan),transparent:true,opacity:0})); eyeMesh.position.set(0,1.6,-43.8); room.add(eyeMesh);
+const deskM = M(0x7a5634), legM = M(0x333);
+function desk(x,z){ const g=new THREE.Group(); g.add(box(.9,.06,.6,deskM,0,.78,0)); g.add(box(.05,.78,.05,legM,-.4,.39,-.25)); g.add(box(.05,.78,.05,legM,.4,.39,-.25)); g.add(box(.05,.78,.05,legM,-.4,.39,.25)); g.add(box(.05,.78,.05,legM,.4,.39,.25));
+  g.add(box(.45,.05,.42,deskM,0,.46,.62)); g.add(box(.45,.5,.05,deskM,0,.72,.84)); g.position.set(x,0,z); room.add(g); return g; }
+for (let r=0;r<4;r++) for (let c=0;c<4;c++){ const x=-3.3+c*2.2, z=-35.2-r*2.0; if (!((c===1||c===2)&&r===0)) desk(x,z); }
+desk(-.9,-35.2); desk(.9,-35.2);
+room.add(box(1.6,.8,.7,M(0x6a4a2c),0,.4,-42.9));           // teacher desk
+[-30.8, -38, -41].forEach(z=>{ if (z===-30.8) return; const w = new THREE.Mesh(new THREE.PlaneGeometry(1.4,1), new THREE.MeshBasicMaterial({color:0x0b1020})); w.position.set(4.93,1.7,z); w.rotation.y=-Math.PI/2; room.add(w); });
+[-33,-39].forEach(z=>{ const l = new THREE.PointLight(0xffe3b0,26,18,1.4); l.position.set(0,2.8,z); scene.add(l); lights.push({l,bulb:box(.5,.06,.25,new THREE.MeshBasicMaterial({color:0xfff2cf}),0,3,z),base:26,seed:Math.random()*100}); scene.add(lights[lights.length-1].bulb); });
+
+/* ------------------------------------------------------------- characters */
+function faceTex(kind){
+  const c=document.createElement('canvas'); c.width=64; c.height=64; const g=c.getContext('2d');
+  g.fillStyle = kind==='gwen' ? '#f3d2b8' : '#8a5a3c'; g.fillRect(0,0,64,64);
+  g.fillStyle='#111'; g.fillRect(16,26,8,10); g.fillRect(40,26,8,10);
+  g.fillStyle='#fff'; g.fillRect(18,28,3,3); g.fillRect(42,28,3,3);
+  g.strokeStyle = kind==='gwen' ? '#c0605a' : '#4a2410'; g.lineWidth=3; g.beginPath(); g.arc(32,42,8,.2,Math.PI-.2); g.stroke();
+  const t=new THREE.CanvasTexture(c); t.magFilter=THREE.NearestFilter; return t;
+}
+function makeChar(kind){
+  const g = new THREE.Group(); const skin = kind==='gwen'?0xf3d2b8:0x8a5a3c;
+  const body = {
+    gwen:  { torso:0xf2f2f4, trim:0x2fb6d8, trim2:0xe84fa0, legs:0x24242c, shoes:0xffffff, hair:0xf0d27a, hood:0xf2f2f4 },
+    miles: { torso:0x15151a, trim:0xd8202c, trim2:0xd8202c, legs:0x1e2a4a, shoes:0xffffff, hair:0x0e0b0a, hood:0x15151a }
+  }[kind];
+  const torso = box(.62,.78,.34,M(body.torso),0,1.1,0); g.add(torso);
+  g.add(box(.64,.12,.36,M(body.trim),0,.74,0));                     // hem stripe
+  g.add(box(.64,.1,.36,M(body.trim2),0,1.0,.0));                    // chest stripe
+  const head = new THREE.Group(); head.position.set(0,1.78,0);
+  const faceMats = [M(skin),M(skin),M(skin),M(skin),M(skin),new THREE.MeshStandardMaterial({map:faceTex(kind),roughness:1})];
+  const hb = new THREE.Mesh(new THREE.BoxGeometry(.52,.52,.5),[faceMats[0],faceMats[0],faceMats[0],faceMats[0],faceMats[0],faceMats[0]]);
+  // BoxGeometry face order: +x,-x,+y,-y,+z,-z ; our character looks toward -z so use the -z face
+  hb.material = [faceMats[0],faceMats[0],faceMats[0],faceMats[0],faceMats[0],faceMats[5]];
+  head.add(hb);
+  head.add(box(.56,.2,.54,M(body.hair),0,.3,0));
+  if (kind==='gwen'){ head.add(box(.56,.55,.12,M(body.hair),0,.0,.27)); head.add(box(.14,.3,.5,M(body.hair),-.3,.1,0)); head.add(box(.58,.5,.12,M(body.hood),0,-.02,.3)); }
+  else { head.add(box(.56,.1,.54,M(0x08080a),0,.5,0)); head.add(box(.6,.1,.1,M(body.trim),0,.38,.0)); head.add(box(.1,.3,.1,M(0x111),-.34,0,-.05)); head.add(box(.1,.3,.1,M(0x111),.34,0,-.05)); }
+  g.add(head);
+  const mkLimb = (w,h,d,color,px,py,pz,tip)=>{ const p=new THREE.Group(); p.position.set(px,py,pz); p.add(box(w,h,d,M(color),0,-h/2,0)); if(tip) p.add(box(w,.16,d,M(tip),0,-h+.06,0)); return p; };
+  const armL = mkLimb(.2,.72,.2,body.torso,-.41,1.46,0,skin), armR = mkLimb(.2,.72,.2,body.torso,.41,1.46,0,skin);
+  const legL = mkLimb(.26,.82,.26,body.legs,-.16,.74,0,body.shoes), legR = mkLimb(.26,.82,.26,body.legs,.16,.74,0,body.shoes);
+  g.add(armL,armR,legL,legR);
+  const shell = new THREE.Group(); shell.add(g);
+  shell.userData = { g, head, armL, armR, legL, legR, kind, phase:0, pos:new THREE.Vector3(), asset:null };
+  scene.add(shell);
+  return shell;
+}
+const gwen = makeChar('gwen'), miles = makeChar('miles');
+// Optional licensed models: assets/gwen.glb + assets/miles.glb (silently ignored if absent)
+['gwen','miles'].forEach(k=>{
+  const a = k==='gwen'?gwen:miles;
+  new GLTFLoader().load(`./assets/${k}.glb`, gltf=>{
+    const m = gltf.scene; const bbx = new THREE.Box3().setFromObject(m); const s = 2.05/(bbx.max.y-bbx.min.y); m.scale.setScalar(s);
+    m.position.y = -bbx.min.y*s; m.rotation.y = Math.PI; a.userData.g.visible=false; a.add(m); a.userData.asset=m;
+  }, undefined, ()=>{});
+});
+
+/* ----------------------------------------------------------- timeline data */
+const T_END = 92;
+// actor tracks: [t, x, y, z, ry(0 faces -z, PI faces +z), sit]
+const GWEN_T = [
+ [0,0,0,5.2,0,0],[5,0,0,3.6,0,0],[12,.45,0,-4.4,0,0],[13.5,.45,0,-4.6,.5,0],[27,.45,0,-4.6,.5,0],
+ [28,.2,0,-8,0,0],[41,.2,0,-28.5,0,0],[44,.2,0,-31,0,0],[47,-.9,0,-34.2,0,0],[49,-.9,0,-34.4,0,0],[50,-.9,0,-34.62,0,1],[T_END,-.9,0,-34.62,0,1]
+];
+const MILES_T = [
+ [0,0,0,-18,Math.PI,0],[11,.4,0,-14,Math.PI,0],[14.5,.4,0,-8.6,Math.PI,0],[16,.45,0,-6.9,Math.PI,0],[17,.45,0,-6.9,Math.PI-.5,0],[27,.45,0,-6.9,Math.PI-.5,0],
+ [28,.7,0,-8.6,0,0],[41,.7,0,-29.2,0,0],[44,.7,0,-31.6,0,0],[47,.9,0,-34.4,0,0],[49,.9,0,-34.4,0,0],[50,.9,0,-34.62,0,1],[T_END,.9,0,-34.62,0,1]
+];
+// camera: [t, px,py,pz, lx,ly,lz, mode]  (mode picks the DOORS-style "peek" frame)
+const CAM_T = [
+ [0,0,1.55,5.4,0,1.6,0,'none'],
+ [4.9,-2.0,1.55,-6,0,1.5,0,'locker'],
+ [5,-2.05,1.58,-6,.3,1.4,-1,'locker'],
+ [12,-2.05,1.58,-6,.45,1.4,-4.6,'locker'],
+ [17,-2.05,1.58,-6,.45,1.35,-6.2,'locker'],
+ [27,-2.05,1.58,-6,.45,1.4,-6.2,'locker'],
+ [28.5,-1.5,1.3,-4,.4,1.4,-9,'corner'],
+ [34,-1.3,1.25,-13,.4,1.3,-18,'corner'],
+ [41,-1.2,1.3,-23,.3,1.4,-31,'corner'],
+ [44,-.4,.9,-28.4,0,1.2,-33,'door'],
+ [49,1.2,.6,-30.8,-.1,1.0,-35,'door'],
+ [51,3.2,.7,-31.6,-.1,1.0,-35,'desk'],
+ [72,3.2,.7,-31.6,0,1.0,-35,'desk'],
+ [80,3.2,.7,-31.6,0,1.5,-43.7,'desk'],
+ [T_END,3.2,.7,-31.6,0,1.55,-43.7,'desk']
+];
+// subtitles: [t0, t1, speaker, text]
+const SUBS = [
+ [15,18.4,'MILES','Hey… you lost? You’re new, right?'],
+ [18.5,22,'GWEN','Is it that obvious? …Gwen. Gwen Stacy.'],
+ [22,25.2,'MILES','Miles. Miles Morales. Homeroom’s this way.'],
+ [25.2,27.6,'GWEN','Lead the way, Miles.'],
+ [30,33,'MILES','Fair warning: Mr. Alvarez loves pop quizzes.'],
+ [33.2,36.5,'GWEN','Back home, I’m always the one with the drumsticks.'],
+ [36.8,40,'MILES','Wait. You play drums?'],
+ [40.2,43.4,'GWEN','Wait. You noticed?'],
+ [51,55,'MILES','Okay… so, gravity. Force equals mass times acceleration.'],
+ [55.2,59.2,'GWEN','Or: the reason you keep falling for my bad jokes.'],
+ [59.4,62.6,'MILES','…That one was actually good.'],
+ [63,67,'GWEN','Share your notes? I promise I’ll… swing by with snacks.'],
+ [67.2,70.5,'MILES','Deal. I’ve got a weird feeling you’re gonna fit in here.'],
+ [74,78.5,'SEEKER','( …they don’t know someone is watching… )']
+];
+const CHAPTERS = [[0,'Title'],[5,'Hallway'],[28,'To class'],[51,'Study']];
+
+/* -------------------------------------------------------------- utilities */
+const smooth = x => x*x*(3-2*x);
+function sampleTrack(tr, t, n){
+  if (t<=tr[0][0]) return tr[0].slice(1,1+n);
+  for (let i=0;i<tr.length-1;i++){
+    const a=tr[i], b=tr[i+1];
+    if (t>=a[0] && t<b[0]){ const u=(t-a[0])/(b[0]-a[0]); const k = n>5 ? smooth(u) : u; return a.slice(1,1+n).map((v,j)=>v+(b[j+1]-v)*k); }
+  }
+  return tr[tr.length-1].slice(1,1+n);
+}
+const modeAt = t => { let m=CAM_T[0][7]; for (const k of CAM_T) if (t>=k[0]) m=k[7]; return m; };
+const hash = n => { const s=Math.sin(n*127.1)*43758.5453; return s-Math.floor(s); };
+
+/* ------------------------------------------------------------------ audio */
+let ac=null, master=null, muted=false, rec=null;
+function initAudio(){
+  if (ac) return; ac = new (window.AudioContext||window.webkitAudioContext)();
+  master = ac.createGain(); master.gain.value=.8; master.connect(ac.destination);
+  rec = ac.createMediaStreamDestination(); master.connect(rec);
+  const lp = ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=180; lp.connect(master);
+  [55,55.7,82.4].forEach((f,i)=>{ const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.value=f; const g=ac.createGain(); g.gain.value=.05; o.connect(g); g.connect(lp); o.start(); });
+  const lfo = ac.createOscillator(); lfo.frequency.value=.12; const lg=ac.createGain(); lg.gain.value=60; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+  const nb = ac.createBuffer(1, ac.sampleRate*2, ac.sampleRate); const d=nb.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; ac._noise=nb;
+}
+function blip(freq,dur=.05,vol=.08,type='square'){ if(!ac||muted) return; const o=ac.createOscillator(), g=ac.createGain(); o.type=type; o.frequency.value=freq; g.gain.setValueAtTime(vol,ac.currentTime); g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur); o.connect(g); g.connect(master); o.start(); o.stop(ac.currentTime+dur); }
+function step(vol){ if(!ac||muted) return; const s=ac.createBufferSource(); s.buffer=ac._noise; const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=420; const g=ac.createGain(); g.gain.setValueAtTime(vol,ac.currentTime); g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.12); s.connect(f); f.connect(g); g.connect(master); s.start(0, Math.random()); s.stop(ac.currentTime+.13); }
+function thump(){ blip(48,.25,.35,'sine'); setTimeout(()=>blip(44,.25,.3,'sine'),180); }
+function whisper(){ if(!ac||muted) return; const s=ac.createBufferSource(); s.buffer=ac._noise; const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2400; f.Q.value=3; const g=ac.createGain(); g.gain.setValueAtTime(.0,ac.currentTime); g.gain.linearRampToValueAtTime(.12,ac.currentTime+.4); g.gain.linearRampToValueAtTime(0,ac.currentTime+1.4); s.connect(f); f.connect(g); g.connect(master); s.start(); s.stop(ac.currentTime+1.5); }
+
+/* ------------------------------------------------------------ pose + step */
+let lastStepPhase = { gwen:0, miles:0 };
+function poseActor(a, track, t, dt, listenerPos){
+  const [x,y,z,ry,sit] = sampleTrack(track,t,5);
+  const u = a.userData; const prev = u.pos; const moved = Math.hypot(x-prev.x, z-prev.z);
+  const speed = dt>0 ? moved/dt : 0;
+  u.pos.set(x,y,z);
+  a.position.set(x, y - sit*.27, z); a.rotation.y = ry;
+  const walking = speed>.25 && speed<6 ? Math.min(1,speed/1.2) : 0;
+  u.phase += walking*dt*7.5;
+  const sw = Math.sin(u.phase)*.75*walking;
+  u.legL.rotation.x = sw*(1-sit) + (-1.45*sit); u.legR.rotation.x = -sw*(1-sit) + (-1.45*sit);
+  u.armL.rotation.x = -sw*.8; u.armR.rotation.x = sw*.8;
+  u.head.rotation.set(0,0,0);
+  if (sit){ // studying: head down, right hand writing; Miles glances over, Gwen rests chin later
+    const w = Math.sin(t*5)*.12;
+    u.head.rotation.x = .28 + Math.sin(t*.7+(u.kind==='gwen'?1:0))*.06;
+    u.armR.rotation.x = -1.15 + w; u.armL.rotation.x = -.9;
+    if (t>57 && t<63) u.head.rotation.y = (u.kind==='gwen'?-1:1)*.55*smooth(Math.min(1,(t-57)/1.5)) * (t>61?1-smooth((t-61)/2):1);
+    if (u.kind==='miles' && t>59 && t<64) u.armR.rotation.x = -1.15 - Math.max(0,Math.sin((t-59)*3))*.7; // pencil-drop fumble
+  } else {
+    if (u.kind==='gwen' && t>12 && t<16) { u.head.rotation.x = .45; u.armR.rotation.x=-1.2; }             // reading her map
+    if (t>17 && t<27 && Math.hypot(x-.45,z+6)<2) u.head.rotation.y = (u.kind==='gwen'?.6:-.6)*Math.min(1,(t-17)/1);
+    if (u.kind==='gwen' && t>18.5 && t<22) u.armR.rotation.z = -.3+Math.sin(t*6)*.15;                    // little wave
+    if (u.kind==='gwen' && t>36 && t<43)  u.armL.rotation.x = -.5+Math.sin(t*10)*.5;                      // air drum
+  }
+  if (walking>0.2 && listenerPos){
+    const ph = Math.floor(u.phase/Math.PI); if (ph !== lastStepPhase[u.kind]){ lastStepPhase[u.kind]=ph; const d=Math.hypot(x-listenerPos.x,z-listenerPos.z); step(Math.max(.02,.2/(1+d*.4))); }
+  }
+}
+
+/* -------------------------------------------------------------- 2D overlay */
+const noise = document.createElement('canvas'); noise.width=noise.height=128; { const g=noise.getContext('2d'); const id=g.createImageData(128,128); for(let i=0;i<id.data.length;i+=4){ const v=Math.random()*255; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=26; } g.putImageData(id,0,0); }
+function drips(g, seed, t, fromTop){
+  g.fillStyle='#050305';
+  for (let i=0;i<9;i++){
+    const x = (hash(seed+i)*W), w = 14+hash(seed+i*3)*34, len = (40+hash(seed+i*5)*130)*(.7+.3*Math.sin(t*.6+i));
+    g.beginPath();
+    if (fromTop){ g.moveTo(x-w,0); g.quadraticCurveTo(x-w*.3,len*.6,x,len); g.quadraticCurveTo(x+w*.3,len*.6,x+w,0); }
+    else { g.moveTo(x-w,H); g.quadraticCurveTo(x-w*.3,H-len*.5,x,H-len*.7); g.quadraticCurveTo(x+w*.3,H-len*.5,x+w,H); }
+    g.fill(); g.beginPath(); g.arc(x,fromTop?len+4:H-len*.7-4,w*.28,0,7); g.fill();
+  }
+}
+function overlay(t, mode, modeBlend){
+  const g = ctx;
+  // vignette
+  const vg = g.createRadialGradient(W/2,H/2,H*.25,W/2,H/2,H*.95); const vs = (mode==='none'?.55:.85);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,`rgba(0,0,0,${vs})`); g.fillStyle=vg; g.fillRect(0,0,W,H);
+  g.fillStyle='#030204';
+  if (mode==='locker'){                                         // peeking through locker vents
+    const top=H*.28, bot=H*.72; g.fillRect(0,0,W,top); g.fillRect(0,bot,W,H-bot);
+    for (let i=0;i<6;i++){ const y=top+(bot-top)*(i/5); g.fillRect(0,y-7,W,14); }
+    g.fillStyle='rgba(30,50,70,.18)'; g.fillRect(0,top,W,bot-top);
+  } else if (mode==='corner'){                                  // leaning round a corner, wall edge on the left
+    const lg = g.createLinearGradient(0,0,W*.28,0); lg.addColorStop(0,'#030204'); lg.addColorStop(.7,'#030204'); lg.addColorStop(1,'rgba(3,2,4,0)'); g.fillStyle=lg; g.fillRect(0,0,W*.28,H);
+  } else if (mode==='door'){                                    // door crack: tall thin gap
+    const gapL = W*.30, gapR = W*.78; g.fillRect(0,0,gapL,H); g.fillRect(gapR,0,W-gapR,H);
+    const e = g.createLinearGradient(gapL,0,gapL+60,0); e.addColorStop(0,'#030204'); e.addColorStop(1,'rgba(3,2,4,0)'); g.fillStyle=e; g.fillRect(gapL,0,60,H);
+  } else if (mode==='desk'){                                    // under the desk
+    const d = g.createLinearGradient(0,H*.7,0,H*.84); d.addColorStop(0,'rgba(20,12,6,0)'); d.addColorStop(1,'#140c06'); g.fillStyle=d; g.fillRect(0,H*.7,W,H*.3);
+    g.fillStyle='#0b0704'; g.fillRect(0,H*.84,W,H*.16);
+  }
+  drips(g, 7, t, true);
+  if (mode==='locker'||mode==='desk') drips(g, 31, t, false);
+  // Seeker blink: lids close from top/bottom every few seconds
+  const cyc = t % 6.5; let lid = 0; if (cyc>5.9 && cyc<6.5) lid = Math.sin(((cyc-5.9)/.6)*Math.PI);
+  if (t>80) lid = Math.max(lid, Math.min(1,(t-80)/9)*.82);
+  if (lid>0){ g.fillStyle='#020102'; g.fillRect(0,0,W,H*.5*lid); g.fillRect(0,H-H*.5*lid,W,H*.5*lid); }
+  // film grain + scanlines
+  const o = (Math.floor(t*24)*37)%128; g.globalCompositeOperation='overlay'; g.drawImage(noise,-o,-o,W+128,H+128); g.globalCompositeOperation='source-over';
+  g.fillStyle='rgba(0,0,0,.12)'; for (let y=0;y<H;y+=4) g.fillRect(0,y,W,1);
+  // subtle UI: seeker-view tag
+  g.font='700 15px "Trebuchet MS",sans-serif'; g.fillStyle='rgba(214,162,74,.8)'; g.textAlign='left';
+  g.fillText('● SEEKER VIEW',28,H-22);
+}
+function drawSubs(t){
+  const s = SUBS.find(s=>t>=s[0]&&t<s[1]); if(!s) return;
+  const shown = Math.min(s[3].length, Math.floor((t-s[0])*30));
+  const txt = s[3].slice(0,shown); const g=ctx;
+  g.textAlign='center'; g.font='700 30px "Trebuchet MS",sans-serif';
+  const col = s[2]==='GWEN'?'#6fd8f2':s[2]==='MILES'?'#ff6b6b':'#d6a24a';
+  g.lineWidth=7; g.strokeStyle='#000'; g.lineJoin='round';
+  g.font='700 20px "Trebuchet MS",sans-serif'; g.strokeText(s[2],W/2,H-110); g.fillStyle=col; g.fillText(s[2],W/2,H-110);
+  g.font='600 31px "Trebuchet MS",sans-serif'; g.strokeText(txt,W/2,H-70); g.fillStyle='#fff'; g.fillText(txt,W/2,H-70);
+  if (shown>0 && shown<s[3].length && shown%2===0 && Math.floor((t-s[0])*30)!==subLast){ blip(s[2]==='GWEN'?640:s[2]==='MILES'?330:90, .04, s[2]==='SEEKER'?.05:.06, s[2]==='SEEKER'?'sawtooth':'square'); subLast = Math.floor((t-s[0])*30); }
+}
+let subLast = -1;
+function drawCards(t){
+  const g=ctx; g.textAlign='center';
+  if (t<5){                                                     // title card
+    const a = t<.8 ? t/.8 : t>4 ? Math.max(0,5-t) : 1; g.fillStyle=`rgba(0,0,0,${t>4?(1-(5-t))*.0+ (5-t>0? 1:0):1})`;
+    g.fillStyle='#000'; g.globalAlpha = t>4 ? Math.max(0,5-t) : 1; g.fillRect(0,0,W,H); g.globalAlpha=1;
+    g.globalAlpha=a; g.fillStyle='#d6a24a'; g.font='700 22px "Trebuchet MS",sans-serif'; g.fillText('P A R T   1',W/2,H/2-70);
+    g.fillStyle='#efe6d2'; g.font='700 78px Georgia,serif'; g.fillText('THE NEW KID',W/2,H/2+10);
+    g.fillStyle='#8f879c'; g.font='italic 22px Georgia,serif'; g.fillText('Gwen Stacy  ×  Miles Morales  —  seen through the Seeker’s eye',W/2,H/2+62); g.globalAlpha=1;
+  }
+  if (t>86){                                                    // end card
+    const a = Math.min(1,(t-86)/2.5); g.fillStyle=`rgba(0,0,0,${a})`; g.fillRect(0,0,W,H);
+    g.globalAlpha = Math.min(1,Math.max(0,(t-87.5)/1.5)); g.fillStyle='#efe6d2'; g.font='700 56px Georgia,serif'; g.fillText('TO BE CONTINUED…',W/2,H/2);
+    g.fillStyle='#d6a24a'; g.font='700 20px "Trebuchet MS",sans-serif'; g.fillText('PART 2: ROOM 003',W/2,H/2+48); g.globalAlpha=1;
+  }
+}
+
+/* ------------------------------------------------------------- main loop */
+let time=0, playing=false, started=false, lastNow=0, lastT=-1, thumpAt=-9, whisperDone=false;
+const camLook = new THREE.Vector3();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dtReal = Math.min(.05,(now-lastNow)/1000); lastNow=now;
+  if (playing){ time += dtReal; if (time>=T_END){ time=T_END; playing=false; document.getElementById('play').textContent='Replay'; } }
+  const dt = Math.abs(time-lastT)<1 ? Math.max(0,time-lastT) : 0; lastT=time;
+  const t = time;
+
+  // camera
+  const [px,py,pz,lx,ly,lz] = sampleTrack(CAM_T,t,6);
+  const mode = modeAt(t);
+  const bob = mode==='corner' ? Math.sin(t*4.2)*.03 : 0, sway = Math.sin(t*.9)*.015 + Math.sin(t*7.3)*.004;
+  camera.position.set(px+sway, py+bob, pz); camLook.set(lx+Math.sin(t*.7)*.06, ly+Math.sin(t*.55)*.03, lz);
+  camera.lookAt(camLook);
+  if (mode==='corner') camera.rotateZ(.09*Math.sin(Math.min(1,(t-28)/3)*Math.PI*.5) );     // lean
+  if (mode==='locker' && t>20 && t<27) camera.rotateZ(Math.sin((t-20)*1.3)*.015);
+
+  // actors + door
+  poseActor(gwen, GWEN_T, t, dt, camera.position);
+  poseActor(miles, MILES_T, t, dt, camera.position);
+  doorPivot.rotation.y = Math.PI/2*smooth(Math.min(1,Math.max(0,(t-41.5)/2.5)));
+  eyeMesh.material.opacity = t>73 ? Math.min(1,(t-73)/3)*(t>80?Math.max(0,1-(t-80)/6):1) : 0;
+  eyeMesh.scale.setScalar(1+Math.sin(t*2)*.03);
+
+  // flickering lights (DOORS-style): steady, then glitchy bursts; blackout near the end
+  lights.forEach((L,i)=>{
+    const n = Math.sin(t*37+L.seed)*Math.sin(t*11+L.seed*2); const burst = (Math.floor(t/3.7+L.seed)%5===0) ? 1 : 0;
+    let k = 1 - burst*Math.max(0,n)*.9; if (t>80) k *= Math.max(0,1-(t-80)/8) * (.6+.4*Math.max(0,Math.sin(t*20+L.seed)));
+    L.l.intensity = L.base*k; L.bulb.material.color.setScalar(.35+.65*k);
+  });
+  // Seeker heartbeat + whisper cues
+  if (playing && started){ if (t>26.5 && t<28 && t-thumpAt>2){ thumpAt=t; thump(); } if (t>73.5 && t<75 && !whisperDone){ whisperDone=true; whisper(); thump(); } if (t<5) whisperDone=false; }
+
+  renderer.render(scene,camera);
+  ctx.imageSmoothingEnabled=false; ctx.drawImage(renderer.domElement,0,0,W,H);
+  overlay(t, mode);
+  drawSubs(t); drawCards(t);
+
+  const sc = document.getElementById('scrub'); if (document.activeElement!==sc) sc.value = (t/T_END*100).toFixed(1);
+  const f = s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'); document.getElementById('clock').textContent = f(t)+' / '+f(T_END);
+}
+
+/* ------------------------------------------------------------------ UI */
+const $ = id=>document.getElementById(id);
+function begin(){ initAudio(); if (ac.state==='suspended') ac.resume(); $('start').style.display='none'; started=true; playing=true; time=0; lastStepPhase={gwen:0,miles:0}; $('play').textContent='Pause'; }
+$('go').onclick = begin;
+$('play').onclick = ()=>{ if(!started){begin();return;} if (time>=T_END){ time=0; playing=true; $('play').textContent='Pause'; return; } playing=!playing; $('play').textContent=playing?'Pause':'Play'; };
+$('restart').onclick = ()=>{ if(!started){begin();return;} time=0; playing=true; whisperDone=false; $('play').textContent='Pause'; };
+$('scrub').oninput = e=>{ time = e.target.value/100*T_END; lastT=time; };
+$('mute').onclick = ()=>{ muted=!muted; if(master) master.gain.value = muted?0:.8; $('mute').textContent='Sound: '+(muted?'off':'on'); };
+addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); $('play').click(); } if(e.key==='r'||e.key==='R') $('restart').click(); });
+$('rec').onclick = ()=>{
+  if (!started) begin(); time=0; playing=true; $('play').textContent='Pause';
+  const vs = view.captureStream(30); if (rec) rec.stream.getAudioTracks().forEach(tr=>vs.addTrack(tr));
+  const mr = new MediaRecorder(vs,{mimeType:MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')?'video/webm;codecs=vp9,opus':'video/webm',videoBitsPerSecond:6e6});
+  const chunks=[]; mr.ondataavailable=e=>chunks.push(e.data);
+  mr.onstop=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(chunks,{type:'video/webm'})); a.download='across-the-doors-part1.webm'; a.click(); $('rec').textContent='Record .webm'; };
+  mr.start(); $('rec').textContent='Recording… (≈1.5 min)'; setTimeout(()=>mr.state!=='inactive'&&mr.stop(), T_END*1000+500);
+};
+window.__seek = t=>{ time=t; lastT=t; };       // test hook
+window.__scene = { gwen, miles, camera, scene }; window.__gl = renderer.domElement;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
