@@ -201,7 +201,7 @@ local function defaultCubePosition()
 	end
 	local forward = spawnCFrame.LookVector * Vector3.new(1, 0, 1)
 	forward = if forward.Magnitude > 0.1 then forward.Unit else Vector3.new(0, 0, -1)
-	local spot = spawnCFrame.Position + forward * 22
+	local spot = spawnCFrame.Position + forward * 10
 	local hit = raycastDown(spot + Vector3.new(0, 15, 0))
 	local groundY = if hit then hit.Position.Y else spawnCFrame.Position.Y
 	return Vector3.new(spot.X, groundY + CONFIG.CubeSize / 2 + 2.5, spot.Z)
@@ -261,6 +261,26 @@ mist.RotSpeed = NumberRange.new(-30, 30)
 mist.LightInfluence = 0.3
 mist.Rate = 5
 mist.Parent = cube
+
+-- floating label so the cube is easy to find from far away
+local marker = Instance.new("BillboardGui")
+marker.Name = "Marker"
+marker.Size = UDim2.fromOffset(160, 40)
+marker.StudsOffset = Vector3.new(0, cube.Size.Y / 2 + 2, 0)
+marker.AlwaysOnTop = true
+marker.MaxDistance = 500
+local markerText = Instance.new("TextLabel")
+markerText.Size = UDim2.fromScale(1, 1)
+markerText.BackgroundTransparency = 1
+markerText.Font = Enum.Font.Creepster
+markerText.TextScaled = true
+markerText.TextColor3 = Color3.fromRGB(220, 0, 0)
+markerText.TextStrokeTransparency = 0
+markerText.Text = "DON'T CLICK"
+markerText.Parent = marker
+marker.Parent = cube
+
+print("[HorrorCube] Cube spawned at", cube.Position)
 
 local click = Instance.new("ClickDetector")
 click.MaxActivationDistance = CONFIG.ClickDistance

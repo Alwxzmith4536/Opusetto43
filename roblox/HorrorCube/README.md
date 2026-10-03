@@ -8,7 +8,7 @@ A cursed black cube floats near your spawn. **Click it** and the whole world tur
 2. **StarterPlayer → StarterPlayerScripts** → **+** → **LocalScript** → paste `HorrorClient.client.lua`
 3. Press **Play** and click the cube.
 
-You don't need to place a cube. The script creates one 22 studs in front of your SpawnLocation.
+You don't need to place a cube. The script creates one 10 studs in front of your SpawnLocation.
 If you want to use your own part instead, name it `HorrorCube` and put it in Workspace.
 
 ## What happens when you click
